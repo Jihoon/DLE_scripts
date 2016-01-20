@@ -1,10 +1,13 @@
-### Read in valuation mtx ###
+### Read in valuation mtx for each country (AT for now for FRA)
+### And define a function for quick conversion between pp and bp
+### Issue: The format will be different for other countries where we need to collect data
+
 
 # AT valuation layer was used for FR.
 Mapping <- system.file("AT_valuation.xlsx", package = "XLConnect")
 wb <- loadWorkbook("H:/MyDocuments/IO work/Valuation/AT_valuation.xls")
 
-f_hous_idx <- 169  # Final hh demand
+f_hous_idx <- 169  # Column for Final hh demand
 row_start <- 15  # Starting row number "paddy rice"
 row_end <- 214  # Ending row number "Extra-territorial organizations and bodies"
 
@@ -12,15 +15,15 @@ trd_idx <- c(152:155, 166)
 trp_idx <- 157:163
 
 # "Taxes less subsidies on products purchased: Total"
-y_bp        <- readWorksheet(wb, "usebptot", header=F, startRow=row_start, endRow=row_end-1, # Why row_end gives 201 rows?
+y_bp        <- readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-y_pp        <- readWorksheet(wb, "usepptot", header=F, startRow=row_start, endRow=row_end-1,
+y_pp        <- readWorksheet(wb, "usepptot", header=FALSE, startRow=row_start, endRow=row_end,
                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-trd_margin  <- readWorksheet(wb, "trade_margins", header=F, startRow=row_start, endRow=row_end, 
+trd_margin  <- readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end, 
                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-trp_margin  <- readWorksheet(wb, "transport_margins", header=F, startRow=row_start, endRow=row_end, 
+trp_margin  <- readWorksheet(wb, "transport_margins", header=FALSE, startRow=row_start, endRow=row_end, 
                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-prod_tax    <- readWorksheet(wb, "product_taxes", header=F, startRow=row_start, endRow=row_end, 
+prod_tax    <- readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end, 
                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
 
 trp_ratio <- trp_margin[trp_idx,]/sum(trp_margin[trp_idx,])
@@ -45,6 +48,12 @@ cbind(y_pp, rowSums(F))
 y <- 1/y_pp[,1]
 y[is.infinite(y)] <- 0 
 D <- diag(y) %*% as.matrix(F)
+
+
+
+##############################################
+### Function get_basic_price from PP to BP ### (only for FRA for now)
+##############################################
 
 # Any y_pp can be converted to y_bp by
 
