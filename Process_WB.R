@@ -1,6 +1,3 @@
-library(stringr)
-library(dplyr)
-
 # Function to extract CE-COICOP concordance from WB .do files
 # Function requires file path and country ISO3 code for given input data
 

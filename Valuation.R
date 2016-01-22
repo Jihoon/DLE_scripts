@@ -1,6 +1,7 @@
 ### Read in valuation mtx for each country (AT for now for FRA)
 ### And define a function for quick conversion between pp and bp
 ### Issue: The format will be different for other countries where we need to collect data
+### Note: Even a 1 EUR expenditure (PP) on one sector is converted to multiple sector expenditures in BP, because it gets transfered to trans/trade sectors.
 
 
 # AT valuation layer was used for FR.

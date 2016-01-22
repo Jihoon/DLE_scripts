@@ -1,10 +1,13 @@
 library(RJDBC)
 library(data.table)
-library(dplyr)
 library(tidyr)
 library(XLConnect)
 library(Surrogate)
 library(ggplot2)
+library(stringr)
+library(dplyr)
+library(pastecs)
+library(pastecs)
 
 setwd("H:/MyDocuments/IO work/DLE_scripts")
 
@@ -91,7 +94,6 @@ fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   
 
 
 
-
 #####################################################
 ### Read in (CES-Pseudo COICOP) mappings from WB  ###
 #####################################################
@@ -124,11 +126,11 @@ wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND_CES-COICOP_ma
 
 n_sector_coicop <- 109  # Num of COICOP sectors
 n_row <- 347  # Num of CES items
-bridge_CES_COICOP <- readWorksheet(wb, "Sheet2", header=F, startRow=2, endRow=1+n_row, 
+bridge_CES_COICOP <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, 
                         startCol=3, endCol=2+n_sector_coicop, forceConversion=T)
 
-CES_catnames <- readWorksheet(wb, "Sheet2", header=F, startRow=2, endRow=1+n_row, startCol=1, endCol=1)
-COICOP_catnames1 <- readWorksheet(wb, "Sheet2", header=F, startRow=1, endRow=1, startCol=3, endCol=2+n_sector_coicop)
+CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, startCol=1, endCol=1)
+# COICOP_catnames1 <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1, startCol=3, endCol=2+n_sector_coicop)
 
 # Order rows of bridge mtx in the alphabatic order of CES item names
 bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
