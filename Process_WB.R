@@ -58,7 +58,7 @@ processWBscript = function(file, iso3='IND') {
     desc <- str_extract(x, "\".+\"")
     desc <- gsub('\"', '', desc, fixed=T)
     codebook <- data.frame(code, desc) 
-    names(codebook) <- c("CODE", "DESC_ORG")  
+    names(codebook) <- c("CODE", "Surv_Heading")  
     result <- unique(merge(result, codebook, by="CODE"))
   }
 
@@ -71,10 +71,10 @@ processWBscript = function(file, iso3='IND') {
 # Output is data frame providing concordance between survey line item ('code')
 # and WB GCD COICOP aggregate category code ('icp_seq')
 wb_path = 'H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/'
-IDN = processWBscript(paste(wb_path, 'INDONESIA2010.txt', sep=''), iso3='IDN')
-BRA = processWBscript(paste(wb_path, 'BRAZIL2008.txt', sep=''), iso3='BRA')
-ZAF = processWBscript(paste(wb_path, 'SOUTH-AFRICA2010.txt', sep=''), iso3='ZAF')
-IND = processWBscript(paste(wb_path, 'INDIA2011.txt', sep=''), iso3='IND')
+IDN_WB = processWBscript(paste(wb_path, 'INDONESIA2010.txt', sep=''), iso3='IDN')
+BRA_WB = processWBscript(paste(wb_path, 'BRAZIL2008.txt', sep=''), iso3='BRA')
+ZAF_WB = processWBscript(paste(wb_path, 'SOUTH-AFRICA2010.txt', sep=''), iso3='ZAF')
+IND_WB = processWBscript(paste(wb_path, 'INDIA2011.txt', sep=''), iso3='IND')
 
 
 

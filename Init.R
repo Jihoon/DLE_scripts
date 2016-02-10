@@ -8,6 +8,11 @@ library(stringr)
 library(dplyr)
 library(pastecs)
 library(pastecs)
+library(countrycode)
+library(scatterplot3d)
+library(rgl)
+library(car)
+library(shape)
 
 setwd("H:/MyDocuments/IO work/DLE_scripts")
 
@@ -31,39 +36,14 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
 
 
 source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
-
+source("Read_final_demand_from_DB.R")
 # Create Oracle DB connection via RJDBC (Java)
 drv = JDBC("oracle.jdbc.driver.OracleDriver","P:/ene.model/Rcodes/Common_files/ojdbc6.jar", identifier.quote="\"") 
 conn = dbConnect(drv, "jdbc:oracle:thin:@gp3.iiasa.ac.at:1521:gp3", "hh_data", "hh_data")
-
-# Query to get total expenditure by CES category of a country (India)
-query <- paste("SELECT ITEM, SUM(VAL_TOT*WEIGHT) FD_TOT FROM 
-               (SELECT f.ITEM, f.VAL_TOT, f.ID, hh.WEIGHT FROM IND1_FOOD f
-               JOIN IND1_HH hh ON f.ID = hh.ID)
-               GROUP BY ITEM
-               UNION ALL
-               SELECT ITEM, SUM(VAL_TOT*WEIGHT) FD_TOT FROM 
-               (SELECT f.ITEM, f.VAL_TOT, f.ID, hh.WEIGHT FROM IND1_OTHCON f
-               JOIN IND1_HH hh ON f.ID = hh.ID)
-               GROUP BY ITEM
-               UNION ALL
-               SELECT FUEL, SUM(VAL_TOT*WEIGHT) FD_TOT FROM 
-               (SELECT f.FUEL, f.VAL_TOT, f.ID, hh.WEIGHT FROM IND1_FUEL f
-               JOIN IND1_HH hh ON f.ID = hh.ID)
-               GROUP BY FUEL")
-res <- dbSendQuery(conn, query)
-
-# Adjust to 2007 Euro as in EXIO
-cpi_2010 <- 218.056 # http://www.usinflationcalculator.com/inflation/consumer-price-index-and-annual-percent-changes-from-1913-to-2008/
-cpi_2007 <- 207.3
-exr_2007 <- 1.3415  # http://www.wikinvest.com/stock/Infineon_Technologies_(IFX)/Annual_Average_Exchange_Rates_Dollar_Per_Euro
-
-fd_tot <- fetch(res, -1)
-fd_tot <- fd_tot[order(fd_tot$ITEM),] # Order CES alphabetically
-
-# Final demand of a country by CES category
-fd_tot$FD_TOT <- fd_tot$FD_TOT*cpi_2007/cpi_2010/exr_2007  # Units are in USD-ppp 2010
-
+IND_FD <- readFinalDemandfromDB('IND')
+IDN_FD <- readFinalDemandfromDB('IDN')
+BRA_FD <- readFinalDemandfromDB('BRA')
+ZAF_FD <- readFinalDemandfromDB('ZAF')
 dbDisconnect(conn)
 
 
@@ -92,8 +72,6 @@ fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   
 
 
 
-
-
 #####################################################
 ### Read in (CES-Pseudo COICOP) mappings from WB  ###
 #####################################################
@@ -111,6 +89,7 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 
 # Issue: I still need to match with our CES DB and final NTNU 109 classification
 #        How to combine fuel consumption and other (food etc)
+
 
 
 ##################################
@@ -136,8 +115,6 @@ CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n
 bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
 
 source("Bridging_uncertainty.R")  # Read in the function 'get_bridge_COICOP_EXIO'
-
-
 
 
 

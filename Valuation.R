@@ -44,7 +44,7 @@ F[trp_idx, trp_idx] <- diag(y_bp[trp_idx,]-colSums(trp_margin_disag[-trp_idx,]))
 F[trd_idx, trd_idx] <- diag(y_bp[trd_idx,]-colSums(trd_margin_disag[-trd_idx,]))
 F <- cbind(F,prod_tax)
 
-cbind(y_pp, rowSums(F))
+# cbind(y_pp, rowSums(F))
 
 y <- 1/y_pp[,1]
 y[is.infinite(y)] <- 0 

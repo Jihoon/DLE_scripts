@@ -11,6 +11,7 @@ L_inverse <- read.table(paste(path_iot, "L_inverse.txt", sep=""), header=FALSE, 
 factor_input <- read.table(paste(path_iot, "mrFactorInputs_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 final_demand <- read.table(paste(path_iot, "mrFinalDemand_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 iot <- read.table(paste(path_iot, "mrIot_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+supplym <- read.table(paste(path_sut, "mrSupply_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".")
 
 # Material extension with more energy carrier resolution from NTNU (ver 2.2.0)
 # However these extensions are in TJ unit, which need to be divided by total use by product to get intensities.
