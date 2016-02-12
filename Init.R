@@ -7,12 +7,14 @@ library(ggplot2)
 library(stringr)
 library(dplyr)
 library(pastecs)
-library(pastecs)
 library(countrycode)
 library(scatterplot3d)
 library(rgl)
 library(car)
 library(shape)
+library(openxlsx)
+library(graphics)
+library(fields)
 
 setwd("H:/MyDocuments/IO work/DLE_scripts")
 
@@ -40,10 +42,22 @@ source("Read_final_demand_from_DB.R")
 # Create Oracle DB connection via RJDBC (Java)
 drv = JDBC("oracle.jdbc.driver.OracleDriver","P:/ene.model/Rcodes/Common_files/ojdbc6.jar", identifier.quote="\"") 
 conn = dbConnect(drv, "jdbc:oracle:thin:@gp3.iiasa.ac.at:1521:gp3", "hh_data", "hh_data")
+
+# Read total FD for all population
 IND_FD <- readFinalDemandfromDB('IND')
 IDN_FD <- readFinalDemandfromDB('IDN')
 BRA_FD <- readFinalDemandfromDB('BRA')
 ZAF_FD <- readFinalDemandfromDB('ZAF')
+
+# Read in by decile group
+for (i in 1:10) {
+  a <- readFinalDemandfromDBbyDecile('IND', i)
+  names(a)[2] <- paste("Decile", i, sep="") 
+  IND_FD <- merge(IND_FD, a, by="ITEM", all.x=TRUE)
+  a <- readFinalDemandfromDBbyDecile('IDN', i)
+  names(a)[2] <- paste("Decile", i, sep="") 
+  IDN_FD <- merge(IDN_FD, a, by="ITEM", all.x=TRUE)
+}
 dbDisconnect(conn)
 
 
@@ -79,11 +93,13 @@ fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   
 ### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
 Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
 wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
-
-icp_seq <- readWorksheet(wb, sheet="Sheet1", header=T, startRow=2, startCol=1, endCol=1, forceConversion=T)
-NTNU <- readWorksheet(wb, sheet="Sheet1", header=T, startRow=2, startCol=7, endCol=8, forceConversion=T)
-icp_ntnu <-cbind(icp_seq, NTNU)
-names(icp_ntnu)[3] <- "ICP_Heading"
+# I added 'Sheet2' and fixed some mis-categorizations for my needs.
+icp_seq <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
+icp_cat <- readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=4, endCol=4, forceConversion=T)
+NTNU <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
+icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
+names(icp_ntnu)[2] <- "Subcategory"
+names(icp_ntnu)[4] <- "ICP_Heading"
 
 source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
 

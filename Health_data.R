@@ -1,3 +1,16 @@
+# Read in PPP rates (using openxlsx library) because of an error for XLConnect loadWorkbook function
+# Probably need to go for either library, not both
+wb <- loadWorkbook("P:/ene.general/DecentLivingEnergy/Surveys/International Comparison Program 2011/ICP2011 Data for Researchers_June22-2015 [IIASA].xlsx")
+a <- readWorkbook(wb, "PPPs (AGG)", colNames = FALSE, rowNames = FALSE, startRow = 7)
+ctry_code <- t(a[1,c(3:dim(a)[2])])
+PPP_GDP <- t(as.numeric(a[2,c(3:dim(a)[2])]))
+PPP_health <- t(as.numeric(a[9,c(3:dim(a)[2])]))
+PPP_health_scaler <- as.numeric(PPP_health/PPP_GDP)
+PPP_health_scaler[is.na(PPP_health_scaler)] <- 0
+options(stringsAsFactors = FALSE)
+PPP_scaler <- data.frame(ctry_code, PPP_health_scaler)
+names(PPP_scaler) <- c("code", "PPP_scaler")
+
 # WHO health outcome 
 fpath <- "H:/MyDocuments/Health/Data/"
 cm <- read.csv(paste(fpath,"WHO - Child mortality.csv", sep=""), header=TRUE)
@@ -15,8 +28,11 @@ cm$InfMort <- as.numeric(unlist(a)[seq(1,2*length(a),2)])
 
 le <- le[-1,1:3]
 names(le) <- c("Country", "YearLE", "LifeExp")
-le$YearLE <- as.numeric(levels(le$YearLE))[le$YearLE]
-le$LifeExp <- as.numeric(levels(le$LifeExp))[le$LifeExp]
+le[,2] <- as.numeric(le[,2])
+le[,3] <- as.numeric(le[,3])
+# le$YearLE <- as.numeric(levels(le$YearLE))[le$YearLE]
+# le <- aggregate(.~Country, le, head, 1)
+# le$LifeExp <- as.numeric(levels(le$LifeExp))[le$LifeExp]
 le <- le[le$YearLE==2012,]
 
 cm$cmIdx <- (cm$InfMort-105)/(1-105)
@@ -52,6 +68,11 @@ me <- aggregate(.~Country, me, head, 1)
 CtyPerf <- Reduce(function(...) merge(..., all=T, by="Country"), 
        list(le, cm, av, ex, wd, infra, me))
 CtyPerf$code <- countrycode(CtyPerf$Country, "country.name", "iso3c")
+CtyPerf <- merge(CtyPerf, PPP_scaler, by="code")
+
+# Scale health expenditures (from WHO) by health PPP rates
+CtyPerf$TotExpPerCapita <- CtyPerf$TotExpPerCapita * CtyPerf$PPP_scaler
+CtyPerf$GovExpPerCapita <- CtyPerf$GovExpPerCapita * CtyPerf$PPP_scaler
 
 # Import population data
 a <- read.fwf(paste(fpath,"population_rawdata_2119.txt", sep=""), widths=c(-7,45,-6,13), 
@@ -71,6 +92,7 @@ CtyPerf$PerfIdx <- (CtyPerf$cmIdx + CtyPerf$leIdx)/2
 CtyPerf$FacilitiesPer1M <- CtyPerf$HospitalPer1M + CtyPerf$HealthCentres + CtyPerf$HealthPosts
 CtyPerf$GovSupport <- CtyPerf$GovExpPerCapita / CtyPerf$TotExpPerCapita
 CtyPerf$HospitalPer1M[CtyPerf$HospitalPer1M > 40] <- NA   # Wrong entry for Guinea-Bissau? (HospitalPer1M > 50)
+CtyPerf$HealthExpRatio <- TotExpPerCapita/GDP2012
 
 # Set country code
 CtyPerf$ColIdx <- ceiling(CtyPerf$PerfIdx*1000) 
@@ -168,8 +190,7 @@ colorbar.plot(52, -7, 1:1000, strip.width = 0.03, strip.length = 0.5,
 text(44, -3, "0", cex=0.6, pos=4)
 text(58.5, -3, "1", cex=0.6, pos=4)
 text(48, -2.5, "Health status index", cex=0.8, pos=4)
-legend(
-  "topright", title="Total health expenditure per capita (PPP 2012$)",
+legend("topright", title="Total health expenditure per capita (PPP 2012$)",
   legend=c("1000", "5000", "10000"), 
   pch = 16,
   bty = "n",
@@ -238,7 +259,6 @@ a <- TotExpPerCapita[LifeExp >= 74 & InfMort <= 15]
 b <- sort(a)[1:(length(a)/2)]
 c<-rbind(c, stat.desc(a)[c(1,4,5,8,9,13)])
 c<-rbind(c, stat.desc(b)[c(1,4,5,8,9,13)])
-
 
 a <- PhysicianPer1000[LifeExp >= 65 & InfMort <= 25]
 b <- sort(a)[1:(length(a)/2)]
