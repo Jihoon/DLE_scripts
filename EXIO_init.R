@@ -8,25 +8,28 @@ path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2
 
 # From IoT folder
 L_inverse <- read.table(paste(path_iot, "L_inverse.txt", sep=""), header=FALSE, sep=",", dec=".")
+
 factor_input <- read.table(paste(path_iot, "mrFactorInputs_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+factor_input <- factor_input[,c(-1,-2)]
+
 final_demand <- read.table(paste(path_iot, "mrFinalDemand_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+final_demand <- final_demand[,c(-1,-2,-3)]
+
 iot <- read.table(paste(path_iot, "mrIot_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+iot <- iot[,c(-1,-2,-3)]
+
 supplym <- read.table(paste(path_sut, "mrSupply_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".")
 
 # Material extension with more energy carrier resolution from NTNU (ver 2.2.0)
 # However these extensions are in TJ unit, which need to be divided by total use by product to get intensities.
 materials <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+materials <- materials[,c(-1,-2)]
+
 final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+final_demand_material <- final_demand_material[,c(-1,-2)]
 
 # From SUT folder
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
-
-# Remove first few columns with names
-factor_input <- factor_input[,c(-1,-2)]
-final_demand <- final_demand[,c(-1,-2,-3)]
-final_demand_material <- final_demand_material[,c(-1,-2)]
-materials <- materials[,c(-1,-2)]
-iot <- iot[,c(-1,-2,-3)]
 tot_use <- tot_use[,c(-1,-2,-3)]
 
 # Get total use by product 

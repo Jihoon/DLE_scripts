@@ -1,6 +1,7 @@
 library(RJDBC)
 library(data.table)
 library(tidyr)
+library(openxlsx)
 library(XLConnect)
 library(Surrogate)
 library(ggplot2)
@@ -12,8 +13,8 @@ library(scatterplot3d)
 library(rgl)
 library(car)
 library(shape)
-library(openxlsx)
 library(graphics)
+library(Surrogate)
 library(fields)
 
 setwd("H:/MyDocuments/IO work/DLE_scripts")
@@ -32,12 +33,55 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
 
 
 
+#####################################################
+### Read in (CES-Pseudo COICOP) mappings from WB  ###
+#####################################################
+
+### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
+Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
+# I added 'Sheet2' and fixed some mis-categorizations for my needs.
+icp_seq <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
+icp_cat <- readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=4, endCol=4, forceConversion=T)
+NTNU <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
+icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
+names(icp_ntnu)[2] <- "Subcategory"
+names(icp_ntnu)[4] <- "ICP_Heading"
+
+source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
+
+# Issue: I still need to match with our CES DB and final NTNU 109 classification
+#        How to combine fuel consumption and other (food etc)
+#       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
+
+
+
+##########################################
+### Read in function 'get_basic_price' ###
+##########################################
+
+# Currently does this only for FRA
+
+source("Valuation.R")
+
+
+
+#################################################
+### Read in function 'Bridging_uncertainty.R' ###
+#################################################
+
+# The uniform random draw routine based on a qual mapping
+
+source("Bridging_uncertainty.R")  
+
+
+
 ############################################################
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
 
 
-source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
+# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
 source("Read_final_demand_from_DB.R")
 # Create Oracle DB connection via RJDBC (Java)
 drv = JDBC("oracle.jdbc.driver.OracleDriver","P:/ene.model/Rcodes/Common_files/ojdbc6.jar", identifier.quote="\"") 
@@ -62,6 +106,76 @@ dbDisconnect(conn)
 
 
 
+#########################################
+### Read in COICOP-EXIO Qual mapping  ###
+#########################################
+
+# Issue: This is to be replaced by 'bridge_icp_exio_q' (currently in Map_CES_COICOP.R).
+#       But bridge_COICOP_EXIO_q is used as a base for contructing bridge_icp_exio_q.
+#       I will move the scripts here (or call from here) once it is being used
+
+Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
+
+# Qualitative mapping (0 or 1)
+bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
+                                      startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
+
+# Final COICOP classification with 109 headings
+n_sector_coicop <- 109
+COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=3, endRow=2+n_sector_coicop, startCol=2, endCol=2)
+EX_catnames <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=2, endRow=2, startCol=3)
+
+# Issue: This qual mapping may change depending on countries, which we need to tackle then.
+
+
+
+##############################################
+###       Generate CES-ICP mapping         ###
+##############################################
+
+# Read in CES code tables, fix some mis-mappings from WB, and create CES_ICP_IDN, CES_ICP_IND, etc.
+# Then I can do 
+# IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
+# to get FD in ICP classification.
+
+source("Map_CES_COICOP.R")
+
+
+
+##############################################
+###     Read in ICP-EXIO Qual mapping      ###
+##############################################
+
+# This is already excuted and saved in a file.
+# Don't need to run everytime.
+
+source("Generate_base_ICP-EXIO_mapping.R")
+
+
+
+##############################################
+###     Read in ICP-EXIO Qual mapping      ###
+##############################################
+
+# This matrix is modified externally manually based on the resulting csv from running Generate_base_ICP-EXIO_mapping.R
+# to fine-allocate mostly for food-subsectors.
+# The result is in H:\MyDocuments\IO work\Bridging\CES-COICOP\ICP_EXIO_Qual_Edited.xlsx
+# Manually changed cells are colored in green in the xlsx file.
+
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
+bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T)
+
+
+
+
+
+
+
+
+
+# Below are (sort of) auxiliary/temporary/transient.
+
 ##############################################
 ### Read in final demand vector for France ### (Auxiliary, from Lucas)
 ##############################################
@@ -75,7 +189,7 @@ fd_decile <- readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T)
 cpi_2007_fr <- 95.7	 # http://data.worldbank.org/indicator/FP.CPI.TOTL
 cpi_2011_fr <- 102.1	
 fd_decile[,2:12] <- fd_decile[,2:12]*cpi_2007_fr/cpi_2011_fr
-names(fd_decile)
+# names(fd_decile)
 
 soc_transfer_ratio <- fd_decile[,14:24]
 names(soc_transfer_ratio) <- names(fd_decile)[2:12]
@@ -86,28 +200,6 @@ fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   
 
 
 
-#####################################################
-### Read in (CES-Pseudo COICOP) mappings from WB  ###
-#####################################################
-
-### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
-Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
-wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
-# I added 'Sheet2' and fixed some mis-categorizations for my needs.
-icp_seq <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
-icp_cat <- readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=4, endCol=4, forceConversion=T)
-NTNU <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
-icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
-names(icp_ntnu)[2] <- "Subcategory"
-names(icp_ntnu)[4] <- "ICP_Heading"
-
-source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
-
-# Issue: I still need to match with our CES DB and final NTNU 109 classification
-#        How to combine fuel consumption and other (food etc)
-
-
-
 ##################################
 ### Read in CES-COICOP mapping ### (Specifically for IND for now)
 ##################################
@@ -115,6 +207,7 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 # Using India CES for French example for now 
 # Update: Received FRA consumption in NTNT 109 classification, so FRA doesn't use this
 # Issue: bridge_CES_COICOP may be replaced with the IND mtx from WB (after comparison)
+# Issue: This is likely to be replaced by the WB mapping.
 
 Mapping <- system.file("IND_CES-COICOP_mapping.xlsx", package = "XLConnect")
 wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND_CES-COICOP_mapping.xlsx")
@@ -130,35 +223,7 @@ CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n
 # Order rows of bridge mtx in the alphabatic order of CES item names
 bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
 
-source("Bridging_uncertainty.R")  # Read in the function 'get_bridge_COICOP_EXIO'
 
-
-
-#########################################
-### Read in COICOP-EXIO bridge (Qual) ###
-#########################################
-
-Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
-wb <- loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
-
-# Qualitative mapping (0 or 1)
-bridge_COICOP_EXIO_q <- readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
-                                      startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
-
-# Final COICOP classification with 109 headings
-n_sector_coicop <- 109
-COICOP_catnames2 <- readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=3, endRow=2+n_sector_coicop, startCol=2, endCol=2)
-EX_catnames <- readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=2, endRow=2, startCol=3)
-
-# Issue: This qual mapping may change depending on countries, which we need to tackle then.
-
-
-
-##########################################
-### Read in function 'get_basic_price' ###
-##########################################
-
-source("Valuation.R")
 
 
 

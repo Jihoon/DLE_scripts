@@ -3,53 +3,111 @@
 ### Issue: The format will be different for other countries where we need to collect data
 ### Note: Even a 1 EUR expenditure (PP) on one sector is converted to multiple sector expenditures in BP, because it gets transfered to trans/trade sectors.
 
+xlcFreeMemory()
 
-# AT valuation layer was used for FR.
-Mapping <- system.file("AT_valuation.xlsx", package = "XLConnect")
-wb <- loadWorkbook("H:/MyDocuments/IO work/Valuation/AT_valuation.xls")
+num_EXIO_sector <- 200
+trade_margin_rate <- data.frame(AT = numeric(num_EXIO_sector),US = numeric(num_EXIO_sector), IN = numeric(num_EXIO_sector))
+trans_margin_rate <- trade_margin_rate
+tax_rate <- trade_margin_rate
 
-f_hous_idx <- 169  # Column for Final hh demand
-row_start <- 15  # Starting row number "paddy rice"
-row_end <- 214  # Ending row number "Extra-territorial organizations and bodies"
+trans_margin_breakdown <- data.frame(AT = numeric(7),US = numeric(7), IN = numeric(7))
+trade_margin_breakdown <- data.frame(AT = numeric(4),US = numeric(4), IN = numeric(4))
 
-trd_idx <- c(152:155, 166)
+trd_idx <- 152:155
 trp_idx <- 157:163
 
-# "Taxes less subsidies on products purchased: Total"
-y_bp        <- readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
-                      startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-y_pp        <- readWorksheet(wb, "usepptot", header=FALSE, startRow=row_start, endRow=row_end,
-                      startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-trd_margin  <- readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end, 
-                      startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-trp_margin  <- readWorksheet(wb, "transport_margins", header=FALSE, startRow=row_start, endRow=row_end, 
-                      startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
-prod_tax    <- readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end, 
-                      startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=T)
+get_valuation_mtx <- function(country){   # Two-letter country code
+  
+  # AT valuation layer was used for FR.
+  if (country=='FR') country <- 'AT'
+  
+  # Mapping <- system.file(paste("H:/MyDocuments/IO work/Valuation/", country, "_output.xls", sep=""), package = "XLConnect")
+  wb <- XLConnect::loadWorkbook(paste("H:/MyDocuments/IO work/Valuation/", country, "_output.xls", sep=""))
+  
+  f_hous_idx <- 169  # Column for Final hh demand
+  row_start <- 15  # Starting row number "paddy rice"
+  row_end <- 214  # Ending row number "Extra-territorial organizations and bodies"
 
-trp_ratio <- trp_margin[trp_idx,]/sum(trp_margin[trp_idx,])
-trd_ratio <- trd_margin[trd_idx,]/sum(trd_margin[trd_idx,])
+  
+  # "Taxes less subsidies on products purchased: Total"
+#   y_bp        <- openxlsx::readWorkbook(wb, "usebptot", colNames=FALSE, startRow=row_start, rows=row_start:row_end,
+#                         cols=f_hous_idx)
+  y_bp        <- readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
+                        startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+  y_pp        <- readWorksheet(wb, "usepptot", header=FALSE, startRow=row_start, endRow=row_end,
+                        startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+  trd_margin  <- readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end, 
+                        startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+  trp_margin  <- readWorksheet(wb, "transport_margins", header=FALSE, startRow=row_start, endRow=row_end, 
+                        startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+  prod_tax    <- readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end, 
+                        startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+  
+  trp_ratio <- trp_margin[trp_idx,]/sum(trp_margin[trp_idx,])
+  trd_ratio <- trd_margin[trd_idx,]/sum(trd_margin[trd_idx,])
+  
+  trade_margin_breakdown[,country] <<- trd_ratio
+  trans_margin_breakdown[,country] <<- trp_ratio
+  trade_margin_rate[,country] <<- trd_margin/y_bp
+  trans_margin_rate[,country] <<- trp_margin/y_bp
+  tax_rate[,country] <<- prod_tax/y_bp
+  
+  trp_margin_disag <- as.matrix(trp_margin[,rep(1,length(trp_idx))]) %*% diag(trp_ratio)
+  trd_margin_disag <- as.matrix(trd_margin[,rep(1,length(trd_idx))]) %*% diag(trd_ratio)
+  
+  # colSums(trp_margin_disag[-trp_idx,])
+  # colSums(trd_margin_disag[-trd_idx,])
+  
+  F <- diag(y_bp[1:200,1])
+  F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
+  F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
+  
+  F[trp_idx, trp_idx] <- diag(y_bp[trp_idx,]-colSums(trp_margin_disag[-trp_idx,]))
+  F[trd_idx, trd_idx] <- diag(y_bp[trd_idx,]-colSums(trd_margin_disag[-trd_idx,]))
+  F <- cbind(F,prod_tax)
+  
+  # cbind(y_pp, rowSums(F))
+  
+  y <- 1/y_pp[,1]
+  y[is.infinite(y)] <- 0 
+  D <- diag(y) %*% as.matrix(F)
+  
+  return(D)
+}
 
-trp_margin_disag <- as.matrix(trp_margin[,rep(1,length(trp_idx))]) %*% diag(trp_ratio)
-trd_margin_disag <- as.matrix(trd_margin[,rep(1,length(trd_idx))]) %*% diag(trd_ratio)
+a <- get_valuation_mtx('IN')
+a <- get_valuation_mtx('AT')
+a <- get_valuation_mtx('US')
 
-# colSums(trp_margin_disag[-trp_idx,])
-# colSums(trd_margin_disag[-trd_idx,])
+rownames(trade_margin_breakdown) <- EX_catnames[trd_idx]
+rownames(trans_margin_breakdown) <- EX_catnames[trp_idx]
+rownames(trade_margin_rate) <- EX_catnames
+rownames(trans_margin_rate) <- EX_catnames
+rownames(tax_rate) <- EX_catnames
+  
+trade_margin_rate[is.na(trade_margin_rate)] <- 0
+trans_margin_rate[is.na(trans_margin_rate)] <- 0
+tax_rate[is.na(tax_rate)] <- 0
 
-F <- diag(y_bp[1:200,1])
-F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
-F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
+# Set up a range for draws
+trd_brkdn_range <- apply(trade_margin_breakdown, 1, function(x) {c(min(x), max(x))})
+trp_brkdn_range <- apply(trans_margin_breakdown, 1, function(x) {c(min(x), max(x))})
+trd_margin_range <- apply(trade_margin_rate, 1, function(x) {c(min(x), max(x))})
+trp_margin_range <- apply(trans_margin_rate, 1, function(x) {c(min(x), max(x))})
+tax_range <- apply(tax_rate, 1, function(x) {c(min(x), max(x))})
 
-F[trp_idx, trp_idx] <- diag(y_bp[trp_idx,]-colSums(trp_margin_disag[-trp_idx,]))
-F[trd_idx, trd_idx] <- diag(y_bp[trd_idx,]-colSums(trd_margin_disag[-trd_idx,]))
-F <- cbind(F,prod_tax)
+# Draw a value within the ranges
+trd_brkdn_draw <- apply(trd_brkdn_range, 2, function(x) {runif(2, x[1], x[2])})
+trp_brkdn_draw <- apply(trp_brkdn_range, 2, function(x) {runif(1, x[1], x[2])})
+trd_rate_draw <- apply(trd_margin_range, 2, function(x) {runif(1, x[1], x[2])})
+trp_rate_draw <- apply(trp_margin_range, 2, function(x) {runif(1, x[1], x[2])})
+tax_rate_draw <- apply(tax_range, 2, function(x) {runif(1, x[1], x[2])})
 
-# cbind(y_pp, rowSums(F))
+a <- cbind(tax_rate, tax_rate_draw)
 
-y <- 1/y_pp[,1]
-y[is.infinite(y)] <- 0 
-D <- diag(y) %*% as.matrix(F)
-
+trans_margin_draws <- get_draws(100, dim(trans_margin_breakdown)[1], min=trp_brkdn_range[1,], max=trp_brkdn_range[2,])
+trade_margin_draws <- get_draws(100, dim(trade_margin_breakdown)[1], min=trd_brkdn_range[1,], max=trd_brkdn_range[2,])
+plot3d(trans_margin_draws[,1], trans_margin_draws[,2], b[,3], size=5)
 
 
 ##############################################
@@ -59,6 +117,7 @@ D <- diag(y) %*% as.matrix(F)
 # Any y_pp can be converted to y_bp by
 
 get_basic_price <- function(v_pp, country){
+  D <- get_valuation_mtx('country')
   v_bp <- (t(D) %*% v_pp)[1:200,]  # Remove tax row
   return(v_bp)
 }

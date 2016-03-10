@@ -1,7 +1,7 @@
 # Read in PPP rates (using openxlsx library) because of an error for XLConnect loadWorkbook function
 # Probably need to go for either library, not both
-wb <- loadWorkbook("P:/ene.general/DecentLivingEnergy/Surveys/International Comparison Program 2011/ICP2011 Data for Researchers_June22-2015 [IIASA].xlsx")
-a <- readWorkbook(wb, "PPPs (AGG)", colNames = FALSE, rowNames = FALSE, startRow = 7)
+wb <- openxlsx::loadWorkbook("P:/ene.general/DecentLivingEnergy/Surveys/International Comparison Program 2011/ICP2011 Data for Researchers_June22-2015 [IIASA].xlsx")
+a <- openxlsx::readWorkbook(wb, "PPPs (AGG)", colNames = FALSE, rowNames = FALSE, startRow = 7)
 ctry_code <- t(a[1,c(3:dim(a)[2])])
 PPP_GDP <- t(as.numeric(a[2,c(3:dim(a)[2])]))
 PPP_health <- t(as.numeric(a[9,c(3:dim(a)[2])]))

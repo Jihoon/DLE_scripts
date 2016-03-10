@@ -12,7 +12,9 @@ qual_map <- t(as.matrix(qual_map)) # Columns of this mtx will be replaced
 bridge <- list()
 r_vec <- list()
 
-for (i in 2:dim(cnt)) {
+# assign_num may start from 0 or 1. We need to start from 2.
+start_index <- which(assign_num[1,]==2)
+for (i in start_index:dim(cnt)) {
 
   r_vec[i-1] <- RandVec(0, 1, 1, assign_num[1,i], assign_num[2,i]*num_draw)    # Uniform draw
 
@@ -20,7 +22,7 @@ for (i in 2:dim(cnt)) {
 
 for (j in 1:num_draw) {
   temp_b <- qual_map
-  for (i in 2:dim(cnt)) {
+  for (i in start_index:dim(cnt)) {
     idx <- ((j-1)*assign_num[2,i]+1):(j*assign_num[2,i])
     assign_ratio <- as.matrix(r_vec[[i-1]][,idx])
     v_ind <- (num_sectors == assign_num[1,i]) # Vertical indices of rows with assign_num[1,i] ones.
@@ -42,8 +44,10 @@ return(bridge)
 
 testColSums <- function(x, n){
   for (j in 1:n) {
-    good <- prod(colSums(x[[j]]))
-    if(!good) {
+    # good <- prod(colSums(x[[j]]))
+    good <- sum(x[[j]])
+    
+    if(good > dim(x[[j]])[2]) {
       print("Doomed!")
     }
   }

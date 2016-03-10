@@ -32,7 +32,7 @@ inten_FR <- 5014 * BTU_to_KJ * 1000 / 0.8  # Primary https://www.eia.gov/cfapps/
 FR_place <- which(exio_ctys=="FR")
 FR_idx <- seq(200*(FR_place-1)+1, 200*FR_place)  # 200 EXIO commodities per country
 FR_idx_fd <- seq(7*(FR_place-1)+1, 7*FR_place)   # 7 final demand columns per country
-
+  
 # Defence spending allocation to hh
 FR_fd_tot <- final_demand[FR_idx, FR_idx_fd]
 names(FR_fd_tot) <- c("HH", "NPISH", "Gov", "GFCF", "Inven", "Valuable", "Export")
@@ -247,6 +247,8 @@ png(filename = paste(figure_path, "Energy total per hh by COICOP consumption cat
 boxplot(SectoralE_per_hh, xlab ="COICOP sectors", ylab ="Embodied energy by consumption sector per hh [MJ]", range=0)
 dev.off()
 
+# For NYC meeting slide
+boxplot(ind_intensity[,-32], xlab ="COICOP sectors", ylab ="Energy intensity by consumption sector [MJ/EUR]", range=0)
 
 # Basic comparison
 total_indr_E <- mean(totE_per_hh[,1])*N_hh_FR/41.86e9   # 1 Tep = 41.86e9 J
