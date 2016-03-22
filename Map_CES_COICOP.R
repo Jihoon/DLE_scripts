@@ -21,9 +21,12 @@ names(code_item_IND) <- c("CODE", "ITEM_DLE", "UNIT")
 code_item_IND$UNIT <- NULL
 # code_item_IND <- code_item_IND[match(unique(code_item_IND$ITEM_DLE), code_item_IND$ITEM_DLE),]    # There are duplicate ITEM_DLEs because they are input in two units (e.g. weight & expenditure)
 
+## Fix WB mis-mappings
+
 # WB assigned "CES 291: Biscuits, chocolates, etc" to "ICP 2: UNBR Food".
 # Sending it to "ICP 36:Confectionery, chocolate and ice cream"
 IND_WB$ICP_SEQ[IND_WB$CODE==291] <- 36
+
 # WB assigned "CES 274-276" to "ICP 39: Coffee, tea and cocoa".
 # They should be "ICP 40: Mineral waters, soft drinks, fruit and vegetable juices"
 # 274 "mineral water (litre)"
@@ -31,6 +34,16 @@ IND_WB$ICP_SEQ[IND_WB$CODE==291] <- 36
 # 276 "fruit juice and shake (litre)"
 IND_WB$ICP_SEQ[IND_WB$CODE>=274 & IND_WB$CODE<=276] <- 40
 
+# WB assigned "CES 334/335: Kerosene" to "ICP 64: Gas".
+# They should be "ICP 65: Other fuel"
+IND_WB$ICP_SEQ[IND_WB$CODE %in% 334:335] <- 65
+
+# WB assigned "CES 435/437" to "ICP 131: Cultural service".
+# They should be "ICP 119: Audio-visual, photographic and information processing equipment"
+# 435 "photography"
+# 436 "VCD/ DVD hire (incl. instrument)"
+# 437 "cable TV"
+IND_WB$ICP_SEQ[IND_WB$CODE %in% 435:437] <- 119
 
 
 # Linking NTNU COICOP with WB ICP
@@ -51,9 +64,10 @@ IDN_map <- IDN_map[order(IDN_map$CODE),]
 
 # Create CES to ICP bridge matrices
 CES_ICP_IDN <- matrix(0, length(IDN_map$CODE), max(IDN_map$ICP_SEQ))
-CES_ICP_IND <- matrix(0, length(IND_map$CODE), max(IND_map$ICP_SEQ))
 CES_ICP_IDN[cbind(1:length(IDN_map$CODE), IDN_map$ICP_SEQ)] <- 1
 row.names(CES_ICP_IDN) <- IDN_map$CODE
+
+CES_ICP_IND <- matrix(0, length(IND_map$CODE), max(IND_map$ICP_SEQ))
 CES_ICP_IND[cbind(1:length(IND_map$CODE), IND_map$ICP_SEQ)] <- 1
 row.names(CES_ICP_IND) <- IND_map$CODE
 

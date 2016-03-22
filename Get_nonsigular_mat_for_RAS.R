@@ -2,16 +2,17 @@
 ###     Clean version      ###
 ##############################
 
-scaler_IND <- sum(IND_FD_ICP_usd2007)/sum(IN_fd_exio_usd2007)
+colConst_init <- get_purch_price(IN_fd_exio_usd2007) # Converto pp without tax
+scaler_IND <- sum(IND_FD_ICP_usd2007)/sum(colConst_init)
+rowConst_init <- as.vector(IND_FD_ICP_usd2007) / scaler_IND
+
 qual_map_init <- bridge_icp_exio_q[,-1]
 qual_map <- qual_map_init
 
-rowConst_init <- as.vector(IND_FD_ICP_usd2007) / scaler_IND
-colConst_init <- IN_fd_exio_usd2007 
 rowConst <- rowConst_init
 colConst <- colConst_init
 
-result_RAS <- matrix(0, dim(qual_map_init)[1],dim(qual_map_init)[2])
+result_RAS_fixed <- matrix(0, dim(qual_map_init)[1],dim(qual_map_init)[2])
 
 
 # Needed to do multiple returns from functions
@@ -55,7 +56,7 @@ repeat {
     list[qual_map, colConst, rowConst] <- UpdateQualMap_Const(qual_map, a, b, colConst, rowConst)
   }
   
-  # Fill in all other fixed cells in result_RAS 
+  # Fill in all other fixed cells in result_RAS_fixed 
   # Singular cells in the same row/col with conflict cells are already fixed above.
   # So this is for only the non-conflict singular cells not in the same row/col with conflicts.
   list[non_conflicts_r, non_conflicts_c]  <- FillNonConflictCells(qual_map, fx_coord_rowCon, fx_coord_colCon, conflicts, colConst, rowConst)
@@ -64,6 +65,10 @@ repeat {
   # Fill the map with NAs for singular row/cols
   # Fill constraint vectors with NAs for singular row/cols
   list[qual_map, colConst, rowConst] <- UpdateQualMap_Const(qual_map, non_conflicts_r, non_conflicts_c, colConst, rowConst)
+  
+  print(sum(rowConst, na.rm = T) + sum(result_RAS_fixed))
+  print(sum(rowConst, na.rm = T))
+  print(sum(colConst, na.rm = T))
 }
 
 
@@ -75,7 +80,13 @@ idx_col_removed <- which(is.na(colConst))
 # Keep the coord of NAs somewhere
 list[qmap_RAS, rowCon_RAS, colCon_RAS] <- CollapseQualMap(qual_map, colConst, rowConst)
 
+# Remove dangling small numbers due to scaling
+rowCon_RAS <- round(rowCon_RAS, 7)
+colCon_RAS <- round(colCon_RAS, 7)
+gap <- sum(rowCon_RAS) - sum(colCon_RAS)
+
 # Get draw
+n_draw <- 100
 bridge_ICP_EXIO <- get_bridge_COICOP_EXIO(qmap_RAS, n_draw)
 
 # Run RAS and construct final matrix in original dimension
@@ -83,268 +94,113 @@ library(mipfp)
 
 # There can appear nearly zeros in the constraints because of scalings. So remove.
 idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, colCon_RAS, 0)
-# Temporary remedy to match the constraint sums
-colCon_RAS[colCon_RAS>100][1] <- colCon_RAS[colCon_RAS>100][1] + sum(colCon_RAS[idx_zero])
+# Temporary fix to match the constraint sums
+colCon_RAS[colCon_RAS>100][1] <- colCon_RAS[colCon_RAS>100][1] + sum(colCon_RAS[idx_zero]) + gap
 colCon_RAS[idx_zero] <- 0
 idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, rowCon_RAS, 0)
+# rowCon_RAS[rowCon_RAS>100][1] <- rowCon_RAS[rowCon_RAS>100][1] + sum(rowCon_RAS[idx_zero])
 rowCon_RAS[idx_zero] <- 0
 
-seed <- diag(rowCon_RAS) %*% t(bridge_ICP_EXIO[[1]]) 
-result_RAS <- Ipfp(seed, list(1,2), list(rowCon_RAS, colCon_RAS), iter=10000)
-rowSums(result_RAS$x.hat)
-colSums(result_RAS$x.hat)
-sum(result_RAS$x.hat)
+colCon <- colCon_RAS
+rowCon <- rowCon_RAS
+result <- list()
 
-# Functions
+for (i in 1:n_draw) {
+  seed <- diag(rowCon_RAS) %*% bridge_ICP_EXIO[[i]]
+  result_RAS <- Ipfp(seed, list(1,2), list(rowCon_RAS, colCon_RAS), iter=5000)
+  
+  colCon <- cbind(colCon, colSums(result_RAS$x.hat))
+  rowCon <- cbind(rowCon, rowSums(result_RAS$x.hat))
+  
+  result[[i]] <- result_RAS$x.hat
+  
+  print(i)
+  # print(norm(result_RAS$x.hat, type="F"))  #"O", "I", "F", "M", "2"
+}
 
-# IdentifyConflicts
-#
-# Goal: For each iteration, this identifies cells that cannot satisfy two (row/col) constraints at the same time.
+# # Test sums
+# colSums(result_RAS$x.hat)
+# sum(colCon_RAS)
+# sum(rowCon_RAS)
+# sum(result_RAS$x.hat)
+# print.mat(cbind(colCon_RAS, colSums(result_RAS$x.hat)))
+
+# Try to plot some rows with three non-zero elements
+# idx_visual <- which(rowSums(qmap_RAS)==3)
+# rowSum_RAS <- rowSums(result[[1]])
+# scale_row <- diag(1/rowSum_RAS)
+# scale_row[is.infinite(scale_row)] <- 0
 # 
-# There are two main cases of conflicts:
-# 1. Lone one: Singluar both by row and column
-# 2. Beyond contrtaint: Singular by one side, but the constrained (fixed) cell value is larger than the marginal sum on the other side.
-#
-# Note: Other than these conflicts, there are still many singular cells which can still satisfy two constraints.
-#       These are listed in fixed_cells_by_row and fixed_cells_by_col.
-
-IdentifyConflicts <- function(qmap, colCon, rowCon) {
-  idx_fixed_row <- which(rowSums(qmap, na.rm = TRUE)==1)
-  idx_fixed_col <- which(colSums(qmap, na.rm = TRUE)==1)
-  
-  # There can be cases where these matrices have length or width = 1. I don't want this become a vector.
-  fixed_row <- as.matrix(qmap[idx_fixed_row,])
-  fixed_col <- as.matrix(qmap[,idx_fixed_col])
-  fixed_cells_by_row <- cbind(idx_fixed_row, apply(fixed_row, 1, function (x) {which(x==1)}))
-  fixed_cells_by_col <- cbind(apply(fixed_col, 2, function (x) {which(x==1)}), idx_fixed_col)
-  
-  # Singular by both row and col const
-  a <- rbind(fixed_cells_by_row, fixed_cells_by_col)
-  lone <- a[duplicated(a),,drop=FALSE]
-  
-  mat <- matrix(0, nrow = length(rowCon), ncol = length(colCon))
-  mat[fixed_cells_by_row] <- 1
-  if (length(idx_fixed_row) > 0) {
-    browser()
-    mat[idx_fixed_row,] <- sweep(mat[idx_fixed_row, ,drop=FALSE], 1, rowCon[idx_fixed_row], '*')
-  }
-  # Singular by row const, which is larger than col const
-  # idx_beyond_const <- rowCon[fixed_cells_by_row[,1]] > colCon[fixed_cells_by_row[,2]]
-  idx_col <- sort(unique(fixed_cells_by_row[,2]))
-  idx_beyond_const <- idx_col[colSums(mat[,idx_col,drop=FALSE], na.rm = TRUE) > colCon[idx_col]]
-  beyond_const_r <- fixed_cells_by_row[fixed_cells_by_row[,2] %in% idx_beyond_const, ,drop=FALSE]
-  
-  mat[,] <- 0
-  mat[fixed_cells_by_col] <- 1
-  if (length(idx_fixed_col) > 0) {
-    browser()
-    mat[,idx_fixed_col] <- sweep(mat[,idx_fixed_col,drop=FALSE], 2, colCon[idx_fixed_col], '*')
-  }
-  # Singular by col const, which is larger than row const
-  # idx_beyond_const <- colCon[fixed_cells_by_col[,2]] > rowCon[fixed_cells_by_col[,1]]
-  idx_row <- sort(unique(fixed_cells_by_col[,1]))
-  idx_beyond_const <- idx_row[rowSums(mat[idx_row,,drop=FALSE], na.rm = TRUE) > rowCon[idx_row]]
-  beyond_const_c <- fixed_cells_by_col[fixed_cells_by_col[,1] %in% idx_beyond_const, ,drop=FALSE]
-  
-  # beyond_const_r and beyond_const_c will include lone celss.
-  
-  return(list(fixed_cells_by_row, fixed_cells_by_col, lone, beyond_const_r, beyond_const_c))
-}
+# alloc_mat <- scale_row %*% result[[1]]
+# alloc_mat <- lapply(result, function (x) {scale_row %*% x})
+# sum(alloc_mat[idx_visual[1],]!=0)
+# 
+# plot_i <- 16
+# idx_plot <- which(qmap_RAS[idx_visual[plot_i],]==1)
+# pt_init <- do.call("rbind", lapply(bridge_ICP_EXIO, `[`, , idx_visual[plot_i]))
+# pt_conv <- do.call("rbind", lapply(alloc_mat, `[`, idx_visual[plot_i], ))
+# pt_res <- do.call("rbind", lapply(result, `[`, idx_visual[plot_i], ))
+# pt_conv[,idx_plot]
+# 
+# plot3d(pt_init[,idx_plot])
+# plot3d(pt_conv[,idx_plot], xlim=c(0,1), ylim=c(0,1), zlim=c(0,1))
 
 
-# UpdateConstsForConflicts
-#
-# Goal: 1. Scale up/down the conflict cell values in the row sum const
-#       2. Fill in the fixed values for those conflict cells in result_RAS mtx.
-# Type: 1. Lone cells where two const vals are different
-#       2. Multiple singular cells in a row but their sum is larger than row sum const.
-#       3. Multiple singular cells in a col but their sum is larger than col sum const.
-# Remedy: 1. Replace the row const value with col const val.
-#         2. Replace the row const value with the sum of all col const values for the singular cells.
-#         3. Replace the row const values with the sum of all col const values for the singular cells.
-# And, copy those fixed cells to result_RAS
-#
-# Test: 1. sum(result_RAS) == sum of copied cells in mat
-#       2. sum(result_RAS) == rowCon[idx_fixed]
+# Combine result_RAS and resut_RAS_fixed to form a whole allocation matrix
+final_RAS_list <- lapply(result, function (x) {
+  final_RAS <- matrix(0, dim(result_RAS_fixed)[1], dim(result_RAS_fixed)[2])
+  final_RAS[-idx_row_removed, -idx_col_removed] <- x
+  final_RAS <- final_RAS + result_RAS_fixed
+  })
 
-# Just correct for conflicts and at the end contstraints are all met.
-# I don't subtract values from constraints here.
-UpdateConstsForConflicts <- function(qmap, fx_rowCon, fx_colCon, lone, beyond_con_r, beyond_con_c, colCon, rowCon) {
-  # Remove lone cells from beyond_con_r, if it is in beyond_con_r
-  a <- rbind(beyond_con_r, lone)
-  beyond_con_r <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
-  
-  cols_with_conflic <- sort(unique(beyond_con_r[,2]))  # Need to treat this differently.
-  rows_with_conflic <- sort(unique(beyond_con_c[,1])) 
-  
-  # Get coord for cells that are in the same row/col with conflicts, but not conflicts themselves
-  cell_rowCon <- fx_rowCon[fx_rowCon[,2] %in% beyond_con_r[,2], , drop = FALSE]
-#   a <- rbind(cell_rowCon, beyond_con_r)
-#   rest_rowCon <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
-  
-  cell_colCon <- fx_colCon[fx_colCon[,1] %in% beyond_con_c[,1], , drop = FALSE]
-#   a <- rbind(cell_colCon, beyond_con_c)
-#   rest_colCon <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
-  
-  # Set a dummy mtx
-  mat <- matrix(0, length(rowCon), length(colCon))
-  
-  # There can be NAs in qmap. Set it to 0 for the use in this function.
-  qmap <- as.matrix(qmap)
-  qmap[is.na(qmap)] <- 0
-  
-  # mat keeps constraints for conflict row/cols
-  mat[lone] <- 1
-  mat[cell_rowCon] <- qmap[cell_rowCon] # Need to take care of the whole row/cols containing singular cells. 
-  mat[cell_colCon] <- qmap[cell_colCon]
-  
-  # Constrained by diff constraints
-  # temp <- mat[,-cols_with_conflic] %*% diag(colCon[-cols_with_conflic])
-  temp <- c(rows_with_conflic, lone[,1])
-  if(length(cols_with_conflic)) {
-    mat[temp,-cols_with_conflic] <- mat[temp,-cols_with_conflic] %*% diag(colCon[-cols_with_conflic]) # Keep only the conflict rows  
-    mat[,cols_with_conflic] <- diag(rowCon) %*% mat[,cols_with_conflic]
-  }
-  else {
-    mat[temp,] <- mat[temp,] %*% diag(colCon) # Keep only the conflict rows  
-  }
-  
-  # Fill in the result matrix with the fixed values
-  # This is ok for loners and beyond_con_c, but not beyond_con_r, because they violate col constraints, which need to be prioritized.
-  mat[is.na(mat)] <- 0
-  result_RAS[lone] <<- mat[lone]
-  result_RAS[cell_colCon] <<- mat[cell_colCon]
-  
-  # Scale down row constraints when there are multiple singular cells in one column, whose sum is greater than col const of the col.
-  idx_col <- cols_with_conflic
-  scaler_col <- colCon[idx_col] / colSums(mat, na.rm = TRUE)[idx_col]
-  mat[,idx_col] <- mat[,idx_col] %*% diag(scaler_col, length(scaler_col), length(scaler_col)) # The length can be 1.
-  result_RAS[,idx_col] <<- mat[,idx_col]
-  
-  # Rows that are not to be scaled to match col sum total
-  # idx_fixed <- unique(rbind(rest_rowCon, rest_colCon, beyond_con_c, lone, beyond_con_r)[,1])
-  idx_fixed <- unique(rbind(cell_colCon, cell_rowCon, lone)[,1])
-  
-  rowCon[idx_fixed] <- rowSums(mat, na.rm = TRUE)[idx_fixed]
-  rowCon[-idx_fixed] <- rowCon[-idx_fixed] * 
-    (sum(colCon, na.rm = TRUE) - sum(rowCon[idx_fixed], na.rm = TRUE)) / 
-    (sum(rowCon, na.rm = TRUE) - sum(rowCon[idx_fixed], na.rm = TRUE))
-  
-  # list[rowCon, colCon] <- UpdateConstsForNonConflicts(rest_rowCon, rest_colCon, colCon, rowCon)
-  
-  return(list(rowCon, colCon, cell_rowCon, cell_colCon))
-}
+final_alloc_list <- lapply(final_RAS_list, function (x) {
+  a <- diag(1/rowSums(x))
+  a[is.infinite(a)] <- 0
+  x <- a %*% x
+})
 
-# UpdateConstsForNonConflicts
-#
-# Goal: 1. Adjust (i.e. subtract) fixed cell values from the two consts. (Singular but non-conflict cells)
-
-UpdateConstsForNonConflicts <- function(non_conf_r, non_conf_c, colCon, rowCon) {
-  row_r <- unique(non_conf_r[,1])
-  col_r <- unique(non_conf_r[,2])
-  
-  row_c <- unique(non_conf_c[,1])
-  col_c <- unique(non_conf_c[,2])
-  
-  mtx_for_sum <- matrix(0, dim(result_RAS)[1],dim(result_RAS)[2])
-  mtx_for_sum[non_conf_r] <- result_RAS[non_conf_r]
-  
-  rowCon[row_r] <- rowCon[row_r] - rowSums(mtx_for_sum[row_r, , drop=FALSE], na.rm = TRUE)
-  colCon[col_r] <- colCon[col_r] - colSums(mtx_for_sum[, col_r, drop=FALSE], na.rm = TRUE)
-  
-  if(sum(colCon <0)) {
-    browser()
-  }
-  
-  mtx_for_sum[,] <- 0
-  mtx_for_sum[non_conf_c] <- result_RAS[non_conf_c]
-  
-  rowCon[row_c] <- rowCon[row_c] - rowSums(mtx_for_sum[row_c, , drop=FALSE], na.rm = TRUE)
-  colCon[col_c] <- colCon[col_c] - colSums(mtx_for_sum[, col_c, drop=FALSE], na.rm = TRUE)
-  
-  if(sum(colCon <0)) {
-    browser()
-  }
-  
-  return(list(rowCon, colCon))
-}
-
-# FillNonConflictCells
-#
-# Goal: 1. Copy fixed cell values to result_RAS mtx (Singular but non-conflict cells)
-# Note: Conflict cells are already copied at UpdateConstsForConflicts.
-
-FillNonConflictCells <- function(qual_map, fx_rowCon, fx_colCon, conflic, colCon, rowCon) {
-  
-  # Pick only non-conflict singular cells
-  #   a <- rbind(fx_rowCon, conflic)
-  #   conf_row <- a[duplicated(a), , drop = FALSE]
-  #   a <- rbind(fx_rowCon, conf_row)
-  #   nonconf_row <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
-  # 
-  #   a <- rbind(fx_colCon, conflic)
-  #   conf_col <- a[duplicated(a), , drop = FALSE]
-  #   a <- rbind(fx_colCon, conf_col)
-  #   nonconf_col <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE]
-  
-  # Pick only non-conflict singular cells not in the same row/col with conflicts
-  idx_conf_row <- unique(conflic[,1])
-  idx_conf_col <- unique(conflic[,2])
-  
-  is.noncon_row <- !(fx_rowCon[,1] %in% idx_conf_row) & !(fx_rowCon[,2] %in% idx_conf_col)
-  nonconf_row <- fx_rowCon[is.noncon_row, , drop=FALSE]
-  
-  is.noncon_col <- !(fx_colCon[,1] %in% idx_conf_row) & !(fx_colCon[,2] %in% idx_conf_col)
-  nonconf_col <- fx_colCon[is.noncon_col, , drop=FALSE]
-  
-  result_RAS[nonconf_row] <<- rowCon[nonconf_row[,1]]
-  result_RAS[nonconf_col] <<- colCon[nonconf_col[,2]]
-  
-  return(list(nonconf_row, nonconf_col))
-}
-
-# UpdateQualMap_Const
-# Goal: Remove row/col that already satisfy consts from qual_map and const vectors 
-
-UpdateQualMap_Const <- function(qmap, to_remove_r, to_remove_c, colCon, rowCon) {
-  idx_row_r <- unique(to_remove_r[,1])
-  idx_row_c <- unique(to_remove_r[,2])
-  idx_col_r <- unique(to_remove_c[,1])
-  idx_col_c <- unique(to_remove_c[,2])
-  
-  qmap[idx_row_r, ] <- NA
-  qmap[, idx_col_c] <- NA
-  
-  mtx_for_sum <- matrix(0, dim(result_RAS)[1],dim(result_RAS)[2])
-  mtx_for_sum[to_remove_r] <- result_RAS[to_remove_r]
-
-  if(sum(colCon[idx_row_c] < colSums(mtx_for_sum[, idx_row_c, drop=FALSE], na.rm = TRUE), na.rm = TRUE) > 0) {
-    browser()
-  }
-  
-  rowCon[idx_row_r] <- NA
-  colCon[idx_row_c] <- colCon[idx_row_c] - colSums(mtx_for_sum[, idx_row_c, drop=FALSE], na.rm = TRUE)
-
-  mtx_for_sum[,] <- 0
-  mtx_for_sum[to_remove_c] <- result_RAS[to_remove_c]
-
-  if(sum(rowCon[idx_col_r] < rowSums(mtx_for_sum[idx_col_r, , drop=FALSE], na.rm = TRUE), na.rm = TRUE) > 0) {
-    browser()
-  }
-    
-  rowCon[idx_col_r] <- rowCon[idx_col_r] - rowSums(mtx_for_sum[idx_col_r, , drop=FALSE], na.rm = TRUE)
-  colCon[idx_col_c] <- NA  
-
-  return(list(qmap, colCon, rowCon))
-}
+final_rowCon <- rowSums(final_RAS_list[[1]])
 
 
-CollapseQualMap <- function(qmap, colCon, rowCon) {
-  colRAS <- !is.na(colCon)
-  rowRAS <- !is.na(rowCon)
-  colCon <- colCon[colRAS]
-  rowCon <- rowCon[rowRAS]
-  qmap <- qmap[rowRAS, colRAS]
-  
-  return(list(qmap, rowCon, colCon))
-}
+# Estimate sectoral energy intensities with/without the RAS process
+xlcFreeMemory()
+ind_inten_RAS <- SetupSectorIntensities(final_alloc_list)
+alloc_nonRAS <- get_bridge_COICOP_EXIO(qual_map_init, n_draw)
+ind_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS)
+
+# Plot intensities
+png(filename = paste(figure_path, "Energy intensity by COICOP consumption category.png", sep=""), width = 781, height = 553, units = "px")
+boxplot(ind_inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by consumption sector [MJ/EUR]", range=0, axes = FALSE)
+axis(side = 1, at = seq(1,151,10))
+axis(side = 2, at = seq(0,300,50))
+# text(1:151, y=apply(ind_inten_RAS, 2, max)+50, bridge_icp_exio_q[,1], pos=4, offset=-.1, cex = 0.5, srt = 90)
+text(1:151, y=apply(ind_inten_RAS, 2, max)+5, 1:151, pos=4, offset=-.1, cex = 0.6, srt = 90)
+dev.off()
+
+boxplot(ind_inten_nonRAS, xlab ="ICP sectors", ylab ="Energy intensity by consumption sector [MJ/EUR]", range=0, axes = FALSE)
+axis(side = 1, at = seq(1,151,10))
+axis(side = 2, at = seq(0,600,100))
+text(1:151, y=apply(ind_inten_nonRAS, 2, max)+15, 1:151, pos=4, offset=-.1, cex = 0.6, srt = 90)
+
+
+
+# Compare rowSum sizes between CES and RASed one
+a <- cbind(bridge_icp_exio_q[,1], rowSums(final_RAS_list[[1]]), IND_FD_ICP_usd2007, IND_FD_ICP_usd2007 > rowSums(final_RAS_list[[1]]))
+
+idx_anomaly <- IND_FD_ICP_usd2007 > rowSums(final_RAS_list[[1]])
+anomaly <- data.frame(bridge_icp_exio_q[idx_anomaly,1], IND_FD_ICP_usd2007[idx_anomaly], rowSums(final_RAS_list[[1]])[idx_anomaly])
+names(anomaly) <- c("SV_sector", "SV_exp", "RAS_exp")
+write.table(anomaly, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+
+b <- cbind(qual_map_init, final_RAS_list[[1]])
+exio_anomal <- apply(b[idx_anomaly,], 1, function(x) {cbind(names(which(x==1)), x[which(x==1)+200])})
+# exio_anomal <- apply(qual_map_init[idx_anomaly,], 1, function(x) {cbind(names(which(x==1)), colConst_init[which(x==1)])})
+a <- do.call("rbind", lapply(exio_anomal, '[', ,))
+
+write.table(a, "clipboard", sep="\t", row.names = FALSE, col.names = FALSE)
+
+# Let's see the 'Gas' item from CES (IND)
+do.call("rbind", lapply(final_RAS_list, '[', 64,))
+a<- cbind(names(bridge_icp_exio_q)[2:201], final_RAS_list[[1]][63,], final_RAS_list[[1]][63,]/sum(final_RAS_list[[1]][63,]))
+
+

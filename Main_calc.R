@@ -17,8 +17,6 @@ n_draw <- 500
 # Constants
 N_hh_FR <- 27568000 # Number of households in 2012
                       # https://www.ined.fr/en/everything_about_population/data/france/couples-households-families/households/
-         # 25253000 # Number of households in 2005 
-                      # https://en.wikipedia.org/wiki/List_of_countries_by_number_of_households
 koe_to_MJ <- 42.868   # Unit conversion
 BTU_to_KJ <- 0.94782  #  Conversion factors from https://www.eia.gov/cfapps/ipdbproject/docs/units.cfm
 E_capita_FR <- 4117 * koe_to_MJ # MJ per capita in 2007 
@@ -82,9 +80,9 @@ for (i in 1:n_draw) {
   
   # Converting COICOP vector to EXIO vector
   # Final hh demand with different elements allocated (by decile)
-  fd_exio <- bridge_COICOP_EXIO[[i]] %*% as.matrix(fd_decile[,2:12])
-  fd_sc_exio <- bridge_COICOP_EXIO[[i]] %*% as.matrix(fd_with_soctr)  # Because fd_with_soctr is extended, this can inflate errors.
-  fd_sc_exio_f <- bridge_COICOP_EXIO[[i]] %*% as.matrix(fd_with_soctr_flat)  
+  fd_exio <- t(bridge_COICOP_EXIO[[i]]) %*% as.matrix(fd_decile[,2:12])
+  fd_sc_exio <- t(bridge_COICOP_EXIO[[i]]) %*% as.matrix(fd_with_soctr)  # Because fd_with_soctr is extended, this can inflate errors.
+  fd_sc_exio_f <- t(bridge_COICOP_EXIO[[i]]) %*% as.matrix(fd_with_soctr_flat)  
   fd_sc_exio_def <- fd_sc_exio    # Proportional to income
   fd_sc_exio_def_f <- fd_sc_exio_f  # Flat
    
@@ -224,8 +222,8 @@ SectoralE_per_hh <- vector()
 
 for (i in 1:n_draw) {
   
-  unit_exio <- bridge_COICOP_EXIO[[i]] %*% diag(n_sector_coicop)  # Identity mtx representing 1 EUR spending in each sector
-  fd_exio <- bridge_COICOP_EXIO[[i]] %*% diag(fd_decile[,2])  # For Ensemble
+  unit_exio <- t(bridge_COICOP_EXIO[[i]]) %*% diag(n_sector_coicop)  # Identity mtx representing 1 EUR spending in each sector
+  fd_exio <- t(bridge_COICOP_EXIO[[i]]) %*% diag(fd_decile[,2])  # For Ensemble
   
   fd_unit <- null_demand_int
   fd_unit[FR_idx,] <- get_basic_price(unit_exio, "FR")

@@ -1,3 +1,4 @@
+options(java.parameters = "-Xmx1g") 
 library(RJDBC)
 library(data.table)
 library(tidyr)
@@ -88,20 +89,21 @@ drv = JDBC("oracle.jdbc.driver.OracleDriver","P:/ene.model/Rcodes/Common_files/o
 conn = dbConnect(drv, "jdbc:oracle:thin:@gp3.iiasa.ac.at:1521:gp3", "hh_data", "hh_data")
 
 # Read total FD for all population
-IND_FD <- readFinalDemandfromDB('IND')
-IDN_FD <- readFinalDemandfromDB('IDN')
-BRA_FD <- readFinalDemandfromDB('BRA')
-ZAF_FD <- readFinalDemandfromDB('ZAF')
+IND_FD <- readFinalDemandfromDB('IND1')
+IND2_FD <- readFinalDemandfromDB('IND2')
+# IDN_FD <- readFinalDemandfromDB('IDN1')
+# BRA_FD <- readFinalDemandfromDB('BRA1')
+# ZAF_FD <- readFinalDemandfromDB('ZAF1')
 
 # Read in by decile group
-for (i in 1:10) {
-  a <- readFinalDemandfromDBbyDecile('IND', i)
-  names(a)[2] <- paste("Decile", i, sep="") 
-  IND_FD <- merge(IND_FD, a, by="ITEM", all.x=TRUE)
-  a <- readFinalDemandfromDBbyDecile('IDN', i)
-  names(a)[2] <- paste("Decile", i, sep="") 
-  IDN_FD <- merge(IDN_FD, a, by="ITEM", all.x=TRUE)
-}
+# for (i in 1:10) {
+#   a <- readFinalDemandfromDBbyDecile('IND', i)
+#   names(a)[2] <- paste("Decile", i, sep="") 
+#   IND_FD <- merge(IND_FD, a, by="ITEM", all.x=TRUE)
+#   a <- readFinalDemandfromDBbyDecile('IDN', i)
+#   names(a)[2] <- paste("Decile", i, sep="") 
+#   IDN_FD <- merge(IDN_FD, a, by="ITEM", all.x=TRUE)
+# }
 dbDisconnect(conn)
 
 
@@ -151,6 +153,7 @@ source("Map_CES_COICOP.R")
 # Don't need to run everytime.
 
 source("Generate_base_ICP-EXIO_mapping.R")
+n_sector_icp <- 151  # Num of ICP sectors
 
 
 
@@ -162,11 +165,30 @@ source("Generate_base_ICP-EXIO_mapping.R")
 # to fine-allocate mostly for food-subsectors.
 # The result is in H:\MyDocuments\IO work\Bridging\CES-COICOP\ICP_EXIO_Qual_Edited.xlsx
 # Manually changed cells are colored in green in the xlsx file.
+# Two types of manual changes
+#   1. ICP item disaggregation info further details (meat -> poultry)
+#   2. Some positive EXIO FD values do not match to any ICP sectors. (e.g. stone from EXIO mapped to household maintenance in ICP)
+#     => can be checked by cbind(names(qual_map)[colConst_init!=0 & colSums(qual_map_init)==0], colConst_init[colConst_init!=0 & colSums(qual_map_init)==0])
 
 wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
-bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T)
+bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T, endRow=152, endCol=201)
 
 
+
+##############################################
+###        Read in EXIO matrices           ###
+##############################################
+
+source("EXIO_init.R")
+
+
+
+##############################################
+###    Set up environment for RAS run      ###
+##############################################
+
+setwd("H:/MyDocuments/IO work/DLE_scripts")
+source("Bridge_RAS.R")
 
 
 
@@ -180,50 +202,50 @@ bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE,
 ### Read in final demand vector for France ### (Auxiliary, from Lucas)
 ##############################################
 
-Mapping <- system.file("2011_FRHHBS_per_decile.xlsx", package = "XLConnect")
-wb <- loadWorkbook("H:/MyDocuments/IO work/Uncertainty/2011_FRHHBS_per_decile.xlsx")
-
-n_sector_coicop <- 109  # Num of COICOP sectors
-n_col <- 11  # Num of columns (10 deciles + avg)
-fd_decile <- readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T)
-cpi_2007_fr <- 95.7	 # http://data.worldbank.org/indicator/FP.CPI.TOTL
-cpi_2011_fr <- 102.1	
-fd_decile[,2:12] <- fd_decile[,2:12]*cpi_2007_fr/cpi_2011_fr
-# names(fd_decile)
-
-soc_transfer_ratio <- fd_decile[,14:24]
-names(soc_transfer_ratio) <- names(fd_decile)[2:12]
-
-fd_with_soctr <- fd_decile[,2:12] * (1+soc_transfer_ratio)  # Final demand including social transfer allocation
-# fd_with_soctr_flat <- diag((1+soc_transfer_ratio[,1])) %*% as.matrix(fd_decile[,2:12])    # Final demand including social transfer allocation
-fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   # Flat means identical $/person, I guess.
-
-
-
-##################################
-### Read in CES-COICOP mapping ### (Specifically for IND for now)
-##################################
-
-# Using India CES for French example for now 
-# Update: Received FRA consumption in NTNT 109 classification, so FRA doesn't use this
-# Issue: bridge_CES_COICOP may be replaced with the IND mtx from WB (after comparison)
-# Issue: This is likely to be replaced by the WB mapping.
-
-Mapping <- system.file("IND_CES-COICOP_mapping.xlsx", package = "XLConnect")
-wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND_CES-COICOP_mapping.xlsx")
-
-n_sector_coicop <- 109  # Num of COICOP sectors
-n_row <- 347  # Num of CES items
-bridge_CES_COICOP <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, 
-                        startCol=3, endCol=2+n_sector_coicop, forceConversion=T)
-
-CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, startCol=1, endCol=1)
-# COICOP_catnames1 <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1, startCol=3, endCol=2+n_sector_coicop)
-
-# Order rows of bridge mtx in the alphabatic order of CES item names
-bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
-
-
-
-
-
+# Mapping <- system.file("2011_FRHHBS_per_decile.xlsx", package = "XLConnect")
+# wb <- loadWorkbook("H:/MyDocuments/IO work/Uncertainty/2011_FRHHBS_per_decile.xlsx")
+# 
+# n_sector_coicop <- 109  # Num of COICOP sectors
+# n_col <- 11  # Num of columns (10 deciles + avg)
+# fd_decile <- readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T)
+# cpi_2007_fr <- 95.7	 # http://data.worldbank.org/indicator/FP.CPI.TOTL
+# cpi_2011_fr <- 102.1	
+# fd_decile[,2:12] <- fd_decile[,2:12]*cpi_2007_fr/cpi_2011_fr
+# # names(fd_decile)
+# 
+# soc_transfer_ratio <- fd_decile[,14:24]
+# names(soc_transfer_ratio) <- names(fd_decile)[2:12]
+# 
+# fd_with_soctr <- fd_decile[,2:12] * (1+soc_transfer_ratio)  # Final demand including social transfer allocation
+# # fd_with_soctr_flat <- diag((1+soc_transfer_ratio[,1])) %*% as.matrix(fd_decile[,2:12])    # Final demand including social transfer allocation
+# fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   # Flat means identical $/person, I guess.
+# 
+# 
+# 
+# ##################################
+# ### Read in CES-COICOP mapping ### (Specifically for IND for now)
+# ##################################
+# 
+# # Using India CES for French example for now 
+# # Update: Received FRA consumption in NTNT 109 classification, so FRA doesn't use this
+# # Issue: bridge_CES_COICOP may be replaced with the IND mtx from WB (after comparison)
+# # Issue: This is likely to be replaced by the WB mapping.
+# 
+# Mapping <- system.file("IND_CES-COICOP_mapping.xlsx", package = "XLConnect")
+# wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND_CES-COICOP_mapping.xlsx")
+# 
+# n_sector_coicop <- 109  # Num of COICOP sectors
+# n_row <- 347  # Num of CES items
+# bridge_CES_COICOP <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, 
+#                         startCol=3, endCol=2+n_sector_coicop, forceConversion=T)
+# 
+# CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, startCol=1, endCol=1)
+# # COICOP_catnames1 <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1, startCol=3, endCol=2+n_sector_coicop)
+# 
+# # Order rows of bridge mtx in the alphabatic order of CES item names
+# bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
+# 
+# 
+# 
+# 
+# 
