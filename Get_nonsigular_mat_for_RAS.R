@@ -2,7 +2,7 @@
 ###     Clean version      ###
 ##############################
 
-colConst_init <- get_purch_price(IN_fd_exio_usd2007) # Converto pp without tax
+colConst_init <- get_purch_price(IN_fd_exio_usd2007) # Convert to pp without tax
 scaler_IND <- sum(IND_FD_ICP_usd2007)/sum(colConst_init)
 rowConst_init <- as.vector(IND_FD_ICP_usd2007) / scaler_IND
 
@@ -86,7 +86,6 @@ colCon_RAS <- round(colCon_RAS, 7)
 gap <- sum(rowCon_RAS) - sum(colCon_RAS)
 
 # Get draw
-n_draw <- 100
 bridge_ICP_EXIO <- get_bridge_COICOP_EXIO(qmap_RAS, n_draw)
 
 # Run RAS and construct final matrix in original dimension
