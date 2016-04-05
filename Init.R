@@ -33,7 +33,7 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
                "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
 n_draw <- 100
 D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
-
+draw_count <- 1
 
 #####################################################
 ### Read in (CES-Pseudo COICOP) mappings from WB  ###

@@ -315,6 +315,11 @@ UpdateQualMap_Const <- function(qmap, to_remove_r, to_remove_c, colCon, rowCon) 
   
   rowCon[idx_row_r] <- NA
   colCon[idx_row_c] <- colCon[idx_row_c] - colSums(mtx_for_sum[, idx_row_c, drop=FALSE], na.rm = TRUE)
+  # Temporary fix to match the constraint sums 
+  # There are cases where some elements of colCon are near-zero (but non-zero) because of scaling.
+  idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, colCon, 0)
+  colCon[which(colCon>100)[1]] <- colCon[which(colCon>100)[1]] + sum(colCon[idx_zero], na.rm = TRUE) 
+  colCon[idx_zero] <- 0
   
   mtx_for_sum[,] <- 0
   mtx_for_sum[to_remove_c] <- result_RAS_fixed[to_remove_c]
@@ -325,6 +330,11 @@ UpdateQualMap_Const <- function(qmap, to_remove_r, to_remove_c, colCon, rowCon) 
   
   rowCon[idx_col_r] <- rowCon[idx_col_r] - rowSums(mtx_for_sum[idx_col_r, , drop=FALSE], na.rm = TRUE)
   colCon[idx_col_c] <- NA  
+  # Temporary fix to match the constraint sums 
+  # There are cases where some elements of rowCon are near-zero (but non-zero around 1e-12) because of scaling.
+  idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, rowCon, 0)
+  rowCon[which(rowCon>100)[1]] <- rowCon[which(rowCon>100)[1]] + sum(rowCon[idx_zero], na.rm = TRUE) 
+  rowCon[idx_zero] <- 0
   
   return(list(qmap, colCon, rowCon))
 }
@@ -358,9 +368,12 @@ SetupSectorIntensities <- function (mapping_list, country = "IN") {
   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
   
   for (i in 1:n_draw) {
+    draw_count <<- i  # Used in get_basic_price
+    
     # Identity mtx representing 1 EUR spending in each ICP sector, now mapped to 200 EXIO sectors
     unit_exio <- diag(n_sector_icp) %*% mapping_list[[i]]  # 151x200 
     fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x151) - each col represents bp fd in each exio sector (for 1 EUR in ICP sector)
+    print(fd_bp[,75])
     a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))
     fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X151
     
@@ -375,7 +388,7 @@ SetupSectorIntensities <- function (mapping_list, country = "IN") {
     ind_intensity <- rbind(ind_intensity, colSums(energy_int)) # Total indirect energy/hh by decile
     # SectoralE_per_hh <- rbind(SectoralE_per_hh, colSums(energy_tot)) # Total indirect energy/hh by decile
     
-    print(i)
+    print(colSums(energy_int)[75])
   }
   
   return(ind_intensity)

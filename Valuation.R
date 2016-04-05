@@ -16,7 +16,7 @@ trade_margin_breakdown <- data.frame(AT = numeric(4),US = numeric(4), IN = numer
 trd_idx <- 152:155
 trp_idx <- 157:163
 
-get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: do Monte Carlo (1) or not (0)?)
+get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: do Monte Carlo (1) or not (0) for val mtx?)
   
   # AT valuation layer was used for FR.
   if (country=='FR') country <- 'AT'
@@ -51,6 +51,11 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
     prod_tax    <- as.matrix(readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end, 
                           startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
     
+    defect <- which(trd_margin[-trd_idx] < 0) # Why negative margin for non trd/trp sectors in NTNU val mtx???
+    trd_margin[-trd_idx][defect] <- 0
+    defect <- which(trp_margin[-trp_idx] < 0) # Why negative margin for non trd/trp sectors???
+    trp_margin[-trp_idx][defect] <- 0
+    
     D <- construct_val_mtx(y_bp, trd_margin, trp_margin, prod_tax)
     
     # Sort of redundant.. This is also in construct_val_mtx()
@@ -70,8 +75,8 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
     
     total_trd_margin <- colSums(trd_margin[-trd_idx,])
     total_trp_margin <- colSums(trp_margin[-trp_idx,])
-    trd_margin[trd_idx,] <- t(total_trd_margin * trade_brkdn_draws)
-    trp_margin[trp_idx,] <- t(total_trp_margin * trans_brkdn_draws)
+    trd_margin[trd_idx,] <- -t(total_trd_margin * trade_brkdn_draws)
+    trp_margin[trp_idx,] <- -t(total_trp_margin * trans_brkdn_draws)
     
     D <- list()
     for (i in 1:n_draw) {
@@ -108,6 +113,14 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
   trp_margin_disag <- trp[,rep(1,length(trp_idx))] %*% diag(trp_ratio)
   trd_margin_disag <- trd[,rep(1,length(trd_idx))] %*% diag(trd_ratio)
   
+    # There are cases where the trd/trp sectors for ypp become negative as a result of random draws.
+  # For now, I truncate those cases. Not sure whether this is realistic.
+  # trd[ybp+trd<100] <- -ybp[ybp+trd<100]+100
+  # trp[ybp+trp<100] <- -ybp[ybp+trp<100]+100
+  trd[ybp+trd<0] <- -ybp[ybp+trd<0]
+  trp[ybp+trp<0] <- -ybp[ybp+trp<0]
+  
+  # Calculate Ypp based on the other vectors
   ypp <- ybp + trd + trp + tax 
   
   # F <- diag(ybp[1:200,1])
@@ -115,8 +128,10 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
   F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
   F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
   
-  F[trp_idx, trp_idx] <- diag(ybp[trp_idx]-colSums(trp_margin_disag[-trp_idx,]))
-  F[trd_idx, trd_idx] <- diag(ybp[trd_idx]-colSums(trd_margin_disag[-trd_idx,]))
+  # F[trp_idx, trp_idx] <- diag(ybp[trp_idx]-colSums(trp_margin_disag[-trp_idx,]))
+  # F[trd_idx, trd_idx] <- diag(ybp[trd_idx]-colSums(trd_margin_disag[-trd_idx,]))
+  F[trp_idx, trp_idx] <- diag(ypp[trp_idx]-tax[trp_idx])
+  F[trd_idx, trd_idx] <- diag(ypp[trd_idx]-tax[trd_idx])
   F <- cbind(F,tax)
   
   # cbind(y_pp, rowSums(F))
@@ -136,15 +151,20 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 #  Read in valuation files from NTNU and build basis (ranges) for random draws  #
 #################################################################################
 
+# Including all countries gives too wide range for margin/tax rates.
+# For now, use three countries
+
 val_IN <- get_valuation_mtx('IN', 0)
-val_ID <- get_valuation_mtx('ID', 0)
-val_BR <- get_valuation_mtx('BR', 0)
-val_CN <- get_valuation_mtx('CN', 0)
-val_ZA <- get_valuation_mtx('ZA', 0)
+# val_ID <- get_valuation_mtx('ID', 0)
+# val_BR <- get_valuation_mtx('BR', 0)
+# val_CN <- get_valuation_mtx('CN', 0)
+# val_ZA <- get_valuation_mtx('ZA', 0)
 val_AT <- get_valuation_mtx('AT', 0)
 val_US <- get_valuation_mtx('US', 0)
-val_mtx <- list(val_IN, val_ID, val_BR, val_CN, val_ZA, val_AT, val_US)
-names(val_mtx) <- c('IN', 'ID', 'BR', 'CN', 'ZA', 'AT', 'US')
+# val_mtx <- list(val_IN, val_ID, val_BR, val_CN, val_ZA, val_AT, val_US)
+# names(val_mtx) <- c('IN', 'ID', 'BR', 'CN', 'ZA', 'AT', 'US')
+val_mtx <- list(val_IN, val_AT, val_US)
+names(val_mtx) <- c('IN', 'AT', 'US')
 
 
 rownames(trade_margin_breakdown) <- EX_catnames[trd_idx]
@@ -173,6 +193,8 @@ tax_rate_draws <- replicate(n_draw, foo(tax_range))
 # Draw for share breakdowns between trade/transportation sectors
 trans_brkdn_draws <- get_draws(100, dim(trans_margin_breakdown)[1], min=trp_brkdn_range[1,], max=trp_brkdn_range[2,])
 trade_brkdn_draws <- get_draws(100, dim(trade_margin_breakdown)[1], min=trd_brkdn_range[1,], max=trd_brkdn_range[2,])
+trans_brkdn_draws <- get_draws(100, dim(trans_margin_breakdown)[1], trans_margin_breakdown)
+trade_brkdn_draws <- get_draws(100, dim(trade_margin_breakdown)[1], trade_margin_breakdown)
 
 
 
@@ -198,14 +220,24 @@ val_IN_rand <- get_valuation_mtx('IN', 1)
 # Any y_pp can be converted to y_bp by
 
 get_basic_price <- function(v_pp, country = 'IN'){
-  D <- val_mtx[[which(country==names(val_mtx))]]
+  if (D_val_uncertainty == 0) {
+    D <- val_mtx[[which(country==names(val_mtx))]]  
+  }
+  else {
+    D <- val_IN_rand[[draw_count]]
+  }
   v_bp <- t(D)[1:200,] %*% v_pp  # Remove tax row
   return(v_bp)
 }
 
 
 get_purch_price <- function(v_bp, country = 'IN'){
-  D <- val_mtx[[which(country==names(val_mtx))]]
+  if (D_val_uncertainty == 0) {
+    D <- val_mtx[[which(country==names(val_mtx))]]
+  }
+  else {
+    D <- val_IN_rand[[draw_count]]
+  }
   Dinv <- get_inv_valmtx(D)
   v_pp <- t(Dinv) %*% v_bp
   return(v_pp)

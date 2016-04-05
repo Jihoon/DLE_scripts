@@ -96,6 +96,40 @@ plot3d(b[,1], b[,2], b[,3], size=5)
 
 library(gtools)
 
+# Approach #0.
+# Use RandVec
+# Still too slow for small ranges
+
+get_draws = function(n_draw, n_dim=3, min, max) {
+  # alpha = 1
+  if(missing(min)) {min = rep(0, n_dim)}
+  if(missing(max)) {max = rep(1, n_dim)}
+  
+  # draws <- rdirichlet(n_draw,rep(1,n_dim))
+  dr <- RandVec(0, 1, 1, n_dim, n_draw*100)    # Uniform draw
+  draws <- dr$RandVecOutput
+  #   if(check_draws(n_dim=3, min, max)) 
+  #     return(draws)
+  
+  min_ok <- apply(draws, 2, function(x) {all(x >= min)})
+  max_ok <- apply(draws, 2, function(x) {all(x <= max)})
+  oks <- (min_ok & max_ok)
+  if (sum(oks)>=n_draw) return(draws[,oks][,1:n_draw])
+  draws <- draws[,oks]
+  
+  for (i in 1:(n_draw-sum(oks))) {
+    dr <- RandVec(0, 1, 1, n_dim, 1)
+    draw <- dr$RandVecOutput
+    while(!all(draw >= min) | !all(draw <= max)) {
+      dr <- RandVec(0, 1, 1, n_dim, 1)
+      draw <- dr$RandVecOutput
+    }
+    draws <- cbind(draws, draw)
+  }
+  
+  return(t(draws))
+}
+
 # Approach #1.
 # Draw a lot from no-constraint simplex (every coordinate between [0,1])
 # And reject draws not meeting given contraints
@@ -129,6 +163,7 @@ get_draws = function(n_draw, n_dim=3, min, max) {
 
 # Approach #2
 # Get intersections first and do Dirichlet directly with those points.
+# This is not quite correct since Dirichlet is for three axis.
 
 get_draws = function(n_draw, n_dim=3, min, max) {
   # alpha = 1
@@ -164,6 +199,23 @@ get_draws = function(n_draw, n_dim=3, min, max) {
 
 element.greater.equal <- Vectorize(function(x, y) {isTRUE(all.equal(x, y)) | x>y})
 element.smaller.equal <- Vectorize(function(x, y) {isTRUE(all.equal(x, y)) | x<y})
+
+# Approach #3
+# Just do Dirichlet with three points in n-dim space
+# Not sure whether this is correct
+
+get_draws = function(n_draw, n_dim=3, coords) {
+  # alpha = 1
+  if(missing(coords)) {coords <- diag(n_dim)} # Coords can be n_dim X k (any k)
+  
+  draw_standard <- rdirichlet(n_draw, rep(1, dim(coords)[2]))  # n_draw X k
+  draw_projected <- draw_standard %*% t(as.matrix(coords))  # n_draw X n_dim
+  
+  return(draw_projected)
+  
+  # plot3d(draw_projected[,1], draw_projected[,2], draw_projected[,3], size=4)
+}
+
 
 b<-get_draws(10000, 3)
 b<-get_draws(100000, 3, min=c(0.3, 0, 0.1), max=c(0.8, 1, 1))

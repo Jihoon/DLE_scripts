@@ -1,6 +1,6 @@
 # Draw a randomized mapping based on the qualitative mapping from COICOP to EXIO
 
-get_bridge_COICOP_EXIO <- function(qual_map, num_draw, country){
+get_bridge_COICOP_EXIO <- function(qual_map, num_draw, country='IN'){
   
   # Number of mapped categories in EXIO per each in COICOP
   num_sectors <- rowSums(qual_map)
