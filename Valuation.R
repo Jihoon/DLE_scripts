@@ -3,6 +3,8 @@
 ### Issue: The format will be different for other countries where we need to collect data
 ### Note: Even a 1 EUR expenditure (PP) on one sector is converted to multiple sector expenditures in BP, because it gets transfered to trans/trade sectors.
 
+source("Random_draw_test.R")
+
 xlcFreeMemory()
 
 num_EXIO_sector <- 200
@@ -191,10 +193,10 @@ trp_rate_draws <- replicate(n_draw, foo(trp_margin_range))
 tax_rate_draws <- replicate(n_draw, foo(tax_range))
 
 # Draw for share breakdowns between trade/transportation sectors
-trans_brkdn_draws <- get_draws(100, dim(trans_margin_breakdown)[1], min=trp_brkdn_range[1,], max=trp_brkdn_range[2,])
-trade_brkdn_draws <- get_draws(100, dim(trade_margin_breakdown)[1], min=trd_brkdn_range[1,], max=trd_brkdn_range[2,])
-trans_brkdn_draws <- get_draws(100, dim(trans_margin_breakdown)[1], trans_margin_breakdown)
-trade_brkdn_draws <- get_draws(100, dim(trade_margin_breakdown)[1], trade_margin_breakdown)
+# trans_brkdn_draws <- get_draws(n_draw, dim(trans_margin_breakdown)[1], min=trp_brkdn_range[1,], max=trp_brkdn_range[2,])
+# trade_brkdn_draws <- get_draws(n_draw, dim(trade_margin_breakdown)[1], min=trd_brkdn_range[1,], max=trd_brkdn_range[2,])
+trans_brkdn_draws <- get_draws(n_draw, dim(trans_margin_breakdown)[1], trans_margin_breakdown)
+trade_brkdn_draws <- get_draws(n_draw, dim(trade_margin_breakdown)[1], trade_margin_breakdown)
 
 
 

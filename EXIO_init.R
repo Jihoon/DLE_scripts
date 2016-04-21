@@ -1,7 +1,7 @@
 # Read in neccessary EXIO tables
 # And derive indirect energy intensities per EXIO sector
 
-setwd("H:/MyDocuments/IO work/")
+# setwd("H:/MyDocuments/IO work/")
 
 path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrIOT_PxP_ita_coefficient_version2.2.2/"
 path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2.2.2/"
@@ -15,8 +15,8 @@ L_inverse <- read.table(paste(path_iot, "L_inverse.txt", sep=""), header=FALSE, 
 factor_input <- read.table(paste(path_iot, "mrFactorInputs_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 factor_input <- factor_input[,c(-1,-2)]
 
-iot <- read.table(paste(path_iot, "mrIot_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
-iot <- iot[,c(-1,-2,-3)]
+# iot <- read.table(paste(path_iot, "mrIot_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+# iot <- iot[,c(-1,-2,-3)]
 
 supplym <- read.table(paste(path_sut, "mrSupply_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".")
 
@@ -25,8 +25,8 @@ supplym <- read.table(paste(path_sut, "mrSupply_version2.2.2.txt", sep=""), head
 materials <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 materials <- materials[,c(-1,-2)]
 
-final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
-final_demand_material <- final_demand_material[,c(-1,-2)]
+# final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+# final_demand_material <- final_demand_material[,c(-1,-2)]
 
 # From SUT folder
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)

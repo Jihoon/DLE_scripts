@@ -1,4 +1,4 @@
-options(java.parameters = "-Xmx1g") 
+options(java.parameters = "-Xmx8g") 
 library(RJDBC)
 library(data.table)
 library(tidyr)
@@ -7,6 +7,7 @@ library(XLConnect)
 library(Surrogate)
 library(ggplot2)
 library(stringr)
+library(plyr)
 library(dplyr)
 library(pastecs)
 library(countrycode)
@@ -31,7 +32,7 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
                "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
-n_draw <- 100
+n_draw <- 5000
 D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
 draw_count <- 1
 
@@ -44,17 +45,51 @@ Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
 wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
 # I added 'Sheet2' and fixed some mis-categorizations for my needs.
 icp_seq <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
-icp_cat <- readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=4, endCol=4, forceConversion=T)
+icp_cat <- readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=3, endCol=4, forceConversion=T)
 NTNU <- readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
 icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
-names(icp_ntnu)[2] <- "Subcategory"
-names(icp_ntnu)[4] <- "ICP_Heading"
+names(icp_ntnu)[2:3] <- c("COICOP1","COICOP2")
+names(icp_ntnu)[5] <- "ICP_Heading"
 
 source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
 
 # Issue: I still need to match with our CES DB and final NTNU 109 classification
 #        How to combine fuel consumption and other (food etc)
 #       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
+
+
+#########################################
+### Read in COICOP-EXIO Qual mapping  ###
+#########################################
+
+# Issue: This is to be replaced by 'bridge_icp_exio_q' (currently in Map_CES_COICOP.R).
+#       But bridge_COICOP_EXIO_q is used as a base for contructing bridge_icp_exio_q.
+#       I will move the scripts here (or call from here) once it is being used
+n_sector_coicop <- 109
+
+Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
+
+# Qualitative mapping (0 or 1)
+bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
+                                                 startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
+
+# Compare Gibran's updated qual mapping
+# wb <- XLConnect::loadWorkbook("C:/Users/min/Dropbox/HH environmental consumption/NTNU/product classification/COICOP3_EXIO_bridge.xlsx")
+# bridge_ntnu <- XLConnect::readWorksheet(wb, sheet="qualitative 0_1", header=FALSE, 
+#                                                  startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
+
+# Final COICOP classification with 109 headings
+COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=3, endRow=2+n_sector_coicop, startCol=2, endCol=2)
+EX_catnames <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=2, endRow=2, startCol=3)
+
+# Issue: This qual mapping may change depending on countries, which we need to tackle then.
+
+##############################################
+###        Read in EXIO matrices           ###
+##############################################
+
+source("EXIO_init.R")
 
 
 
@@ -82,54 +117,25 @@ source("Bridging_uncertainty.R")
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
 
-
-# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
+source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 source("Read_final_demand_from_DB.R")
-# Create Oracle DB connection via RJDBC (Java)
-drv = JDBC("oracle.jdbc.driver.OracleDriver","P:/ene.model/Rcodes/Common_files/ojdbc6.jar", identifier.quote="\"") 
-conn = dbConnect(drv, "jdbc:oracle:thin:@gp3.iiasa.ac.at:1521:gp3", "hh_data", "hh_data")
+source("Read_direct_energy_from_DB.R")
 
 # Read total FD for all population
-IND_FD <- readFinalDemandfromDB('IND1')
-IND2_FD <- readFinalDemandfromDB('IND2')
+# dim: n_CES_sector x 2 (or 11 for deciles)
+
+# IND_FD <- readFinalDemandfromDB('IND1')
+IND_FD <- readFinalDemandfromDBbyDecile('IND1')
+IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
+
+list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
+list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')
+
+# For later use
+# IND2_FD <- readFinalDemandfromDB('IND2')
 # IDN_FD <- readFinalDemandfromDB('IDN1')
 # BRA_FD <- readFinalDemandfromDB('BRA1')
 # ZAF_FD <- readFinalDemandfromDB('ZAF1')
-
-# Read in by decile group
-# for (i in 1:10) {
-#   a <- readFinalDemandfromDBbyDecile('IND', i)
-#   names(a)[2] <- paste("Decile", i, sep="") 
-#   IND_FD <- merge(IND_FD, a, by="ITEM", all.x=TRUE)
-#   a <- readFinalDemandfromDBbyDecile('IDN', i)
-#   names(a)[2] <- paste("Decile", i, sep="") 
-#   IDN_FD <- merge(IDN_FD, a, by="ITEM", all.x=TRUE)
-# }
-dbDisconnect(conn)
-
-
-
-#########################################
-### Read in COICOP-EXIO Qual mapping  ###
-#########################################
-
-# Issue: This is to be replaced by 'bridge_icp_exio_q' (currently in Map_CES_COICOP.R).
-#       But bridge_COICOP_EXIO_q is used as a base for contructing bridge_icp_exio_q.
-#       I will move the scripts here (or call from here) once it is being used
-
-Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
-
-# Qualitative mapping (0 or 1)
-bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
-                                      startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
-
-# Final COICOP classification with 109 headings
-n_sector_coicop <- 109
-COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=3, endRow=2+n_sector_coicop, startCol=2, endCol=2)
-EX_catnames <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=2, endRow=2, startCol=3)
-
-# Issue: This qual mapping may change depending on countries, which we need to tackle then.
 
 
 
@@ -172,15 +178,9 @@ n_sector_icp <- 151  # Num of ICP sectors
 #     => can be checked by cbind(names(qual_map)[colConst_init!=0 & colSums(qual_map_init)==0], colConst_init[colConst_init!=0 & colSums(qual_map_init)==0])
 
 wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
-bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T, endRow=152, endCol=201)
-
-
-
-##############################################
-###        Read in EXIO matrices           ###
-##############################################
-
-source("EXIO_init.R")
+# bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T, endRow=152, endCol=201)
+# No yellow corrections
+bridge_icp_exio_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Q_nochange", header=TRUE, forceConversion=T, endRow=152, endCol=201) 
 
 
 

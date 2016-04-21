@@ -10,10 +10,6 @@ source("Init.R")
 # Total final demand converted to COICOP classification
 # fd_tot_coicop <- t(bridge_CES_COICOP)%*%fd_tot$FD_TOT   # Using India CES for placeholder
 
-
-# Get a random draw of a mapping
-n_draw <- 500
-
 # Constants
 N_hh_FR <- 27568000 # Number of households in 2012
                       # https://www.ined.fr/en/everything_about_population/data/france/couples-households-families/households/

@@ -50,13 +50,13 @@ IND_WB$ICP_SEQ[IND_WB$CODE %in% 435:437] <- 119
 # XXX_WB has original survey code, ICP seq number, and ICP heading (except for BRA where 'heading' is missing).
 # icp_ntnu is for ICP seq number, NTNU-COICOP seq number, and ICP heading.
 IND_map <- merge(IND_WB, icp_ntnu, by="ICP_SEQ")
-IND_map <- IND_map[c("CODE", "Surv_Heading", "ICP_SEQ", "Subcategory", "ICP_Heading", "NTNU_109")]
+IND_map <- IND_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "ICP_Heading", "NTNU_109")]
 # IND_map$ORD <- 1:dim(IND_map)[1]  # Is this necessary?
 IND_map <- merge(IND_map, code_item_IND, by="CODE")
 IND_map <- IND_map[order(IND_map$CODE),]
 
 IDN_map <- merge(IDN_WB, icp_ntnu, by="ICP_SEQ")
-IDN_map <- IDN_map[c("CODE", "Surv_Heading", "ICP_SEQ", "Subcategory", "ICP_Heading", "NTNU_109")]
+IDN_map <- IDN_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "ICP_Heading", "NTNU_109")]
 # IDN_map$ORD <- 1:dim(IDN_map)[1]
 IDN_map <- merge(IDN_map, code_item_IDN, by="CODE")
 IDN_map <- IDN_map[order(IDN_map$CODE),]

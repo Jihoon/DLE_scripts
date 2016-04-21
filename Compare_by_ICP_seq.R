@@ -6,8 +6,8 @@ IDN_FD_code <- IDN_FD[-grep("tax", IDN_FD$ITEM, ignore.case = TRUE), ]
 IDN_map$ITEM_DLE[IDN_map$CODE==208] <- "Fish (fried, roasted, presto, pindang, pepes, etc)" # Correct DB input errors
 IDN_FD_code$ITEM[grep("Fish ", IDN_FD_code$ITEM)] <- "Fish (fried, roasted, presto, pindang, pepes, etc)"
 
-IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "Subcategory", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
-IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "Subcategory", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
+IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
+IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
 
 IND_FD_code <- IND_FD_code[order(IND_FD_code$CODE),]
 IDN_FD_code <- IDN_FD_code[order(IDN_FD_code$CODE),]
@@ -30,7 +30,7 @@ Food_category <- c("Bread/cereals", "Meat", "Fish/seafood", "Milk/cheese/eggs", 
 
 # Index for food subcategories - 3:8, 9:14, 15:17, 18:22, 23:25, 26:28, 29:32, 33:37, 38:40
 Food_num <- 1:40
-a <- aggregate(. ~ Subcategory, data = FD_ICP[Food_num,2:dim(FD_ICP)[2]], sum)
+a <- aggregate(. ~ COICOP2, data = FD_ICP[Food_num,2:dim(FD_ICP)[2]], sum)
 plotdata <- data.matrix(a[3:dim(a)[1],2:dim(a)[2]])
 plotratio <- plotdata %*% diag(1/colSums(plotdata))
 

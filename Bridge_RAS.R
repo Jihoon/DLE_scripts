@@ -11,13 +11,41 @@ IN_fd_exio_imp <- rowSums(IN_fd[,-IN_place]) # Sum all HH FD across countries
 # Get IND final demand in ICP 
 
 # Remove tax observations from DB
-IND_FD_code <- IND_FD[-grep("taxes", IND_FD$ITEM, ignore.case = TRUE), ]
-IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "Subcategory", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
+IND_FD_code <- IND_FD[-grep("taxes", IND_FD$item, ignore.case = TRUE), ]
+IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "COICOP1", "COICOP2", "ITEM_DLE")], by.x="item", by.y="ITEM_DLE", all.x = TRUE)
 IND_FD_code <- IND_FD_code[order(IND_FD_code$CODE),]
 IND_FD_code[is.na(IND_FD_code)] <- 0
 
+# For IND2
+# Note: need to add COICOP1 info to get annual hh consumption increase rates.
+# Some item names are different from IND1.
+IND2_FD_code <- IND2_FD[-grep("taxes", IND2_FD$item, ignore.case = TRUE), ]
+IND2_FD_code <- merge(IND2_FD_code, IND_map[,c("CODE", "COICOP1", "COICOP2", "ITEM_DLE")], by.x="item", by.y="ITEM_DLE", all.x = TRUE)
+
+missing <- IND2_FD_code %>% filter(CODE==0)
+write.table(missing, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+# So I assigned COICOP numbers to items only appearing in IND2.
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/For IND2-IND1 matching.xlsx")
+missing_cat  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T) 
+
+IND2_FD_code <- merge(IND2_FD_code, missing_cat[,c("CODE", "COICOP1", "COICOP2", "item")], by="item", all.x = TRUE)
+IND2_FD_code[is.na(IND2_FD_code$CODE.x), ] <- IND2_FD_code %>% filter(is.na(CODE.x)) %>% mutate(CODE.x = CODE.y, COICOP1.x = COICOP1.y, COICOP2.x = COICOP2.y)
+IND2_FD_code <- select(IND2_FD_code,-CODE.y, -COICOP1.y, -COICOP2.y) %>% rename(CODE = CODE.x, COICOP1 = COICOP1.x, COICOP2 = COICOP2.x)
+
+IND2_FD_code <- IND2_FD_code[order(IND2_FD_code$CODE),]
+IND2_FD_code[is.na(IND2_FD_code)] <- 0
+
+# 
+# a <- strsplit(missing$item, split="[[:punct:] ]")
+# a <- lapply(a, function(x) {x[x != ""]})
+# b <- strsplit(IND_FD_code$item, split="[[:punct:] ]")
+# b <- lapply(b, function(x) {x[x != ""]})
+
+
+
 # CES_ICP_IDN, CES_ICP_IND rows are sorted by Survey Code.
-IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
+# IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])   # only for total
+IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2:12])  # for all deciles and total
 
 
 # Get IDN final demand from EXIO [M.EUR]
@@ -30,7 +58,7 @@ IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
 # 
 # # Remove tax observations from DB
 # IDN_FD_code <- IDN_FD[-grep("taxes", IDN_FD$ITEM, ignore.case = TRUE), ]
-# IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "Subcategory", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
+# IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
 # IDN_FD_code <- IDN_FD_code[order(IDN_FD_code$CODE),]
 # IDN_FD_code[is.na(IDN_FD_code)] <- 0
 # 
@@ -65,23 +93,40 @@ EXR_EUR <- EXR_EUR %>% rename(r=PA.NUS.FCRF)
 EXR_IND <- WDI(country = "IN", indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
 EXR_IND <- EXR_IND %>% rename(r=PA.NUS.FCRF)
 
-# HH Consumption in India 2007
-a <- WDI(country = "IN", indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.CN"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
-a[,4:7] <- a[,4:7]/1e6
+# HH Consumption in India 2007 [US$]
+HH_CON <- WDI(country = "IN", indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.CN"), start = 2007, end = 2011, extra = FALSE, cache = NULL)
+HH_CON <- HH_CON %>% rename(hhcon=NE.CON.PRVT.CD)
+HH_CON[,4:7] <- HH_CON[,4:7]/1e6 #[million US$]
+
+
+# Adjust for real consumption increase
+# consumption_growth <- (sum(IND_FD[,2]) / sum(IND2_FD[,2]))^(1/7)  # 2004-2005 to 2011-2012
+# consumption_growth <- (HH_CON$hhcon[5]/HH_CON$hhcon[1])^(1/4)
+# (sum(IND_FD_ICP_usd2007) / consumption_growth^4) / (sum(IN_fd_exio_usd2007) ) # Assuming EXIO already incorporated real consumption increase..
+
+# by decile
+IND_FD_code$COICOP1 <- as.numeric(IND_FD_code$COICOP1)
+IND2_FD_code$COICOP1 <- as.numeric(IND2_FD_code$COICOP1)
+a <- aggregate(. ~ COICOP1, data=IND_FD_code[,2:14], sum)
+b <- aggregate(. ~ COICOP1, data=IND2_FD_code[,2:14], sum)
+
+consumption_growth <- (a[,2:12]/b[,2:12])^(1/7) # consumption growth rate in 7 years by decile
+consumption_growth_DE <- (IND_DE[,2:12]/IND2_DE[,2:12])^(1/7) # consumption growth rate in 7 years by decile
+consumption_growth_FD_DE <- (IND_FD_DE[,2:12]/IND2_FD_DE[,2:12])^(1/7) # consumption growth rate in 7 years by decile
 
 # IND1 is for 2010-2011
 IND_FD_ICP_usd2007 <- IND_FD_ICP * PPP_IND / CPI_ratio / EXR_IND$r / 1e6
+IND_FD_ICP_usd2007 <- IND_FD_ICP_usd2007/((consumption_growth^4)[as.numeric(icp_ntnu$COICOP1)[1:151],])
 IN_fd_exio_usd2007 <- IN_fd_exio / EXR_EUR$r
 
-sum(IND_FD_ICP_usd2007) # CES FD in 2007$ (MER) based on 2011-2012 NSS -> Use this for RAS
-sum(IN_fd_exio_usd2007) # EXIO FD in 2007$ (MER?) based on 2004 IoT -> Use this for RAS
+IND_DE_intst2007 <- (IND_DE[,2:12] / (consumption_growth_DE^4)) / (IND_FD_DE[,2:12] / (consumption_growth_FD_DE^4))
+
+# sum(IND_FD_ICP_usd2007) # CES FD in 2007$ (MER) based on 2011-2012 NSS -> Use this for RAS
+# sum(IN_fd_exio_usd2007) # EXIO FD in 2007$ (MER?) based on 2004 IoT -> Use this for RAS
 
 # From Indian I-O 2007 - total PFCE (Private Final Consumption Expenditure)
 IND_FD_IO2007_usd <- 278289600 * 1e5 / EXR_IND$r / 1e6 # Convert Rs. Lakhs to Million $ 2007
 
-# Adjust for real consumption increase
-consumption_growth <- (sum(IND_FD[,2]) / sum(IND2_FD[,2]))^(1/7)  # 2004-2005 to 2011-2012
-(sum(IND_FD_ICP_usd2007) / consumption_growth^4) / (sum(IN_fd_exio_usd2007) ) # Assuming EXIO already incorporated real consumption increase..
 
 
 
@@ -352,7 +397,7 @@ CollapseQualMap <- function(qmap, colCon, rowCon) {
 
 
 # Calculate ICP sectoral intensities from given allocation ratio matrix based on random draws (either RASed or non-RASed)
-SetupSectorIntensities <- function (mapping_list, country = "IN") {
+SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN") {
   ind_intensity <- vector()
   null_demand_int <- matrix(0, 9600, n_sector_icp)
   SectoralE_per_hh <- vector()
@@ -373,8 +418,8 @@ SetupSectorIntensities <- function (mapping_list, country = "IN") {
     # Identity mtx representing 1 EUR spending in each ICP sector, now mapped to 200 EXIO sectors
     unit_exio <- diag(n_sector_icp) %*% mapping_list[[i]]  # 151x200 
     fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x151) - each col represents bp fd in each exio sector (for 1 EUR in ICP sector)
-    print(fd_bp[,75])
-    a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))
+
+    a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))   # 48 regions in EXIO
     fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X151
     
     # fd_exio <- mapping_list[[i]] %*% diag(fd_decile[,2])  # For Ensemble
@@ -386,185 +431,13 @@ SetupSectorIntensities <- function (mapping_list, country = "IN") {
     # energy_tot <- indirect_E_int %*% cty_fd
     
     ind_intensity <- rbind(ind_intensity, colSums(energy_int)) # Total indirect energy/hh by decile
-    # SectoralE_per_hh <- rbind(SectoralE_per_hh, colSums(energy_tot)) # Total indirect energy/hh by decile
     
-    print(colSums(energy_int)[75])
+    # print(colSums(energy_int)[75])
   }
   
+  # not_conv_idx has 1 where the RAS did not converge.
+  ind_intensity <- ind_intensity[not_conv_idx!=1,]
   return(ind_intensity)
 }
 
 
-
-
-
-
-
-
-
-
-
-#######################
-###     Run RAS     ###
-#######################
-
-# library(mipfp)
-# 
-# n_draw <- 2000
-# 
-# qual_map <- bridge_icp_exio_q[,-1]
-# bridge_ICP_EXIO <- get_bridge_COICOP_EXIO(qual_map, n_draw)
-# scaler_IND <- sum(IND_FD_ICP_usd2007)/sum(IN_fd_exio_usd2007)
-# 
-# rowConst <- as.vector(IND_FD_ICP_usd2007) / scaler_IND
-# colConst <- IN_fd_exio_usd2007 
-# 
-# idx_fixed_row <- which(rowSums(qual_map)==1)
-# idx_fixed_col <- which(colSums(qual_map)==1)
-# 
-# init <- list()
-# result <- list()
-# 
-# for (i in 1:n_draw) {
-#   seed <- diag(rowConst) %*% t(bridge_ICP_EXIO[[i]]) 
-#   init[[i]] <- seed
-#   
-#   # a <- t(bridge_ICP_EXIO[[1]]) * as.vector(IND_FD_ICP_usd2007)
-#   balanced_map <- Ipfp(seed, list(1,2), list(rowConst, colConst), tol = 1e-12, iter = 10000, print=FALSE)
-#   result[[i]] <- balanced_map$x.hat
-#   print(i)
-#   print(paste("Constraint total =", sum(init[[i]]), ", Result total =", sum(result[[i]]) ))
-# }
-# 
-# hist(rapply(init, function(x) {x[4,1]}))
-# hist(rapply(result, function(x) {x[4,1]}))
-# 
-# # Check out fixed row/column w
-# idx_fixed <- colSums(qual_map[,as.matrix(colSums(qual_map[idx_fixed_row,]))!=0])==1
-# fixed_cells_by_row <- cbind(idx_fixed_row, apply(qual_map[idx_fixed_row,], 1, function (x) {which(x==1)}))
-# fixed_cells_by_col <- cbind(apply(qual_map[, idx_fixed_col], 2, function (x) {which(x==1)}), idx_fixed_col)
-# 
-# rowSums(b[idx_fixed_row,]) # These should be values for fixed cells for rowSums
-# colSums(b[idx_fixed_col,]) # These should be values for fixed cells for colSums
-# 
-# 
-# balanced_bridge_ICP_EXIO <- rapply(result, function(x) {diag(1/rowConst) * x})
-# 
-# 
-# # Let's find out the ultimate matrix for RAS (after removing all fixed cells)
-# 
-# qual_map_reduced <- qual_map
-# final <- matrix(0, dim(qual_map)[1], dim(qual_map)[2])
-# colConst_reduced <- colConst
-# rowConst_reduced <- rowConst
-# 
-# repeat {
-#   idx_fixed_row <- which(rowSums(qual_map_reduced)==1)
-#   idx_fixed_col <- which(colSums(qual_map_reduced)==1)
-#   fixed_cells_by_row <- cbind(idx_fixed_row, apply(qual_map[idx_fixed_row,], 1, function (x) {which(x==1)}))
-#   fixed_cells_by_col <- cbind(apply(qual_map[, idx_fixed_col], 2, function (x) {which(x==1)}), idx_fixed_col)
-#   
-#   rowConst_reduced <- CheckCells(fixed_cells_by_row, fixed_cells_by_col, colConst_reduced, rowConst_reduced)
-#   
-#   print(idx_fixed_row)
-#   print(idx_fixed_col)
-#   
-#   if (length(idx_fixed_row)!=0 & length(idx_fixed_col)!=0) {
-#     qual_map_reduced[idx_fixed_row,idx_fixed_col] <- NA
-#     final[fixed_cells_by_row] <- rowConst_reduced[idx_fixed_row]
-#     colConst_reduced <- colConst_reduced - colSums(final)
-#     final[fixed_cells_by_col] <- colConst_reduced[idx_fixed_col]
-#     rowConst_reduced <- rowConst_reduced - rowSums(final)  
-#     
-#     rowConst_reduced <- rowConst_reduced[-idx_fixed_row]
-#     colConst_reduced <- colConst_reduced[-idx_fixed_col]
-#   }
-#   else if (length(idx_fixed_row)!=0 & length(idx_fixed_col)==0) {
-#     qual_map_reduced <- qual_map_reduced[-idx_fixed_row,]
-#     final[fixed_cells_by_row] <- rowConst_reduced[idx_fixed_row]
-#     colConst_reduced <- colConst_reduced - colSums(final)
-#     
-#     rowConst_reduced <- rowConst_reduced[-idx_fixed_row]
-#   }
-#   else if (length(idx_fixed_row)==0 & length(idx_fixed_col)!=0) {
-#     qual_map_reduced <- qual_map_reduced[,-idx_fixed_col]
-#     final[fixed_cells_by_col] <- colConst_reduced[idx_fixed_col]
-#     rowConst_reduced <- rowConst_reduced - rowSums(final)  
-#     
-#     colConst_reduced <- colConst_reduced[-idx_fixed_col]
-#   }
-#   else {
-#     break 
-#   }
-# }
-# 
-# 
-# 
-# CheckCells <- function(fixed_cells_by_row, fixed_cells_by_col, colCon, rowCon) {
-#   a <- rbind(fixed_cells_by_row, fixed_cells_by_col)
-#   conflict_cell <- a[duplicated(a)]
-#   if (colCon[conflict_cell[1]]==rowCon[conflict_cell[2]]) {return(0)}
-#   
-#   rowCon[conflict_cell[2]] <- colCon[conflict_cell[1]]
-#   
-# }
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# # Kevin's test
-# 
-# result <- list()
-# initial <- list()
-# zz <- sample.int(50, 25)
-# 
-# for (i in 1:500) {
-#   # Commodity sums
-#   com_sums = round(100*runif(10))
-#   
-#   # Sector sums (total forced to match total of com_sums)
-#   sec_sums = round(100*runif(5))
-#   sec_sums = sec_sums * sum(com_sums)/sum(sec_sums)
-#   
-#   # Random matrix (set 50% of values to zero)
-#   x = matrix(runif(10*5), nrow=10)
-#   x[zz] = 0
-#   
-#   # Force row sums to equal 1
-#   x = x/rowSums(x)
-#   
-#   # Convert commodity shares to nominal values
-#   x = x * com_sums
-#   initial[i] <- x
-#   
-#   # Obviously, column sums do not match sec_sums
-#   # plot(sec_sums, colSums(x))
-#   
-#   # Apply RAS
-#   test = Ipfp(x, list(1,2), list(com_sums, sec_sums), tol=1e-11)
-#   result[i] <- test$x.hat
-# #   colSums(test$x.hat) - sec_sums
-# #   rowSums(test$x.hat) - com_sums
-# }
