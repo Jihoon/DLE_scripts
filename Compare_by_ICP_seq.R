@@ -19,10 +19,10 @@ IDN_FD_code[is.na(IDN_FD_code)] <- 0
 IDN_FD_ICP <- t(CES_ICP_IDN) %*% as.matrix(IDN_FD_code[,2:12])
 IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2:12])
 
-# IDN_FD_ICP <- cbind(icp_ntnu[1:151,c(1,3)], IDN_FD_ICP)
-# IND_FD_ICP <- cbind(icp_ntnu[1:151,c(1,3)], IND_FD_ICP)
+# IDN_FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1,3)], IDN_FD_ICP)
+# IND_FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1,3)], IND_FD_ICP)
 
-FD_ICP <- cbind(icp_ntnu[1:151,c(1:2)], IDN_FD_ICP, IND_FD_ICP)
+FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1:2)], IDN_FD_ICP, IND_FD_ICP)
 
 # Plot food and non-alco bev only
 Food_category <- c("Bread/cereals", "Meat", "Fish/seafood", "Milk/cheese/eggs", "Oils/fats", "Fruits", 

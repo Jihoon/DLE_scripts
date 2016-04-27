@@ -115,6 +115,7 @@ consumption_growth_DE <- (IND_DE[,2:12]/IND2_DE[,2:12])^(1/7) # consumption grow
 consumption_growth_FD_DE <- (IND_FD_DE[,2:12]/IND2_FD_DE[,2:12])^(1/7) # consumption growth rate in 7 years by decile
 
 # IND1 is for 2010-2011
+# in M.EUR
 IND_FD_ICP_usd2007 <- IND_FD_ICP * PPP_IND / CPI_ratio / EXR_IND$r / 1e6
 IND_FD_ICP_usd2007 <- IND_FD_ICP_usd2007/((consumption_growth^4)[as.numeric(icp_ntnu$COICOP1)[1:151],])
 IN_fd_exio_usd2007 <- IN_fd_exio / EXR_EUR$r

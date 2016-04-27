@@ -32,8 +32,8 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
                "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
-n_draw <- 5000
-D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
+n_draw <- 2000
+D_val_uncertainty <- 1  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
 draw_count <- 1
 
 #####################################################
@@ -203,15 +203,15 @@ source("Bridge_RAS.R")
 ### Read in final demand vector for France ### (Auxiliary, from Lucas)
 ##############################################
 
-# Mapping <- system.file("2011_FRHHBS_per_decile.xlsx", package = "XLConnect")
-# wb <- loadWorkbook("H:/MyDocuments/IO work/Uncertainty/2011_FRHHBS_per_decile.xlsx")
-# 
-# n_sector_coicop <- 109  # Num of COICOP sectors
-# n_col <- 11  # Num of columns (10 deciles + avg)
-# fd_decile <- readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T)
-# cpi_2007_fr <- 95.7	 # http://data.worldbank.org/indicator/FP.CPI.TOTL
-# cpi_2011_fr <- 102.1	
-# fd_decile[,2:12] <- fd_decile[,2:12]*cpi_2007_fr/cpi_2011_fr
+Mapping <- system.file("2011_FRHHBS_per_decile.xlsx", package = "XLConnect")
+wb <- loadWorkbook("H:/MyDocuments/IO work/Uncertainty/2011_FRHHBS_per_decile.xlsx")
+
+n_sector_coicop <- 109  # Num of COICOP sectors
+n_col <- 11  # Num of columns (10 deciles + avg)
+fd_decile_FRA <- readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T)
+cpi_2007_fr <- 95.7	 # http://data.worldbank.org/indicator/FP.CPI.TOTL
+cpi_2011_fr <- 102.1
+fd_decile[,2:12] <- fd_decile[,2:12]*cpi_2007_fr/cpi_2011_fr
 # # names(fd_decile)
 # 
 # soc_transfer_ratio <- fd_decile[,14:24]
