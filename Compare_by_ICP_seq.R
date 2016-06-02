@@ -1,27 +1,3 @@
-# Remove tax observations from DB
-IND_FD_code <- IND_FD[-grep("taxes", IND_FD$ITEM, ignore.case = TRUE), ]
-
-IDN_FD_code <- IDN_FD[-grep("tax", IDN_FD$ITEM, ignore.case = TRUE), ] 
-
-IDN_map$ITEM_DLE[IDN_map$CODE==208] <- "Fish (fried, roasted, presto, pindang, pepes, etc)" # Correct DB input errors
-IDN_FD_code$ITEM[grep("Fish ", IDN_FD_code$ITEM)] <- "Fish (fried, roasted, presto, pindang, pepes, etc)"
-
-IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
-IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
-
-IND_FD_code <- IND_FD_code[order(IND_FD_code$CODE),]
-IDN_FD_code <- IDN_FD_code[order(IDN_FD_code$CODE),]
-
-IND_FD_code[is.na(IND_FD_code)] <- 0
-IDN_FD_code[is.na(IDN_FD_code)] <- 0
-
-# CES_ICP_IDN, CES_ICP_IND rows are sorted by Survey Code.
-IDN_FD_ICP <- t(CES_ICP_IDN) %*% as.matrix(IDN_FD_code[,2:12])
-IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2:12])
-
-# IDN_FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1,3)], IDN_FD_ICP)
-# IND_FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1,3)], IND_FD_ICP)
-
 FD_ICP <- cbind(icp_ntnu[1:n_sector_icp,c(1:2)], IDN_FD_ICP, IND_FD_ICP)
 
 # Plot food and non-alco bev only

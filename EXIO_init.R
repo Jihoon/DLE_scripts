@@ -20,10 +20,15 @@ factor_input <- factor_input[,c(-1,-2)]
 
 supplym <- read.table(paste(path_sut, "mrSupply_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".")
 
+fd_materials <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+fd_materials <- fd_materials[,c(-1,-2)]
+
 # Material extension with more energy carrier resolution from NTNU (ver 2.2.0)
 # However these extensions are in TJ unit, which need to be divided by total use by product to get intensities.
 materials <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 materials <- materials[,c(-1,-2)]
+materials_reduc <- read.table(paste(path_iot, "mrMaterials_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+materials_reduc <- materials_reduc[,c(-1,-2)]
 
 # final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 # final_demand_material <- final_demand_material[,c(-1,-2)]
@@ -35,9 +40,18 @@ tot_use <- tot_use[,c(-1,-2,-3)]
 # Get total use by product 
 tot_demand <- rowSums(final_demand) + rowSums(tot_use)
 
+TJ_per_MTOE <- 41870
+TWh_per_MTOE <- 11.63
+
+nature_input_idx <- 1:19   # number of rows for E-carrier use after removing the row headers
+emission_energy_carrier_idx <- 20:70   # number of rows for E-carrier use after removing the row headers
+energy_carrier_supply_idx <- 71:139   # number of rows for E-carrier use after removing the row headers
 energy_carrier_use_idx <- 140:208   # number of rows for E-carrier use after removing the row headers
-energy_use <- materials[energy_carrier_use_idx,]  # The energy extension has not intensities but total consumptions.
+energy_pri_carrier_use_idx <- c(140:154, 187:188, 191:194)   # number of rows for E-carrier use after removing the row headers
+energy_sec_carrier_use_idx <- energy_carrier_use_idx[!(energy_carrier_use_idx %in% energy_pri_carrier_use_idx)]
+
+energy_use <- materials[nature_input_idx,]  # The energy extension has not intensities but total consumptions.
 y <- 1/tot_demand
 y[is.infinite(y)] <- 0 
-energy_int <- as.matrix(energy_use) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector
+energy_int <- as.matrix(energy_use) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
 indirect_E_int <- energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1

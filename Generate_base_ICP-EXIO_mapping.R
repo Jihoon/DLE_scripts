@@ -8,7 +8,8 @@ temp <- lapply(temp, as.numeric)              # temp will hold those numerical i
 
 # Build a list with COICOP-EXIO mapping rows
 bridge_icp_exio_list <- lapply(temp, function(ind) {
-  a <- bridge_COICOP_EXIO_q[ind,]         # Get the mapping row (or rows if multiple) from the qual mapping
+  # a <- bridge_COICOP_EXIO_q[ind,-1,drop=FALSE]         # Get the mapping row (or rows if multiple) from the qual mapping
+  a <- Q_UN_EXIO[ind, ,drop=FALSE]         # UN mapping
   b <- as.numeric(apply(a, 2, function(x) { Reduce("|", x) }))  # Logical OR of multiple rows
   return(b)
 })
@@ -28,7 +29,10 @@ bridge_icp_exio <- data.frame(bridge_icp_exio)
 names(bridge_icp_exio) <- EX_catnames  
 row.names(bridge_icp_exio) <- icp_ntnu$ICP_Heading[-c(len-1, len)]
 # row.names(bridge_icp_exio) <- icp_ntnu$ICP_Heading[!is.na(icp_ntnu$NTNU_109)]
-write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual.csv")
+
+Q_UN_ICP_EXIO <- bridge_icp_exio
+write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_UN.csv")
+# write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual.csv")
 
 # This matrix (ICP_EXIO_Qual.csv) is modified externally manually to fine-allocate mostly for food-subsectors.
 # The result is in H:\MyDocuments\IO work\Bridging\CES-COICOP\ICP_EXIO_Qual_Edited.xlsx

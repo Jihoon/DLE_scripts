@@ -27,6 +27,10 @@ code_item_IND$UNIT <- NULL
 # Sending it to "ICP 36:Confectionery, chocolate and ice cream"
 IND_WB$ICP_SEQ[IND_WB$CODE==291] <- 36
 
+# WB assigned "CES 196 "others: birds, crab, oyster, tortoise, etc. to "ICP 9: UNBR Meat".
+# Sending it to "ICP 14:Other meats and meat preparations"
+IND_WB$ICP_SEQ[IND_WB$CODE==196] <- 14
+
 # WB assigned "CES 274-276" to "ICP 39: Coffee, tea and cocoa".
 # They should be "ICP 40: Mineral waters, soft drinks, fruit and vegetable juices"
 # 274 "mineral water (litre)"

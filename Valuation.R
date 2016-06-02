@@ -8,20 +8,17 @@ source("Random_draw_test.R")
 xlcFreeMemory()
 
 num_EXIO_sector <- 200
-trade_margin_rate <- data.frame(AT = numeric(num_EXIO_sector),US = numeric(num_EXIO_sector), IN = numeric(num_EXIO_sector))
+trade_margin_rate <- data.frame(FR = numeric(num_EXIO_sector),US = numeric(num_EXIO_sector), IN = numeric(num_EXIO_sector))
 trans_margin_rate <- trade_margin_rate
 tax_rate <- trade_margin_rate
 
-trans_margin_breakdown <- data.frame(AT = numeric(7),US = numeric(7), IN = numeric(7))
-trade_margin_breakdown <- data.frame(AT = numeric(4),US = numeric(4), IN = numeric(4))
+trans_margin_breakdown <- data.frame(FR = numeric(7), US = numeric(7), IN = numeric(7))
+trade_margin_breakdown <- data.frame(FR = numeric(4), US = numeric(4), IN = numeric(4))
 
 trd_idx <- 152:155
 trp_idx <- 157:163
 
 get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: do Monte Carlo (1) or not (0) for val mtx?)
-  
-  # AT valuation layer was used for FR.
-  if (country=='FR') country <- 'AT'
   
   cty_place <- which(exio_ctys==country)
   # cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
@@ -32,8 +29,6 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
   y_bp <- rowSums(y_bp)
   
   if (mc==0) {
-    
-    # Mapping <- system.file(paste("H:/MyDocuments/IO work/Valuation/", country, "_output.xls", sep=""), package = "XLConnect")
     wb <- XLConnect::loadWorkbook(paste("H:/MyDocuments/IO work/Valuation/", country, "_output.xls", sep=""))
     
     # Index for xx_output.xls files
@@ -71,14 +66,28 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
     tax_rate[,country] <<- prod_tax/y_bp
   }
   else {
-    trd_margin <- diag(y_bp) %*% trd_rate_draws
-    trp_margin <- diag(y_bp) %*% trp_rate_draws
-    prod_tax <- diag(y_bp) %*% tax_rate_draws
+    upper <- paste0(country, "upper")
+    lower <- paste0(country, "lower")
+    
+    trd_range <- t(trd_margin_range[,c(lower, upper)])
+    trp_range <- t(trp_margin_range[,c(lower, upper)])
+    tx_range <- t(trp_margin_range[,c(lower, upper)])
+    
+    trd_r_draws <- replicate(n_draw, foo(trd_range)) %>% replace(is.na(.), 0)
+    trp_r_draws <- replicate(n_draw, foo(trp_range)) %>% replace(is.na(.), 0)
+    tax_r_draws <- replicate(n_draw, foo(tx_range)) %>% replace(is.na(.), 0)
+    
+    trd_margin <- diag(y_bp) %*% trd_r_draws
+    trp_margin <- diag(y_bp) %*% trp_r_draws
+    prod_tax <- diag(y_bp) %*% tax_r_draws
     
     total_trd_margin <- colSums(trd_margin[-trd_idx,])
     total_trp_margin <- colSums(trp_margin[-trp_idx,])
-    trd_margin[trd_idx,] <- -t(total_trd_margin * trade_brkdn_draws)
-    trp_margin[trp_idx,] <- -t(total_trp_margin * trans_brkdn_draws)
+    total_trd_margin*t(replicate(n_draw, trade_margin_breakdown[,c(country)]))
+    trd_margin[trd_idx,] <- -t(total_trd_margin * t(replicate(n_draw, trade_margin_breakdown[,c(country)])))
+    trp_margin[trp_idx,] <- -t(total_trp_margin * t(replicate(n_draw, trans_margin_breakdown[,c(country)])))
+    # trd_margin[trd_idx,] <- -t(total_trd_margin * trade_brkdn_draws)
+    # trp_margin[trp_idx,] <- -t(total_trp_margin * trans_brkdn_draws)
     
     D <- list()
     for (i in 1:n_draw) {
@@ -161,12 +170,13 @@ val_IN <- get_valuation_mtx('IN', 0)
 # val_BR <- get_valuation_mtx('BR', 0)
 # val_CN <- get_valuation_mtx('CN', 0)
 # val_ZA <- get_valuation_mtx('ZA', 0)
-val_AT <- get_valuation_mtx('AT', 0)
+# val_AT <- get_valuation_mtx('AT', 0)
+val_FR <- get_valuation_mtx('FR', 0)
 val_US <- get_valuation_mtx('US', 0)
 # val_mtx <- list(val_IN, val_ID, val_BR, val_CN, val_ZA, val_AT, val_US)
 # names(val_mtx) <- c('IN', 'ID', 'BR', 'CN', 'ZA', 'AT', 'US')
-val_mtx <- list(val_IN, val_AT, val_US)
-names(val_mtx) <- c('IN', 'AT', 'US')
+val_mtx <- list(val_FR, val_US, val_IN)
+names(val_mtx) <- c('FR', 'US', 'IN')
 
 
 rownames(trade_margin_breakdown) <- EX_catnames[trd_idx]
@@ -185,6 +195,18 @@ trp_brkdn_range <- apply(trans_margin_breakdown, 1, function(x) {c(min(x), max(x
 trd_margin_range <- apply(trade_margin_rate, 1, function(x) {c(min(x), max(x))})
 trp_margin_range <- apply(trans_margin_rate, 1, function(x) {c(min(x), max(x))})
 tax_range <- apply(tax_rate, 1, function(x) {c(min(x), max(x))})
+
+# Temporarily for 10% uncertainty assumption for ranges
+uncertainty_range <- 0.1 # +-10%
+trd_margin_range <- cbind(trade_margin_rate*(1-uncertainty_range), trade_margin_rate*(1+uncertainty_range))
+trp_margin_range <- cbind(trans_margin_rate*(1-uncertainty_range), trans_margin_rate*(1+uncertainty_range))
+tax_range <- cbind(tax_rate*(1-uncertainty_range), tax_rate*(1+uncertainty_range))
+trd_margin_range <- trd_margin_range[,c(1,4,2,5,3,6)]
+trp_margin_range <- trp_margin_range[,c(1,4,2,5,3,6)]
+tax_range <- tax_range[,c(1,4,2,5,3,6)]
+names(trd_margin_range) <- c("FRlower", "FRupper", "USlower", "USupper", "INlower", "INupper")
+names(trp_margin_range) <- c("FRlower", "FRupper", "USlower", "USupper", "INlower", "INupper")
+names(tax_range) <- c("FRlower", "FRupper", "USlower", "USupper", "INlower", "INupper")
 
 # Draw a value within the rate ranges (for all 200 EXIO sectors)
 foo <- function(vec) {apply(vec, 2, function(x) {runif(1, x[1], x[2])})}
@@ -210,6 +232,7 @@ val_IN_rand <- get_valuation_mtx('IN', 1)
 # val_CN_rand <- get_valuation_mtx('CN', 1)
 # val_ZA_rand <- get_valuation_mtx('ZA', 1)
 # val_AT_rand <- get_valuation_mtx('AT', 1)
+val_FR_rand <- get_valuation_mtx('FR', 1)
 # val_US_rand <- get_valuation_mtx('US', 1)
 
 
@@ -222,11 +245,15 @@ val_IN_rand <- get_valuation_mtx('IN', 1)
 # Any y_pp can be converted to y_bp by
 
 get_basic_price <- function(v_pp, country = 'IN'){
+  # if(country=='FR') {country <- 'AT'}
   if (D_val_uncertainty == 0) {
-    D <- val_mtx[[which(country==names(val_mtx))]]  
+    # D <- val_AT
+    D <- val_mtx[[which(country==names(val_mtx))]]
   }
   else {
-    D <- val_IN_rand[[draw_count]]
+    # if(country=='FR' | country=='AT') {D <- val_AT}
+    # else {D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]] }
+    D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]]
   }
   v_bp <- t(D)[1:200,] %*% v_pp  # Remove tax row
   return(v_bp)
@@ -234,14 +261,25 @@ get_basic_price <- function(v_pp, country = 'IN'){
 
 
 get_purch_price <- function(v_bp, country = 'IN'){
+  # if(country=='FR') {country <- 'AT'}
   if (D_val_uncertainty == 0) {
     D <- val_mtx[[which(country==names(val_mtx))]]
   }
   else {
-    D <- val_IN_rand[[draw_count]]
+    # if(country=='FR' | country=='AT') {D <- val_AT}
+    # else {D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]] }
+    D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]] 
   }
   Dinv <- get_inv_valmtx(D)
   v_pp <- t(Dinv) %*% v_bp
+  
+  taxR <- D[,201]
+  v_pp <- v_pp / (1-taxR)
+  
+  # print(which(v_pp<0))
+  # For France, v_pp for trade sectors become negative..
+  # Need to figure out a better way later.
+  v_pp[v_pp<0 | is.nan(v_pp)] <- 0
   return(v_pp)
 }
 

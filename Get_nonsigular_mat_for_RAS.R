@@ -1,174 +1,31 @@
-##############################
-###     Clean version      ###
-##############################
+#####################
+# Main run of rIPFP #
+#####################
 
-# This library needed to do multiple returns from functions
-library(devtools)  
-source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list.R")
+# Expenditure in cells
+n_draw <- 1000
 
-# Run RAS and construct final matrix in original dimension
-library(mipfp)
+# D_val_uncertainty <- 1
+# list[result_IND, NC_IND] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], "IND")
+D_val_uncertainty <- 0
+list[result_IND_noVal, NC_IND_noVal] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], "IND")
 
-RemoveConflictsInConstraints <- function() {
-  
-  # Convert to pp without tax
-  colConst_init <- get_purch_price(IN_fd_exio_usd2007) 
-  scaler_IND <- sum(IND_FD_ICP_usd2007[,1])/sum(colConst_init)
-  rowConst_init <- as.vector(IND_FD_ICP_usd2007[,1]) / scaler_IND
-  
-  qual_map <- qual_map_init
-  
-  rowConst <- rowConst_init
-  colConst <- colConst_init
+D_val_uncertainty <- 1
+# list[result_FRA, NC_FRA] <- Run_rIPFP(bridge_COICOP_EXIO_q[,-1], "FRA")
+D_val_uncertainty <- 0
+list[result_FRA_noVal, NC_FRA_noVal] <- Run_rIPFP(bridge_COICOP_EXIO_q[,-1], "FRA")
 
-  # Do this until no conflicts remain.
-  # At the end, we get consistent and RASable rowCon and colCon.
-  repeat {
-    # This will return a list of coordinates.
-    # [[1]] fx_coord_rowCon - Coord for cells fixed by row constraint
-    # [[2]] fx_coord_colCon
-    # [[3]] lone_cell
-    # [[4]] beyond_const
-    list[fx_coord_rowCon, fx_coord_colCon, lone_cell, beyond_const_r, beyond_const_c] <- IdentifyConflicts(qual_map, colConst, rowConst) 
-    conflicts <- rbind(lone_cell, beyond_const_r, beyond_const_c)
-    
-    # print(paste("Constrained by row con = ", fx_coord_rowCon[,1]))
-    # print(paste("Constrained by col con = ", fx_coord_colCon[,2]))
-    
-    finish_cond <- dim(fx_coord_rowCon)[1] == 0 & dim(fx_coord_colCon)[1] == 0
-    # finish_cond <- dim(conflicts)[1] == 0
-    
-    if (finish_cond) {
-      break
-    }
-    
-    # This is just for conflict row/cols!
-    while (dim(conflicts)[1]) {
-      # Get updated row constraint (corrected, scaled)
-      # col constraint does not change.
-      # [[1]] by row
-      # [[2]] by col
-      list[rowConst, colConst, idx_rowConflic, idx_colConflic] <- UpdateConstsForConflicts(qual_map, fx_coord_rowCon, fx_coord_colCon, lone_cell, beyond_const_r, 
-                                                                                                     beyond_const_c, colConst, rowConst)
-      
-      # Need to remove from q_map the whole singular cells in the same row/col with conflicts
-      a <- rbind(idx_rowConflic, lone_cell)
-      b <- rbind(idx_colConflic, lone_cell)
-      
-      # Fill the map with NAs for singular row/cols
-      # Fill constraint vectors with NAs for singular row/cols
-      list[qual_map, colConst, rowConst] <- UpdateQualMap_Const(qual_map, a, b, colConst, rowConst)
-      
-      # New conflicts can occur as a result of updated constraints.
-      list[fx_coord_rowCon, fx_coord_colCon, lone_cell, beyond_const_r, beyond_const_c] <- IdentifyConflicts(qual_map, colConst, rowConst) 
-      conflicts <- rbind(lone_cell, beyond_const_r, beyond_const_c)
-    }
-    
-    # Fill in all other fixed cells in result_RAS_fixed 
-    # Singular cells in the same row/col with conflict cells are already fixed above.
-    # So this is for only the non-conflict singular cells not in the same row/col with conflicts.
-    list[non_conflicts_r, non_conflicts_c]  <- FillNonConflictCells(qual_map, fx_coord_rowCon, fx_coord_colCon, conflicts, colConst, rowConst)
-    # list[rowConst, colConst] <- UpdateConstsForNonConflicts(non_conflicts_r, non_conflicts_c, colConst, rowConst)
-    
-    # Fill the map with NAs for singular row/cols
-    # Fill constraint vectors with NAs for singular row/cols
-    list[qual_map, colConst, rowConst] <- UpdateQualMap_Const(qual_map, non_conflicts_r, non_conflicts_c, colConst, rowConst)
-    
-    print('Sum total =')
-    print(sum(rowConst, na.rm = T) + sum(result_RAS_fixed))
-    print(sum(rowConst, na.rm = T))
-    print(sum(colConst, na.rm = T))
-  }
-  
-  
-  # Keep the record of NA'ed coords
-  idx_row_removed <- which(is.na(rowConst))
-  idx_col_removed <- which(is.na(colConst))
-  
-  # Remove NAs and collapse to RASable matrix and constraints
-  # Keep the coord of NAs somewhere
-  list[qmap_RAS, rowCon_RAS, colCon_RAS] <- CollapseQualMap(qual_map, colConst, rowConst)
-  
-  # Remove dangling small numbers due to scaling
-  rowCon_RAS <- round(rowCon_RAS, 7)
-  colCon_RAS <- round(colCon_RAS, 7)
-  gap <- sum(rowCon_RAS) - sum(colCon_RAS)
-  
-  # There can appear nearly zeros in the constraints because of scalings. So remove.
-  idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, colCon_RAS, 0)
-  # Temporary fix to match the constraint sums
-  colCon_RAS[colCon_RAS>100][1] <- colCon_RAS[colCon_RAS>100][1] + sum(colCon_RAS[idx_zero]) + gap
-  colCon_RAS[idx_zero] <- 0
-  idx_zero <- mapply(function(x, y) {isTRUE(all.equal(x, y))}, rowCon_RAS, 0)
-  # rowCon_RAS[rowCon_RAS>100][1] <- rowCon_RAS[rowCon_RAS>100][1] + sum(rowCon_RAS[idx_zero])
-  rowCon_RAS[idx_zero] <- 0
-  
-  return(list(rowCon_RAS, colCon_RAS, idx_row_removed, idx_col_removed, result_RAS_fixed, qmap_RAS))
-}
-
-
-# Generate all the n_draw RAS results
-D_val_uncertainty <- 1  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
-
-colCon <- NULL
-rowCon <- NULL
-result <- list()
-non_converge <- rep(0, n_draw)
-
-qual_map_init <- bridge_icp_exio_q[,-1]
-
-draw_count <- 1
-
-for (i in 1:n_draw) {
-  result_RAS_fixed <- matrix(0, dim(qual_map_init)[1],dim(qual_map_init)[2])
-  
-  draw_count <- i   # Indicate that we are on i-th draw. Used in get_basic_price and get_purch_price
-  
-  if (D_val_uncertainty == 0 & i==1) {
-    list[rCon_RAS, cCon_RAS, idx_r_removed, idx_c_removed, result_fixed, q_RAS] <- RemoveConflictsInConstraints()  
-    # Get draw
-    bridge_ICP_EXIO <- get_bridge_COICOP_EXIO(q_RAS, n_draw)
-  }
-  else if (D_val_uncertainty == 1)  {
-    list[rCon_RAS, cCon_RAS, idx_r_removed, idx_c_removed, result_fixed, q_RAS] <- RemoveConflictsInConstraints()  
-    # Get draw
-    bridge_ICP_EXIO <- get_bridge_COICOP_EXIO(q_RAS, 1)
-  }
-  
-  if (D_val_uncertainty == 0)  {bridge <- bridge_ICP_EXIO[[i]]}
-  else {bridge <- bridge_ICP_EXIO[[1]]}
-    
-  seed <- diag(rCon_RAS) %*% bridge   # RAS init mtx
-  result_RAS <- Ipfp(seed, list(1,2), list(rCon_RAS, cCon_RAS), iter=10000)
-  if(result_RAS$conv == FALSE) {
-    print(paste("Didn't converge at", draw_count))
-    non_converge[i] <- 1 }
-  
-  colCon <- cbind(colCon, colSums(result_RAS$x.hat))
-  rowCon <- cbind(rowCon, rowSums(result_RAS$x.hat))
-  
-  final_RAS <- matrix(0, length(IND_FD_ICP_usd2007[,1]), length(IN_fd_exio_usd2007))
-  final_RAS[-idx_r_removed, -idx_c_removed] <- result_RAS$x.hat
-  final_RAS <- final_RAS + result_fixed
-  
-  result[[i]] <- final_RAS
-  
-  print(i)
-  # print(norm(result_RAS$x.hat, type="F"))  #"O", "I", "F", "M", "2"
-}
-
-# Combine result_RAS and resut_RAS_fixed to form a whole allocation matrix
-# final_RAS_list <- lapply(result, function (x) {
-#   final_RAS <- matrix(0, dim(result_RAS_fixed)[1], dim(result_RAS_fixed)[2])
-#   final_RAS[-idx_row_removed, -idx_col_removed] <- x
-#   final_RAS <- final_RAS + result_RAS_fixed
-#   })
-
-final_alloc_list <- lapply(result, function (x) {
+# Allocation ratio in cells - summing up to 1 each row
+func1 <- function (x) {
   a <- diag(1/rowSums(x))
   a[is.infinite(a)] <- 0
   x <- a %*% x
-})
+}
+
+# final_alloc_list_FRA <- lapply(result_FRA, func1)
+final_alloc_list_FRA_noVal <- lapply(result_FRA_noVal, func1)
+# final_alloc_list_IND <- lapply(result_IND, func1)
+final_alloc_list_IND_noVal <- lapply(result_IND_noVal, func1)
 
 
 
@@ -176,176 +33,123 @@ final_alloc_list <- lapply(result, function (x) {
 ### Calculate ICP Sectoral energy intensity ###
 ###############################################
 
+# in MJ/EUR
 xlcFreeMemory()
 
-# Estimate sectoral energy intensities with/without the RAS process
-
-# Case 1: not including val mtx uncertainty
-# D_val_uncertainty <- 0
-# # Then need to run the for-loop above
-# ind_inten_RAS_no_val <- SetupSectorIntensities(final_alloc_list, non_converge)
-# alloc_nonRAS_no_val <- get_bridge_COICOP_EXIO(qual_map_init, n_draw)
-# ind_inten_nonRAS_no_val <- SetupSectorIntensities(alloc_nonRAS_no_val, non_converge)
-
-# Case 2: including val mtx uncertainty
+# Including val mtx uncertainty
+# India
 D_val_uncertainty <- 1
-# Then need to run the for-loop above
-ind_inten_RAS <- SetupSectorIntensities(final_alloc_list, non_converge)
-alloc_nonRAS <- get_bridge_COICOP_EXIO(qual_map_init, n_draw)
-ind_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, non_converge)
+IND_inten_RAS <- SetupSectorIntensities(final_alloc_list_IND, NC_IND, "IN")
+alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
+IND_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_IND, "IN")
 
-# There are cases where ICP expenditure is zero for a sector. 
+D_val_uncertainty <- 0
+IND_inten_RAS_noVal <- SetupSectorIntensities(final_alloc_list_IND_noVal, NC_IND_noVal, "IN")
+IND_inten_nonRAS_noVal <- SetupSectorIntensities(alloc_nonRAS, NC_IND_noVal, "IN")
+
+# France
+D_val_uncertainty <- 1
+FRA_inten_RAS <- SetupSectorIntensities(final_alloc_list_FRA, NC_FRA, "FR")
+alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_COICOP_EXIO_q[,-1], n_draw)
+FRA_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_FRA, "FR")
+
+D_val_uncertainty <- 0
+FRA_inten_RAS_noVal <- SetupSectorIntensities(final_alloc_list_FRA_noVal, NC_FRA_noVal, "FR")
+FRA_inten_nonRAS_noVal <- SetupSectorIntensities(alloc_nonRAS, NC_FRA_noVal, "FR")
+
+
+# Replacing intensity values for ICP sectors with 0 expenditure
+# Note: There are cases where ICP expenditure is zero for a sector from a country.
 # In the RAS approach, we do not get intensity numbers because no expenditure is assigned and thus no emission.
 # In this case, I copy intensities from the non-RAS estimation.
-no_expense <- which((rowSums(qual_map_init)!=0) & (IND_FD_ICP_usd2007[,1]==0))
-ind_inten_RAS_combined <- ind_inten_RAS
-# ind_inten_RAS_no_val_combined <- ind_inten_RAS_no_val
-ind_inten_RAS_combined[,no_expense] <- ind_inten_nonRAS[,no_expense]
-# ind_inten_RAS_no_val_combined[,no_expense] <- ind_inten_nonRAS_no_val[,no_expense]
+no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
+no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
+no_expense_FRA <- which((rowSums(bridge_COICOP_EXIO_q[,-1])!=0) & (FRA_FD_ICP_usd2007[,1]==0))
+# IND_inten_RAS_combined <- IND_inten_RAS
+IND_inten_RAS_combined_noVal <- IND_inten_RAS_noVal
+# FRA_inten_RAS_combined <- FRA_inten_RAS
+FRA_inten_RAS_combined_noVal <- FRA_inten_RAS_noVal
+IND_inten_RAS_combined_noVal[,no_expense_IND] <- IND_inten_nonRAS_noVal[,no_expense_IND]
+# IND_inten_RAS_combined[,no_expense_IND] <- IND_inten_nonRAS[,no_expense_IND]
+FRA_inten_RAS_combined_noVal[,no_expense_FRA] <- FRA_inten_nonRAS_noVal[,no_expense_FRA]
+# FRA_inten_RAS_combined[,no_expense_FRA] <- FRA_inten_nonRAS[,no_expense_FRA]
+
 
 # Add in direct energy intensities for fuel/energy sectors
-idx_DE <- c(63:65,103)
-inten_RAS <- ind_inten_RAS_combined
-inten_RAS[, idx_DE] <- ind_inten_RAS_combined[, idx_DE] + 
-  # do.call("rbind", replicate(dim(ind_inten_RAS_combined)[1], tot_DE_IND$e_inten, simplify = FALSE))
-  do.call("rbind", replicate(dim(ind_inten_RAS_combined)[1], IND_DE_intst2007$de_tot, simplify = FALSE))
+# idx_DE_ICP <- c(63:65,103)
+# idx_DE_COICOP <- c(32:36,61)
+# IND_inten_RAS_DE <- IND_inten_RAS_combined
+# IND_inten_RAS_DE[, idx_DE_ICP] <- IND_inten_RAS_combined[, idx_DE_ICP] + 
+#   do.call("rbind", replicate(dim(IND_inten_RAS_combined)[1], IND_DE_intst2007$de_tot, simplify = FALSE))
 
 
-###########################################################
-### Calculate average energy intensity by income decile ###
-###########################################################
 
-# Without direct energy
-totE_by_decile <- ind_inten_RAS_combined %*% IND_FD_ICP_usd2007   # n_draw X n_decile (11)
-int_by_decile <- sweep(totE_by_decile, 2, colSums(IND_FD_ICP_usd2007, na.rm = TRUE), '/')
-
-# Total w/ direct energy
-totE_by_decile_DE <- inten_RAS %*% IND_FD_ICP_usd2007   # n_draw X n_decile (11)
-int_by_decile_DE <- sweep(totE_by_decile_DE, 2, colSums(IND_FD_ICP_usd2007, na.rm = TRUE), '/')
-
-# Direct energy only
-DE_by_decile <- IND_DE_intst2007$de_tot %*% IND_FD_ICP_usd2007[idx_DE,]   # n_draw X n_decile (11)
-
-# Food only
-foodE_by_decile <- inten_RAS[,1:40] %*% IND_FD_ICP_usd2007[1:40,]   # n_draw X n_decile (11) in 1000 GJ
-food_int_by_decile <- sweep(foodE_by_decile, 2, colSums(IND_FD_ICP_usd2007[1:40,], na.rm = TRUE), '/')
-
-# Plot
-# png(filename = paste(figure_path, "Avg energy intensity w/o DE.png", sep=""), width = 781, height = 553, units = "px")
-# boxplot(int_by_decile, xlab ="Deciles", ylab ="Avg energy intensity [MJ/EUR] w/o DE", range=0, axes = TRUE)
+# # France
+# COICOP_divider <- c(0, 11, 15, 21, 36, 48, 55, 69, 72, 93, 94, 97)
+# COICOP1_name <- c("Food and non-alcoholic beverages", section_name[10:20])
+# 
+# pdf(file = paste0(figure_path, "0.2 FRA embodied energy intensity by ICP sector - no direct energy.pdf"), width = 18, height = 10)
+# boxplot(FRA_inten_RAS, range=0, ylim=c(0, 150), axes = FALSE, add=FALSE)
+# col_div <- c(par("usr")[1], COICOP_divider+0.5, par("usr")[2])
+# 
+# # Paint alternating colors
+# for(i in 1:(length(col_div)-1)) { 
+#   color_bgn <- c("gray60", "gray15")[i %% 2]
+#   rect(col_div[i], par("usr")[3], col_div[i+1], par("usr")[4],col = color_bgn, border=FALSE)  
+# }
+# boxplot(FRA_inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o DE", 
+#         axes = FALSE, ylim=c(0, 150), add=TRUE)
+# axis(side = 2, at = seq(0,150,50))
+# 
+# text(COICOP_divider+1, y=100, COICOP1_name, pos=4, offset=-.05, cex = 0.7, srt = 90)
+# text(1:n_sector_coicop, y=apply(FRA_inten_RAS, 2, max)+5, 1:n_sector_coicop, pos=2, offset=-.1, cex = 0.7, srt = 90)
+# text(no_expense_FRA, y=apply(FRA_inten_RAS[,no_expense_FRA], 2, max)+8, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
+# title("France without valuation uncertainty")
 # dev.off()
 
-# Total E by decile
-options(scipen=0)
-
-png(filename = paste(figure_path, "Avg energy intensity w/o DE.png", sep=""), width = 781, height = 553, units = "px")
-boxplot(int_by_decile_DE, xlab ="Deciles", ylab ="Avg energy intensity [MJ/EUR] w/ DE", range=0, axes = TRUE)
-dev.off()
-boxplot(totE_by_decile_DE[,2:11], xlab ="Deciles", ylab ="Total energy [TJ] incl. DE", range=0, axes = TRUE)
-axis(side=2, labels=)
-# Total food E by decile
-png(filename = paste(figure_path, "Food energy intensity.png", sep=""), width = 781, height = 553, units = "px")
-boxplot(food_int_by_decile, xlab ="Deciles", ylab ="Avg energy intensity [MJ/EUR]", range=0, axes = TRUE)
-dev.off()
-boxplot(foodE_by_decile[,2:11], xlab ="Deciles", ylab ="Total embodied energy in food [TJ]", range=0, axes = TRUE)
-
-# Total direct E by decile
-# barplot((totE_by_decile_DE - totE_by_decile)[,2:11], xlab ="Deciles", ylab ="Total direct energy [TJ]", range=0, axes = TRUE)
-barplot(DE_by_decile[,2:11], xlab ="Deciles", ylab ="Total direct energy [TJ]", axes = TRUE)
-# Total expenditure on energy
-barplot(colSums(IND_FD_ICP_usd2007[idx_DE,2:11]), xlab ="Deciles", ylab ="Total direct energy [TJ]", axes = TRUE)
 
 
-
-##########################################
-### Plot ICP Sectoral energy intensity ###
-##########################################
-
-## Main ##
-# COICOP sectors with zero expenditure included here
-# With RAS and with uncertainty in valuation mtx
-# Without direct energy
-COICOP_divider <- c(2, 8, 14, 17, 22, 25, 28, 32, 37, 
-                    40, 47, 55, 65, 84, 95, 112, 116, 134, 135, 137)
-
-# png(filename = paste(figure_path, "Energy intensity by ICP sector w/o DE.png", sep=""), width = 781, height = 553, units = "px")
-boxplot(ind_inten_RAS, range=0, ylim=c(0, 150), axes = FALSE, add=FALSE)
-col_div <- c(par("usr")[1], COICOP_divider+0.5, par("usr")[2])
-
-# Paint alternating colors
-for(i in 1:(length(col_div)-1)) { 
-  color_bgn <- c("gray60", "gray15")[i %% 2]
-  rect(col_div[i], par("usr")[3], col_div[i+1], par("usr")[4],col = color_bgn, border=FALSE)  
-}
-boxplot(ind_inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o DE", 
-        axes = FALSE, ylim=c(0, 150), add=TRUE)
+# 
+# # With direct energy
+# png(filename = paste(figure_path, "Energy intensity by ICP sector w/ DE.png", sep=""), width = 781, height = 553, units = "px")
+# boxplot(inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/ DE", range=0, axes = FALSE)
 # axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,150,50))
-
-# idx_section_name <- c(1,  COICOP_divider)+1
-idx_section_name <- c(COICOP_divider)+1
-section_name <- icp_ntnu$ICP_Heading[idx_section_name]
-section_name <- gsub("UNBR ", "", section_name) 
-section_name[19] <- "Restaurants and hotels"
-
-text(idx_section_name-1, y=100, section_name, pos=4, cex = 0.7, srt = 90)
-text(1:n_sector_icp, y=apply(ind_inten_RAS, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.7, srt = 90)
-text(no_expense, y=apply(ind_inten_RAS[,no_expense], 2, max)+22, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
+# axis(side = 2, at = seq(0,300,50))
+# text(1:n_sector_icp, y=apply(inten_RAS, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.7, srt = 90)
+# text(no_expense, y=apply(inten_RAS[,no_expense], 2, max)+22, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
 # dev.off()
+# 
 
-# Distributions for some example sectors
-opar <- par() 
-par(mfrow=c(2,2),oma = c(2, 0, 0, 0))
-hist(ind_inten_RAS[,6], 200, main="Bread", xlab =NULL)
-hist(ind_inten_RAS[,11], 200, main="Pork", xlab =NULL)
-hist(ind_inten_RAS[,54], 200, main="Shoes and other footwear", xlab =NULL)
-hist(ind_inten_RAS[,103], 200, main="Fuels and lubricants for personal transport", xlab =NULL)
-mtext("Energy intensity for selected sectors [MJ/EUR]", outer = TRUE, side=1)
-par(opar)
-
-
-
-
-# With direct energy
-png(filename = paste(figure_path, "Energy intensity by ICP sector w/ DE.png", sep=""), width = 781, height = 553, units = "px")
-boxplot(inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/ DE", range=0, axes = FALSE)
-axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,300,50))
-text(1:n_sector_icp, y=apply(inten_RAS, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.7, srt = 90)
-text(no_expense, y=apply(inten_RAS[,no_expense], 2, max)+22, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
-dev.off()
-
-
-
-# png(filename = paste(figure_path, "Energy intensity by COICOP consumption category.png", sep=""), width = 781, height = 553, units = "px")
-# COICOP sectors with zero expenditure excluded here
-boxplot(ind_inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/ RAS", range=0, axes = FALSE)
-axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,300,50))
-text(1:n_sector_icp, y=apply(ind_inten_RAS, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
-# dev.off()
+# 
+# # png(filename = paste(figure_path, "Energy intensity by COICOP consumption category.png", sep=""), width = 781, height = 553, units = "px")
+# # COICOP sectors with zero expenditure excluded here
+# boxplot(ind_inten_RAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/ RAS", range=0, axes = FALSE)
+# axis(side = 1, at = seq(1,n_sector_icp,10))
+# axis(side = 2, at = seq(0,300,50))
+# text(1:n_sector_icp, y=apply(ind_inten_RAS, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
+# # dev.off()
 
 # COICOP sectors with zero expenditure included here
 # With RAS
-# Not include uncertainty in valuation mtx
-boxplot(ind_inten_RAS_no_val_combined, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
-axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,300,50))
-text(1:n_sector_icp, y=apply(ind_inten_RAS_no_val_combined, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
-
-# Just random draw on Q mapping
-# No RAS, but including val mtx uncertainty
-boxplot(ind_inten_nonRAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
-axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,600,100))
-text(1:n_sector_icp, y=apply(ind_inten_nonRAS, 2, max)+15, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
-
-# Just random draw on Q mapping
-# No RAS and no val mtx uncertainty
-boxplot(ind_inten_nonRAS_no_val, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
-axis(side = 1, at = seq(1,n_sector_icp,10))
-axis(side = 2, at = seq(0,600,100))
-text(1:n_sector_icp, y=apply(ind_inten_nonRAS_no_val, 2, max)+15, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
+# # Not include uncertainty in valuation mtx
+# boxplot(ind_inten_RAS_no_val_combined, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
+# axis(side = 1, at = seq(1,n_sector_icp,10))
+# axis(side = 2, at = seq(0,300,50))
+# text(1:n_sector_icp, y=apply(ind_inten_RAS_no_val_combined, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
+# 
+# # Just random draw on Q mapping
+# # No RAS, but including val mtx uncertainty
+# boxplot(ind_inten_nonRAS, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
+# axis(side = 1, at = seq(1,n_sector_icp,10))
+# axis(side = 2, at = seq(0,600,100))
+# text(1:n_sector_icp, y=apply(ind_inten_nonRAS, 2, max)+15, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
+# 
+# # Just random draw on Q mapping
+# # No RAS and no val mtx uncertainty
+# boxplot(ind_inten_nonRAS_no_val, xlab ="ICP sectors", ylab ="Energy intensity by ICP sector [MJ/EUR] w/o RAS", range=0, axes = FALSE)
+# axis(side = 1, at = seq(1,n_sector_icp,10))
+# axis(side = 2, at = seq(0,600,100))
+# text(1:n_sector_icp, y=apply(ind_inten_nonRAS_no_val, 2, max)+15, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.6, srt = 90)
 
 
 ####################
@@ -373,27 +177,36 @@ par(opar)
 
 # 2. Check HH energy consumption / Cap / Yr
 # hh consumption [$2007] = 6.898717e+11
-# Pop in 2007 = 1.159e9
-WDI(country = "IN", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
-6.898717e+11 * EXR_EUR$r * 33.5 / 1e3 / 1.159e9
+# per-cap energy
+IND_pop_2007 <- 1.159e9
+a <- WDI(country = "IN", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
+a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_IN[,1]) / 1e3 / IND_pop_2007
 
 # Total primary energy demand 
 # https://www.iea.org/publications/freepublications/publication/India_study_FINAL_WEB.pdf
 # 650 Mtoe(2009)
-2.72142E+19 / 1e9 / 1.159e9
+2.72142E+19 / 1e9 / IND_pop_2007
 # http://www.statista.com/statistics/265582/primary-energy-consumption-in-india/
 # 420.3 Mtoe(2007)
-1.75971204E+19 / 1e9 / 1.159e9
+1.75971204E+19 / 1e9 / IND_pop_2007
 # http://www.statista.com/statistics/265582/primary-energy-consumption-in-india/
 # 575 Mtoe
-2.40741E+19 / 1e9 / 1.159e9
+2.40741E+19 / 1e9 / IND_pop_2007
 
+# France
+FRA_pop_2007 <- 64e6
+# https://www.google.at/search?q=primary+energy+consumption+france&espv=2&biw=1920&bih=911&tbm=isch&tbo=u&source=univ&sa=X&ved=0ahUKEwiXnpScuLHMAhXBIcAKHaWoAV0QsAQIIQ&dpr=1#imgrc=h_RwRGCAT_rZyM%3A
+# 250 Mtoe (2007)
+1.0467E+19 / 1e9 / FRA_pop_2007
+# per-cap energy
+a <- WDI(country = "FR", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
+a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_FR[,1]) / 1e3 / FRA_pop_2007
 
 # Compare rowSum sizes between CES and RASed one
-a <- cbind(bridge_icp_exio_q[,1], rowSums(final_RAS_list[[1]]), IND_FD_ICP_usd2007[,1], IND_FD_ICP_usd2007[,1] > rowSums(final_RAS_list[[1]]))
+a <- cbind(bridge_ICP_EXIO_q[,1], rowSums(final_RAS_list[[1]]), IND_FD_ICP_usd2007[,1], IND_FD_ICP_usd2007[,1] > rowSums(final_RAS_list[[1]]))
 
 idx_anomaly <- IND_FD_ICP_usd2007[,1] > rowSums(final_RAS_list[[1]])
-anomaly <- data.frame(bridge_icp_exio_q[idx_anomaly,1], IND_FD_ICP_usd2007[,1][idx_anomaly], rowSums(final_RAS_list[[1]])[idx_anomaly])
+anomaly <- data.frame(bridge_ICP_EXIO_q[idx_anomaly,1], IND_FD_ICP_usd2007[,1][idx_anomaly], rowSums(final_RAS_list[[1]])[idx_anomaly])
 names(anomaly) <- c("SV_sector", "SV_exp", "RAS_exp")
 write.table(anomaly, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
@@ -406,7 +219,7 @@ write.table(a, "clipboard", sep="\t", row.names = FALSE, col.names = FALSE)
 
 # Let's see the 'Gas' item from CES (IND)
 do.call("rbind", lapply(final_RAS_list, '[', 64,))
-a<- cbind(names(bridge_icp_exio_q)[2:201], final_RAS_list[[1]][63,], final_RAS_list[[1]][63,]/sum(final_RAS_list[[1]][63,]))
+a<- cbind(names(bridge_ICP_EXIO_q)[2:201], final_RAS_list[[1]][63,], final_RAS_list[[1]][63,]/sum(final_RAS_list[[1]][63,]))
 
 
 #################
@@ -415,19 +228,21 @@ a<- cbind(names(bridge_icp_exio_q)[2:201], final_RAS_list[[1]][63,], final_RAS_l
 
 # Summary table
 library(pastecs)
-colnames(ind_inten_RAS_combined) <- rownames(bridge_icp_exio)
-colnames(inten_RAS) <- rownames(bridge_icp_exio)
+colnames(IND_inten_RAS_combined) <- rownames(bridge_icp_exio)
+colnames(FRA_inten_RAS_combined) <- COICOP_catnames2[,1]
 
-int_summary_combined <- stat.desc(ind_inten_RAS_combined) 
-int_summary_combined <- t(int_summary_combined[c(4,5,9,13),])
-int_summary_combined <- round(int_summary_combined, digits = 2)
-int_summary_combined <- format(int_summary_combined, digits = 2, nsmall = 1, scientific=FALSE)
-int_summary <- stat.desc(inten_RAS) 
-int_summary <- t(int_summary[c(4,5,9,13),])
-int_summary <- round(int_summary, digits = 2)
-int_summary <- format(int_summary, digits = 2, nsmall = 1, scientific=FALSE)
+IND_int_summary_combined <- stat.desc(IND_inten_RAS_combined) 
+IND_int_summary_combined <- t(IND_int_summary_combined[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
+FRA_int_summary_combined <- stat.desc(FRA_inten_RAS_combined) 
+FRA_int_summary_combined <- t(FRA_int_summary_combined[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
+# int_summary_combined <- round(int_summary_combined, digits = 2)
+# int_summary_combined <- format(int_summary_combined, digits = 2, nsmall = 1, scientific=FALSE)
 
-write.csv(int_summary_combined, "Intensity summary without direct E.csv")
-write.csv(int_summary, "Intensity summary with direct E.csv")
+# int_summary <- stat.desc(inten_RAS) 
+# int_summary <- t(int_summary[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
+
+write.csv(IND_int_summary_combined, "India - Intensity summary without direct E.csv")
+write.csv(FRA_int_summary_combined, "France - Intensity summary without direct E.csv")
+# write.csv(int_summary, "Intensity summary with direct E.csv")
 
 intensities <- cbind(int_summary_combined, int_summary)
