@@ -38,20 +38,20 @@ xlcFreeMemory()
 
 # Including val mtx uncertainty
 # India
-D_val_uncertainty <- 1
-IND_inten_RAS <- SetupSectorIntensities(final_alloc_list_IND, NC_IND, "IN")
+# D_val_uncertainty <- 1
+# IND_inten_RAS <- SetupSectorIntensities(final_alloc_list_IND, NC_IND, "IN")
 alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
-IND_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_IND, "IN")
+# IND_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_IND, "IN")
 
 D_val_uncertainty <- 0
 IND_inten_RAS_noVal <- SetupSectorIntensities(final_alloc_list_IND_noVal, NC_IND_noVal, "IN")
 IND_inten_nonRAS_noVal <- SetupSectorIntensities(alloc_nonRAS, NC_IND_noVal, "IN")
 
 # France
-D_val_uncertainty <- 1
-FRA_inten_RAS <- SetupSectorIntensities(final_alloc_list_FRA, NC_FRA, "FR")
+# D_val_uncertainty <- 1
+# FRA_inten_RAS <- SetupSectorIntensities(final_alloc_list_FRA, NC_FRA, "FR")
 alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_COICOP_EXIO_q[,-1], n_draw)
-FRA_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_FRA, "FR")
+# FRA_inten_nonRAS <- SetupSectorIntensities(alloc_nonRAS, NC_FRA, "FR")
 
 D_val_uncertainty <- 0
 FRA_inten_RAS_noVal <- SetupSectorIntensities(final_alloc_list_FRA_noVal, NC_FRA_noVal, "FR")

@@ -2,9 +2,15 @@
 
 # Remove tax observations from DB
 IND_FD_code <- IND_FD[-grep("taxes", IND_FD$item, ignore.case = TRUE), ]
-IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "COICOP1", "COICOP2", "ITEM_DLE")], by.x="item", by.y="ITEM_DLE", all.x = TRUE)
-IND_FD_code <- IND_FD_code[order(IND_FD_code$CODE),]
+IND_FD_code <- merge(IND_FD_code, IND_map[,c("CODE", "COICOP1", "COICOP2", "ITEM_DLE")], 
+                     by.x="item", by.y="ITEM_DLE", all.x = TRUE) %>% arrange(CODE)
 IND_FD_code[is.na(IND_FD_code)] <- 0
+
+# FD for all households
+IND_FD_ALL_ICP <- IND_FD_ALL[-grep("taxes", IND_FD_ALL$item, ignore.case = TRUE), ]
+IND_FD_ALL_ICP <- merge(IND_FD_ALL_ICP, IND_map[,c("CODE", "COICOP1", "COICOP2", "ITEM_DLE")], 
+                        by.x="item", by.y="ITEM_DLE", all.x = TRUE) %>% arrange(CODE)
+IND_FD_ALL_ICP <- NAer(IND_FD_ALL_ICP[,2:(dim(IND_FD_ALL_ICP)[2]-3)]) # Faster than IND_FD_code[is.na(IND_FD_code)] <- 0
 
 # For IND2
 # Note: need to add COICOP1 info to get annual hh consumption increase rates.
@@ -26,26 +32,8 @@ IND2_FD_code <- IND2_FD_code[order(IND2_FD_code$CODE),]
 IND2_FD_code[is.na(IND2_FD_code)] <- 0
 
 # CES_ICP_IDN, CES_ICP_IND rows are sorted by Survey Code.
-# IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])   # only for total
 IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2:12])  # for all deciles and total
-
-
-# Get IDN final demand from EXIO [M.EUR]
-# ID_place <- which(exio_ctys=="ID")
-# ID_idx <- seq(200*(ID_place-1)+1, 200*ID_place)  # 200 EXIO commodities per country
-# ID_idx_fd <- seq(7*(ID_place-1)+1, 7*ID_place)   # 7 final demand columns per country
-# ID_fd_exio <- rowSums(final_demand[ID_idx, seq(1, dim_fd[2], 7)]) # Sum all HH FD across countries
-# 
-# # Get IDN final demand in ICP 
-# 
-# # Remove tax observations from DB
-# IDN_FD_code <- IDN_FD[-grep("taxes", IDN_FD$ITEM, ignore.case = TRUE), ]
-# IDN_FD_code <- merge(IDN_FD_code, IDN_map[,c("CODE", "COICOP2", "ITEM_DLE")], by.x="ITEM", by.y="ITEM_DLE")
-# IDN_FD_code <- IDN_FD_code[order(IDN_FD_code$CODE),]
-# IDN_FD_code[is.na(IDN_FD_code)] <- 0
-# 
-# # CES_ICP_IDN, CES_ICP_IDN rows are sorted by Survey Code.
-# IDN_FD_ICP <- t(CES_ICP_IDN) %*% as.matrix(IDN_FD_code[,2])
+IND_FD_ICP_AllHH <- t(CES_ICP_IND) %*% as.matrix(IND_FD_ALL_ICP) 
 
 
 ##########################################

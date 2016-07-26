@@ -7,14 +7,12 @@ scaler_IND <- sum(IND_FD_ICP_usd2007[,1])/sum(IND_fd_exio)
 scaler_FRA <- sum(FRA_FD_ICP_usd2007[,1])/sum(FRA_fd_exio)
 
 totE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal %*% (IND_FD_ICP_usd2007 * EXR_EUR$r) / scaler_IND   # n_draw X n_decile (11)
-# int_by_decile_IN_noVal <- sweep(totE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007* EXR_EUR$r, na.rm = TRUE), '/') * scaler_IND 
 PPP_IND2007 <- WDI(country = "IN", indicator = "PA.NUS.PRVT.PP", start = 2007, end = 2007, extra = FALSE, cache = NULL)
 int_by_decile_IN_noVal <- sweep(totE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND 
 totE_per_cap_by_dec_IN <- 1000*cbind(totE_by_decile_IN_noVal[,1]/IND_pop_2007, totE_by_decile_IN_noVal[,2:11]/IND_pop_2007*10)
 colnames(totE_per_cap_by_dec_IN) <- colnames(IND_FD_ICP_usd2007)
 
 totE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal %*% (FRA_FD_ICP_usd2007* EXR_EUR$r) / scaler_FRA   # n_draw X n_decile (11)
-# int_by_decile_FR_noVal  <- sweep(totE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007* EXR_EUR$r, na.rm = TRUE), '/') *scaler_FRA
 PPP_FRA2007 <- WDI(country = "FR", indicator = "PA.NUS.PRVT.PP", start = 2007, end = 2007, extra = FALSE, cache = NULL)
 int_by_decile_FR_noVal  <- sweep(totE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
 totE_per_cap_by_dec_FR <- 1000*cbind(totE_by_decile_FR_noVal[,1]/FRA_pop_2007, totE_by_decile_FR_noVal[,2:11]/FRA_pop_2007*10)
@@ -22,12 +20,10 @@ colnames(totE_per_cap_by_dec_FR) <- colnames(IND_FD_ICP_usd2007)
 
 # Food only
 foodE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal[,1:40] %*% (IND_FD_ICP_usd2007[1:40,] * EXR_EUR$r) / scaler_IND   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_IN_noVal <- sweep(foodE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007[1:40,]* EXR_EUR$r, na.rm = TRUE), '/') * scaler_IND
 food_int_by_decile_IN_noVal <- sweep(foodE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007[1:40,]* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND
 foodE_per_cap_by_dec_IN <- 1000*cbind(foodE_by_decile_IN_noVal[,1]/IND_pop_2007, foodE_by_decile_IN_noVal[,2:11]/IND_pop_2007*10)
 
 foodE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal[,1:11] %*% (FRA_FD_ICP_usd2007[1:11,] * EXR_EUR$r) / scaler_FRA   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_FR_noVal <- sweep(foodE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007[1:11,]* EXR_EUR$r, na.rm = TRUE), '/') *scaler_FRA
 food_int_by_decile_FR_noVal <- sweep(foodE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007[1:11,]* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
 foodE_per_cap_by_dec_FR <- 1000*cbind(foodE_by_decile_FR_noVal[,1]/FRA_pop_2007, foodE_by_decile_FR_noVal[,2:11]/FRA_pop_2007*10)
 
@@ -123,33 +119,28 @@ Plot_ICP_sectors <- function(intensity_mtx, noexp, icp=1, ymax, titlename) {
     color_bgn <- c("gray60", "gray15")[i %% 2]
     rect(col_div[i], par("usr")[3], col_div[i+1], par("usr")[4],col = color_bgn, border=FALSE)  
   }
-  boxplot(intensity_mtx, ylab ="Embodied energy intensity [MJ/EUR]", 
-          axes = FALSE, ylim=c(0, ymax), add=TRUE, cex.lab=1.3)
+  boxplot(intensity_mtx, ylab ="Embodied energy intensity [MJ/2007EUR]", 
+          axes = FALSE, ylim=c(0, ymax), add=TRUE, cex.lab=1.3, range=0)
   # axis(side = 1, at = seq(1,n_sector_icp,10))
   title(xlab ="Consumption sectors", line=1, cex.lab=1.3) 
-  axis(side = 2, at = seq(0,ymax,50), cex.axis=1.1)
+  axis(side = 2, at = seq(0,ymax,20), cex.axis=1.1)
   
   if(icp==0) { 
     section_name <- c("Food and non-alcoholic beverages", section_name[10:20])
   }
   idx_section <- c(divider)+1
   
-  text(idx_section-1, y=50, section_name, pos=4, offset=0.7, cex = 0.9, srt = 90)
+  text(idx_section-1, y=ifelse(icp, 50, 20), section_name, pos=4, offset=0.8, cex = 1.2, srt = 90)
   if(icp==1) { 
-    text(1:n_sector_icp, y=apply(intensity_mtx, 2, max)+5, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.7, srt = 90)
+    text(1:n_sector_icp, y=apply(intensity_mtx, 2, max)+2, 1:n_sector_icp, pos=4, offset=-.1, cex = 0.7, srt = 90)
   }
   else {
-    text(1:n_sector_coicop, y=apply(intensity_mtx, 2, max)+5, 1:n_sector_coicop, pos=4, offset=-.1, cex = 0.7, srt = 90)
+    text(1:n_sector_coicop, y=apply(intensity_mtx, 2, max)+2, 1:n_sector_coicop, pos=4, offset=-.1, cex = 0.7, srt = 90)
   }
-  text(noexp, y=apply(intensity_mtx[,noexp], 2, max)+11, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
+  # text(noexp, y=apply(intensity_mtx[,noexp], 2, max)+17, '*', pos=2, offset=-.1, cex = 1.2, srt = 90)
   title(titlename)
 }
 
-# figure_path <- "H:/MyDocuments/IO work/DLE_scripts/Plots/"
-# pdf(file = paste0(figure_path, "IND intensity by ICP sector-val-noDE.pdf"), width = 18, height = 10)
-# Plot_ICP_sectors(IND_inten_RAS, no_expense_IND, 500)
-# title("India with valuation uncertainty")
-# dev.off()
 
 pdf(file = paste0(figure_path, "0.1 IND embodied energy intensity by ICP sector - no direct energy.pdf"), width = 16, height = 9)
 Plot_ICP_sectors(IND_inten_RAS_noVal, no_expense_IND, icp=1, 180, 

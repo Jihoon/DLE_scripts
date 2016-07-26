@@ -1,16 +1,25 @@
 library(readxl)
 
 COICOP_CPC <- read_excel("H:/MyDocuments/IO work/Bridging/UN correspondence tables/COICOP-CPC.xls")
+names(COICOP_CPC)[c(2,4)] <- c("Part_COICOP", "Part_CPC")
 CPC_ISIC <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables/CPCV1_0_ISIC_REV_3_correspondence.txt",
-                         header=TRUE, sep=",")
+                         header=TRUE, sep=",", as.is=T)
+# ISIC_names <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables/ISIC_Rev_3_english_structure.txt",
+#            header=TRUE, sep="\t", quote="", as.is=T)
+# names(ISIC_names)[1] <- "lv_ISIC"
+# a <- strsplit(ISIC_names[,1], "\t")
+# a <- matrix(unlist(a), ncol=2, byrow=TRUE)
 
 names(COICOP_CPC)[c(1,3)] <- c("lv_COICOP", "lv_CPC")
 names(CPC_ISIC)[c(1,3)] <- c("lv_CPC", "lv_ISIC")
-COICOP_CPC$lv_CPC <- as.numeric(COICOP_CPC$lv_CPC)
+# COICOP_CPC$lv_CPC <- as.numeric(COICOP_CPC$lv_CPC)
 
-lv_CPC <- factor(sort(unique(COICOP_CPC$lv_CPC)))
-lv_COICOP <- factor(sort(unique(COICOP_CPC$lv_COICOP)))
-lv_ISIC <- factor(sort(unique(CPC_ISIC$lv_ISIC)))
+CPC_ISIC$lv_CPC <- formatC(CPC_ISIC$lv_CPC, width=5, flag="0")
+CPC_ISIC$lv_ISIC <- formatC(CPC_ISIC$lv_ISIC, width=5, flag="0")
+
+lvls_CPC <- sort(unique(COICOP_CPC$lv_CPC))
+lvls_COICOP <- sort(unique(COICOP_CPC$lv_COICOP))
+lvls_ISIC <- sort(unique(CPC_ISIC$lv_ISIC))
 
 # Note 1: CPC_ISIC mapping has more CPC categories (832) than COICOP_CPC (2038). (Of course because COICOP is only for consumer consumption.)
 #   Left join below will remove those non-COICOP related CPC items.
@@ -18,18 +27,19 @@ lv_ISIC <- factor(sort(unique(CPC_ISIC$lv_ISIC)))
 #   These are '39 - Wastes or scraps', an aggregate item '64100' for '07.3.5 - Combined passenger transport', and 
 #   '83631' not existing in CPC 1.0 for 'Sale of advertising space in print media' (from CPC 1.1).
 
-n_CPC <- length(lv_CPC)
-n_COICOP <- length(lv_COICOP)
-n_ISIC <- length(lv_ISIC)
+n_CPC <- length(lvls_CPC)
+n_COICOP <- length(lvls_COICOP)
+n_ISIC <- length(lvls_ISIC)
 
-idx_CPC <- data.frame(lv_CPC, CPC = 1:n_CPC)
-idx_COICOP <- data.frame(lv_COICOP, COICOP = 1:n_COICOP)
-idx_ISIC <- data.frame(lv_ISIC, ISIC = 1:n_ISIC)
+options(stringsAsFactors = FALSE)
+idx_CPC <- data.frame(lv_CPC=lvls_CPC, CPC = 1:n_CPC)
+idx_COICOP <- data.frame(lv_COICOP=lvls_COICOP, COICOP = 1:n_COICOP)
+idx_ISIC <- data.frame(lv_ISIC=lvls_ISIC, ISIC = 1:n_ISIC)
 
-COICOP_CPC$lv_COICOP <- factor(COICOP_CPC$lv_COICOP)
-COICOP_CPC$lv_CPC <- factor(COICOP_CPC$lv_CPC)
-CPC_ISIC$lv_CPC <- factor(CPC_ISIC$lv_CPC)
-CPC_ISIC$lv_ISIC <- factor(CPC_ISIC$lv_ISIC)
+# COICOP_CPC$lv_COICOP <- factor(COICOP_CPC$lv_COICOP)
+# COICOP_CPC$lv_CPC <- factor(COICOP_CPC$lv_CPC)
+# CPC_ISIC$lv_CPC <- factor(CPC_ISIC$lv_CPC)
+# CPC_ISIC$lv_ISIC <- factor(CPC_ISIC$lv_ISIC)
 
 COICOP_CPC <- COICOP_CPC %>% left_join(idx_COICOP, by="lv_COICOP" ) %>% left_join(idx_CPC, by="lv_CPC")
 CPC_ISIC <- CPC_ISIC %>% left_join(idx_ISIC, by="lv_ISIC" ) %>% left_join(idx_CPC, by="lv_CPC") %>% filter(!is.na(CPC))
@@ -38,12 +48,12 @@ m_COICOP_CPC <- matrix(0, n_COICOP, n_CPC)
 m_CPC_ISIC<- matrix(0, n_CPC, n_ISIC)
 Q_UN <- matrix(0, n_COICOP, n_ISIC)  # Final mapping
 
-rownames(m_COICOP_CPC) <- lv_COICOP
-colnames(m_COICOP_CPC) <- lv_CPC
-rownames(m_CPC_ISIC) <- lv_CPC
-colnames(m_CPC_ISIC) <- lv_ISIC
-rownames(Q_UN) <- lv_COICOP
-colnames(Q_UN) <- lv_ISIC
+rownames(m_COICOP_CPC) <- lvls_COICOP
+colnames(m_COICOP_CPC) <- lvls_CPC
+rownames(m_CPC_ISIC) <- lvls_CPC
+colnames(m_CPC_ISIC) <-lvls_ISIC
+rownames(Q_UN) <- lvls_COICOP
+colnames(Q_UN) <- lvls_ISIC
 
 m_COICOP_CPC[as.matrix(COICOP_CPC[c("COICOP", "CPC")])] <- 1
 m_CPC_ISIC[as.matrix(CPC_ISIC[c("CPC", "ISIC")])] <- 1
@@ -64,7 +74,9 @@ ISICrev3 <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables
                        header=TRUE, sep="\t", quote = "", as.is = TRUE)
 ISICrev3$Code <- as.numeric(ISICrev3$Code)
 ISICrev3 <- ISICrev3[ISICrev3$Code > 1000 & !is.na(ISICrev3$Code),]
-temp <- data.frame(Code = as.numeric(levels(lv_ISIC)[1:9]), Description = c(
+
+ISICrev3$Code <- formatC(ISICrev3$Code, width=5, flag="0")
+temp <- data.frame(Code = lvls_ISIC[1:9], Description = c(
            'Growing of cereals and other crops n.e.c.',
            'Growing of vegetables, horticultural specialties and nursery products',
            'Growing of fruit, nuts, beverage and spice crops',
@@ -76,16 +88,19 @@ temp <- data.frame(Code = as.numeric(levels(lv_ISIC)[1:9]), Description = c(
            'Forestry, logging and related service activities',
            'Fishing, operation of fish hatcheries and fish farms; service activities incidental to fishing'))
 ISICrev3 <- rbind(temp, ISICrev3)
-
+names(ISICrev3)[1] <- "lv_ISIC"
 
 # write.table(ISICrev3, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 ISIC_EXIO <- read_excel("H:/MyDocuments/IO work/Bridging/UN correspondence tables/ISIC_EXIO_mapping.xlsx", 3)
 ISIC_EXIO <- ISIC_EXIO %>% gather(name, ISIC, -EXIO) %>% select(-name) %>% arrange(ISIC) %>% filter(!is.na(ISIC))
+names(ISIC_EXIO) <- c("lv_EXIO", "lv_ISIC")
+ISIC_EXIO$lv_ISIC <- formatC(ISIC_EXIO$lv_ISIC, width=5, flag="0")
+
 foo <- function(x) {  # For each row of Q_UN
-  ISIC_match <- as.numeric(names(which(x==1)))   # Get codes of mapped ISIC sectors
+  ISIC_match <- names(which(x==1))   # Get codes of mapped ISIC sectors
   a <- matrix(0, 1, 200)
-  a[ISIC_EXIO$EXIO[ISIC_EXIO$ISIC %in% ISIC_match]] <- 1   # Set the corresponding EXIO cells mapped to those ISIC sectors
+  a[ISIC_EXIO$lv_EXIO[ISIC_EXIO$lv_ISIC %in% ISIC_match]] <- 1   # Set the corresponding EXIO cells mapped to those ISIC sectors
   return(a)
 }
 
@@ -99,3 +114,15 @@ Q_UN_EXIO[rownames(Q_UN_EXIO)=='07.3.5',] <- as.numeric(apply(a, 2, function(x) 
 
 # So now I have bridge_COICOP_EXIO_q, bridge_ICP_EXIO_q, and Q_UN_EXIO.
 
+# Figuring out m:1:n items during conversion
+CPC_diverge_items <- CPC_ISIC %>% filter(CPCpartial==1) %>% distinct(lv_CPC)
+CPC_merge_items <- COICOP_CPC %>% group_by(lv_CPC) %>% summarise(n=n()) %>% filter(n>1)
+CPC_merge_items[as.matrix(CPC_merge_items) %in% as.matrix(CPC_diverge_items),]
+
+ISIC_diverge_items <- ISIC_EXIO %>% group_by(lv_ISIC) %>% summarise(n=n()) %>% filter(n>1)
+ISIC_merge_items <- CPC_ISIC %>% group_by(lv_ISIC) %>% summarise(n=n()) %>% filter(n>1)
+a <- ISIC_merge_items[as.matrix(ISIC_merge_items[,1]) %in% as.matrix(ISIC_diverge_items[,1]),] 
+CPC_EXIO_direct <- a %>% left_join(ISICrev3) %>% distinct(lv_ISIC, .keep_all=TRUE)
+
+a <- CPC_EXIO_direct %>% left_join(ISIC_EXIO)
+b <- CPC_EXIO_direct %>% left_join(CPC_ISIC)

@@ -4,6 +4,7 @@ library(data.table)
 library(tidyr)
 library(openxlsx)
 library(XLConnect)
+library(readxl)
 library(Surrogate)
 library(ggplot2)
 library(stringr)
@@ -19,6 +20,7 @@ library(graphics)
 library(Surrogate)
 library(fields)
 library(WDI)
+library(qdap)
 
 # This library needed to do multiple returns from functions
 library(devtools)  
@@ -165,6 +167,7 @@ source("Read_direct_energy_from_DB.R")
 
 IND_FD <- readFinalDemandfromDBbyDecile('IND1')
 IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
+list[IND_FD_ALL, IND_HH] <- readFinalDemandfromDBAllHH('IND1')
 
 list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
 list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')

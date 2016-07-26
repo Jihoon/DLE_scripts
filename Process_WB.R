@@ -33,8 +33,9 @@ processWBscript = function(file, iso3='IND') {
       if (iso3=='BRA') {
         temp = which(str_detect(d, fixed('keep if')))
         grupo_ind = max(temp[temp<t1[i]])
-        grupo = str_sub(d[grupo_ind], -2, -1)
-        code = as.numeric(paste0(grupo, str_pad(code, width=5, pad=0)))
+        # grupo = str_sub(d[grupo_ind], -2, -1)
+        grupo = str_extract(d[grupo_ind], "[0-9]+")  # There are one-digit group numbers.
+        code = paste0(str_pad(grupo, width=2, pad=0), str_pad(code, width=5, pad=0))
       }
       icp_seq = as.numeric(z[2])
       data.frame(code, icp_seq)
@@ -76,5 +77,15 @@ BRA_WB = processWBscript(paste(wb_path, 'BRAZIL2008.txt', sep=''), iso3='BRA')
 ZAF_WB = processWBscript(paste(wb_path, 'SOUTH-AFRICA2010.txt', sep=''), iso3='ZAF')
 IND_WB = processWBscript(paste(wb_path, 'INDIA2011.txt', sep=''), iso3='IND')
 
+fuel.items = c('Electricity','Pipeline natural gas','LPG','Kerosene','Sawdust','Ethanol, non-transport','Diesel, non-transport','Gasoline, non-transport','Coal','Firewood','Ethanol, transport','Gasoline, transport','Diesel, transport','CNG, transport')
+ce_code = read_excel("H:/MyDocuments/IO work/Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes.xlsx") %>%
+  # mutate(code = as.numeric(code)) %>% 
+  left_join(BRA_WB, by=c("code"="CODE")) %>%
+  # mutate(ICP_SEQ = ifelse(is.na(ICP_SEQ), 0, ICP_SEQ)) %>%   # NAs occur because the WB does not map everything.
+  mutate(ICP_item = ifelse(is.na(ICP_SEQ), "Tax, etc.", ICP_catnames[ICP_SEQ])) %>%
+  mutate(ICP_item = ifelse(item %in% fuel.items, item, ICP_item)) %>%   # Fuel names do not follow ICP but DLE_DB classification.
+  select(-item) %>% rename(item = ICP_item)
 
-
+xlsx::write.xlsx(as.data.frame(ce_code), "H:/MyDocuments/IO work/Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes ICP.xlsx", 
+                  col.names=TRUE, row.names=FALSE)
+ce_code[ce_code$ICP_SEQ==0,]
