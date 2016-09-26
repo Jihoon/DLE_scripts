@@ -3,7 +3,7 @@
 ### Issue: The format will be different for other countries where we need to collect data
 ### Note: Even a 1 EUR expenditure (PP) on one sector is converted to multiple sector expenditures in BP, because it gets transfered to trans/trade sectors.
 
-source("Random_draw_test.R")
+source("Random_draw_test.R")    # get_draws
 
 xlcFreeMemory()
 
@@ -37,8 +37,10 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
     row_end <- 214  # Ending row number "Extra-territorial organizations and bodies"
   
     # "Taxes less subsidies on products purchased: Total"
-    # y_bp        <- readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
-    #                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
+    if (country == "BR") {
+      y_bp        <- as.matrix(readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
+                                   startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
+    }
     # y_pp        <- readWorksheet(wb, "usepptot", header=FALSE, startRow=row_start, endRow=row_end,
     #                       startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE)
     trd_margin  <- as.matrix(readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end, 
@@ -135,7 +137,7 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
   ypp <- ybp + trd + trp + tax 
   
   # F <- diag(ybp[1:200,1])
-  F <- diag(ybp)
+  F <- diag(as.numeric(ybp))
   F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
   F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
   
@@ -167,7 +169,7 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 
 val_IN <- get_valuation_mtx('IN', 0)
 # val_ID <- get_valuation_mtx('ID', 0)
-# val_BR <- get_valuation_mtx('BR', 0)
+val_BR <- get_valuation_mtx('BR', 0)
 # val_CN <- get_valuation_mtx('CN', 0)
 # val_ZA <- get_valuation_mtx('ZA', 0)
 # val_AT <- get_valuation_mtx('AT', 0)
@@ -175,8 +177,8 @@ val_FR <- get_valuation_mtx('FR', 0)
 val_US <- get_valuation_mtx('US', 0)
 # val_mtx <- list(val_IN, val_ID, val_BR, val_CN, val_ZA, val_AT, val_US)
 # names(val_mtx) <- c('IN', 'ID', 'BR', 'CN', 'ZA', 'AT', 'US')
-val_mtx <- list(val_FR, val_US, val_IN)
-names(val_mtx) <- c('FR', 'US', 'IN')
+val_mtx <- list(val_FR, val_BR, val_US, val_IN)
+names(val_mtx) <- c('FR', 'BR', 'US', 'IN')
 
 
 rownames(trade_margin_breakdown) <- EX_catnames[trd_idx]
@@ -226,13 +228,13 @@ trade_brkdn_draws <- get_draws(n_draw, dim(trade_margin_breakdown)[1], trade_mar
 #  Generate n_draw valuation matrices  #
 ########################################
 
-val_IN_rand <- get_valuation_mtx('IN', 1)
+# val_IN_rand <- get_valuation_mtx('IN', 1)
 # val_ID_rand <- get_valuation_mtx('ID', 1)
 # val_BR_rand <- get_valuation_mtx('BR', 1)
 # val_CN_rand <- get_valuation_mtx('CN', 1)
 # val_ZA_rand <- get_valuation_mtx('ZA', 1)
 # val_AT_rand <- get_valuation_mtx('AT', 1)
-val_FR_rand <- get_valuation_mtx('FR', 1)
+# val_FR_rand <- get_valuation_mtx('FR', 1)
 # val_US_rand <- get_valuation_mtx('US', 1)
 
 
@@ -288,9 +290,49 @@ get_inv_valmtx <- function(val_mat) {
   mat_inv <- matrix(0, dim(mat)[1], dim(mat)[2])
   
   idx_zero <- which(diag(mat)==0)
-  D <- mat[-idx_zero, -idx_zero]
-  Dinv <- solve(D)
-  mat_inv[-idx_zero, -idx_zero] <- Dinv
+  if (length(idx_zero)!=0) {
+    D <- mat[-idx_zero, -idx_zero]
+    Dinv <- solve(D)
+    mat_inv[-idx_zero, -idx_zero] <- Dinv
+  }
+  else {
+    mat_inv <- solve(mat)
+  }
   
   return(mat_inv)
 }
+
+
+
+###################################################################
+#  Read in Brazilian valuation file (from Guilioto) and summarize #
+###################################################################
+
+a <- c("Code", "Descr", "SupPP", "TrdMrg", "TrpMrg", "ImpTax", "IPI", "ICMS", "OthTaxSub", "TotTaxSub", "SupBP")
+BRA_val_org <- read_excel("H:/MyDocuments/IO work/Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
+BRA_val_org <- BRA_val_org %>% select(-Descr, -ImpTax, -IPI, -ICMS, -OthTaxSub) %>% filter(!is.na(Code)) %>% filter(Code!="Total")
+BRA_val <- BRA_val_org
+BRA_val$Code <- floor(as.numeric(BRA_val$Code) / 1000)
+BRA_val <- BRA_val %>% group_by(Code) %>% summarise_each(funs(sum))
+BRA_exio_map <- read_excel("H:/MyDocuments/IO work/Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
+  mutate(Code=as.numeric(Code), CodeBRA=as.numeric(CodeBRA))
+
+BRA_val <- BRA_val[match(BRA_exio_map$CodeBRA, BRA_val$Code),]
+
+# We need to assume certain shares for each trd/trp subsectors.
+# The only groud is from the EXIO FD...
+BRA_val[trd_idx,-1] <- BRA_val[trd_idx,-1] * BRA_fd_exio[trd_idx] / sum(BRA_fd_exio[trd_idx])
+BRA_val[trp_idx,-1] <- BRA_val[trp_idx,-1] * BRA_fd_exio[trp_idx] / sum(BRA_fd_exio[trp_idx])
+
+Exceptions <- !is.na(BRA_exio_map$Exception)
+BRA_val[Exceptions,-1] <- BRA_val_org[match(BRA_exio_map$Exception[Exceptions], BRA_val_org$Code),-1]
+
+# Sum of each margin column needs to be zero.
+valscale <- sum(BRA_val$TrpMrg[-trp_idx]) / sum(BRA_val$TrpMrg[trp_idx])
+BRA_val$TrpMrg[-trp_idx] <- BRA_val$TrpMrg[-trp_idx] / abs(valscale)
+valscale <- sum(BRA_val$TrdMrg[-trd_idx]) / sum(BRA_val$TrdMrg[trd_idx])
+BRA_val$TrdMrg[-trd_idx] <- BRA_val$TrdMrg[-trd_idx] / abs(valscale)
+
+attach(BRA_val)
+val_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
+detach(BRA_val)

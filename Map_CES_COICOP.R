@@ -65,6 +65,15 @@ IDN_map <- IDN_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "I
 IDN_map <- merge(IDN_map, code_item_IDN, by="CODE")
 IDN_map <- IDN_map[order(IDN_map$CODE),]
 
+# Need to remove fuel items for direct link CES-EXIO
+IND_map <- IND_map %>% 
+  filter(!((COICOP1 == "04" & COICOP2 > "50") | 
+             (COICOP1 == "07" & COICOP2 == "22" & 
+                !grepl("Lubri", Surv_Heading, ignore.case = TRUE))))
+IDN_map <- IDN_map %>% 
+  filter(!((COICOP1 == "04" & COICOP2 > "50") | 
+             (COICOP1 == "07" & COICOP2 == "22" & 
+                !grepl("Lubri", Surv_Heading, ignore.case = TRUE))))
 
 # Create CES to ICP bridge matrices
 CES_ICP_IDN <- matrix(0, length(IDN_map$CODE), max(IDN_map$ICP_SEQ))

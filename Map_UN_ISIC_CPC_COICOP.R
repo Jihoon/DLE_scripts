@@ -113,16 +113,13 @@ a <- Q_UN_EXIO[rownames(Q_UN_EXIO) %in% c('07.3.1','07.3.2','07.3.3','07.3.4'),]
 Q_UN_EXIO[rownames(Q_UN_EXIO)=='07.3.5',] <- as.numeric(apply(a, 2, function(x) { Reduce("|", x) }))
 
 # So now I have bridge_COICOP_EXIO_q, bridge_ICP_EXIO_q, and Q_UN_EXIO.
+bridge_coicop_exio <- data.frame(Q_UN_EXIO)
+names(bridge_coicop_exio) <- EX_catnames  
+row.names(bridge_coicop_exio) <- as.matrix(COICOP_catnames2)
 
-# Figuring out m:1:n items during conversion
-CPC_diverge_items <- CPC_ISIC %>% filter(CPCpartial==1) %>% distinct(lv_CPC)
-CPC_merge_items <- COICOP_CPC %>% group_by(lv_CPC) %>% summarise(n=n()) %>% filter(n>1)
-CPC_merge_items[as.matrix(CPC_merge_items) %in% as.matrix(CPC_diverge_items),]
+# This file is used to create ICP-EXIO mapping after some manual editing
+write.csv(bridge_coicop_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN.csv")
 
-ISIC_diverge_items <- ISIC_EXIO %>% group_by(lv_ISIC) %>% summarise(n=n()) %>% filter(n>1)
-ISIC_merge_items <- CPC_ISIC %>% group_by(lv_ISIC) %>% summarise(n=n()) %>% filter(n>1)
-a <- ISIC_merge_items[as.matrix(ISIC_merge_items[,1]) %in% as.matrix(ISIC_diverge_items[,1]),] 
-CPC_EXIO_direct <- a %>% left_join(ISICrev3) %>% distinct(lv_ISIC, .keep_all=TRUE)
-
-a <- CPC_EXIO_direct %>% left_join(ISIC_EXIO)
-b <- CPC_EXIO_direct %>% left_join(CPC_ISIC)
+# Fuel rows replaced by the standardized DLE fuel sectors
+# But we don't have (for FRA) any detailed info about further fuel breakdowns
+# Q_UN_EXIO <- as.matrix(Q_UN_EXIO[-c(32:36,61),] %>% rbind(bridge_fuel_EXIO_q))

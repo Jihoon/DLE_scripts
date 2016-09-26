@@ -240,7 +240,9 @@ cons = d %>%
   filter(val_tot>0 | is.na(val_tot))
 
 # Extract FUEL data
-fuel.items = c('Electricity','Pipeline natural gas','LPG','Kerosene','Sawdust','Ethanol, non-transport','Diesel, non-transport','Gasoline, non-transport','Coal','Firewood','Ethanol, transport','Gasoline, transport','Diesel, transport','CNG, transport')
+fuel.items = c('Electricity','Pipeline natural gas','LPG','Kerosene','Sawdust','Ethanol, 
+               non-transport','Diesel, non-transport','Gasoline, non-transport','Coal',
+               'Firewood','Ethanol, transport','Gasoline, transport','Diesel, transport','CNG, transport')
 fuel.units = c('kWh','m3','kg','l','kg','l','l','l','kg','kg','l','l','l','l')  # COAL AND FIREWOOD UNITS (assuming kg for now...); CNG, assume liter???
 fuel.data = data.frame(item=fuel.items, unit=fuel.units, stringsAsFactors=F)  
 fuel.data  # Check alignment of items and units...

@@ -26,6 +26,15 @@ IdentifyConflicts <- function(qmap, colCon, rowCon) {
   # Singular by both row and col const
   a <- rbind(fixed_cells_by_row, fixed_cells_by_col)
   lone <- a[duplicated(a),,drop=FALSE]
+  lone <- lone[colCon[lone[,2]]!=rowCon[lone[,1]],] # Lone cell Only when two constraints are different
+  
+  # Sum of all values in a row or column, which has only singular cells, is different from the constraint on the other side.
+  # These can be treated as (group) lone cells
+  group_lone_by_r <- which(colSums(fixed_row) == colSums(qmap) & colSums(fixed_row) >1)
+  group_lone_by_c <- which(rowSums(fixed_col) == rowSums(qmap) & rowSums(fixed_col) >1)
+  lone <- rbind(lone, 
+                fixed_cells_by_col[fixed_cells_by_col[,1] %in% group_lone_by_c,],
+                fixed_cells_by_row[fixed_cells_by_row[,2] %in% group_lone_by_r,])
   
   mat <- matrix(0, nrow = length(rowCon), ncol = length(colCon))
   mat[fixed_cells_by_row] <- 1
@@ -51,8 +60,16 @@ IdentifyConflicts <- function(qmap, colCon, rowCon) {
   idx_beyond_const <- idx_row[rowSums(mat[idx_row,,drop=FALSE], na.rm = TRUE) > rowCon[idx_row]]
   beyond_const_c <- fixed_cells_by_col[fixed_cells_by_col[,1] %in% idx_beyond_const, ,drop=FALSE]
   
-  # beyond_const_r and beyond_const_c will include lone celss.
-  
+  # beyond_const_r and beyond_const_c will include lone cells.
+  # remove them.
+  b <- rbind(lone, beyond_const_r)
+  dupl <- b[duplicated(b),,drop=FALSE]
+  beyond_const_r <- beyond_const_r[!(beyond_const_r[,2] %in% dupl[,2]),,drop=FALSE]
+
+  b <- rbind(lone, beyond_const_c)
+  dupl <- b[duplicated(b),,drop=FALSE]
+  beyond_const_c <- beyond_const_c[!(beyond_const_c[,1] %in% dupl[,1]),,drop=FALSE]
+
   return(list(fixed_cells_by_row, fixed_cells_by_col, lone, beyond_const_r, beyond_const_c))
 }
 
@@ -76,9 +93,13 @@ IdentifyConflicts <- function(qmap, colCon, rowCon) {
 # I don't subtract values from constraints here.
 UpdateConstsForConflicts <- function(qmap, fx_rowCon, fx_colCon, lone, beyond_con_r, beyond_con_c, colCon, rowCon) {
   # Remove lone cells from beyond_con_r, if it is in beyond_con_r
-  a <- rbind(beyond_con_r, lone)
-  beyond_con_r <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
+  # a <- rbind(beyond_con_r, lone)
+  # beyond_con_r <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE] 
+  # a <- rbind(beyond_con_c, lone)
+  # beyond_con_c <- a[!duplicated(a, fromLast = FALSE) & !duplicated(a, fromLast = TRUE), , drop = FALSE]
   
+  lone_r <- lone[lone[,2] %in% lone[duplicated(lone[,2]),2],]
+  lone_other <- lone[!lone[,2] %in% lone[duplicated(lone[,2]),2],]
   cols_with_conflic <- sort(unique(beyond_con_r[,2]))  # Need to treat this differently.
   rows_with_conflic <- sort(unique(beyond_con_c[,1])) 
   
@@ -105,7 +126,7 @@ UpdateConstsForConflicts <- function(qmap, fx_rowCon, fx_colCon, lone, beyond_co
   
   # Constrained by diff constraints
   # temp <- mat[,-cols_with_conflic] %*% diag(colCon[-cols_with_conflic])
-  temp <- c(rows_with_conflic, lone[,1])
+  temp <- unique(c(rows_with_conflic))
   if(length(cols_with_conflic)) {
     mat[temp,-cols_with_conflic] <- mat[temp,-cols_with_conflic] %*% diag(colCon[-cols_with_conflic]) # Keep only the conflict rows  
     mat[,cols_with_conflic] <- diag(rowCon) %*% mat[,cols_with_conflic]
@@ -113,6 +134,13 @@ UpdateConstsForConflicts <- function(qmap, fx_rowCon, fx_colCon, lone, beyond_co
   else {
     mat[temp,] <- mat[temp,] %*% diag(colCon[1:200]) # Keep only the conflict rows  
     # I don't know why, but diag(colCon[1:200]) and diag(colCon) are different
+  }
+  mat[lone_other] <- colCon[lone_other[,2]]  # lone cells should always be updated by col Const.
+  
+  # Scaling the group lone cells aligned vertically
+  for (i in unique(lone_r[,2])) {
+    sclr <- colCon[i] / sum(mat[,i]*rowCon, na.rm = TRUE)
+    mat[,i] <- mat[,i] * rowCon * sclr
   }
   
   # Fill in the result matrix with the fixed values
@@ -124,7 +152,9 @@ UpdateConstsForConflicts <- function(qmap, fx_rowCon, fx_colCon, lone, beyond_co
   # Scale down row constraints when there are multiple singular cells in one column, whose sum is greater than col const of the col.
   idx_col <- cols_with_conflic
   scaler_col <- colCon[idx_col] / colSums(mat, na.rm = TRUE)[idx_col]
-  mat[,idx_col] <- mat[,idx_col] %*% diag(scaler_col, length(scaler_col), length(scaler_col)) # The length can be 1.
+  scale_idx <- idx_col[which(scaler_col < 1)]
+  scaler_col <- scaler_col[which(scaler_col < 1)]
+  mat[,scale_idx] <- mat[,scale_idx] %*% diag(scaler_col, length(scaler_col), length(scaler_col)) # The length can be 1.
   result_RAS_fixed[cell_rowCon] <<- mat[cell_rowCon]
   
   # Rows that are not to be scaled to match col sum total
@@ -269,7 +299,7 @@ CollapseQualMap <- function(qmap, colCon, rowCon) {
 # Calculate ICP sectoral intensities from given allocation ratio matrix based on random draws (either RASed or non-RASed)
 SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN") {
   ind_intensity <- vector()
-  n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp)
+  n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
   
   null_demand_int <- matrix(0, 9600, n_sector)
   SectoralE_per_hh <- vector()
@@ -284,31 +314,34 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN")
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
   
-  for (i in 1:n_draw) {
+  for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
     
-    # Identity mtx representing 1 EUR spending in each ICP sector, now mapped to 200 EXIO sectors
-    unit_exio <- diag(n_sector) %*% mapping_list[[i]]  # 151x200 
-    fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x151) - each col represents bp fd in each exio sector (for 1 EUR in ICP sector)
-
+    # Identity mtx representing 1 2007USD spending in each ICP sector, now mapped to 200 EXIO sectors
+    unit_exio <- diag(n_sector) %*% mapping_list[[i]]  # 164x200 
+    
+    # To run without valuation, toggle comment on this line.
+    # fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
+    fd_bp <- t(unit_exio)
+    
     a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X151
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X164
     
     # fd_exio <- mapping_list[[i]] %*% diag(fd_decile[,2])  # For Ensemble
     
     # cty_fd <- null_demand_int
     # cty_fd[cty_idx,] <- get_basic_price(fd_exio, country)
     
-    energy_int <- indirect_E_int %*% fd_bp   # indirect energy use from the supply chains
+    energy_int <- indirect_E_int %*% fd_bp * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007)
     # energy_tot <- indirect_E_int %*% cty_fd
     
-    ind_intensity <- rbind(ind_intensity, colSums(energy_int)) # Total indirect energy/hh by decile
-    
+    ind_intensity <- rbind(ind_intensity, colSums(energy_int)) # Total indirect energy/cap by decile
     # print(colSums(energy_int)[75])
   }
   
   # not_conv_idx has 1 where the RAS did not converge.
   ind_intensity <- ind_intensity[not_conv_idx!=1,]
+  
   return(ind_intensity)
 }
 
@@ -316,7 +349,7 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN")
 RemoveConflictsInConstraints <- function(qmap_i, country="IND") {
   
   # Convert to pp without tax
-  exio_fd_cty_usd <- eval(parse(text=paste0(country, "_fd_exio"))) / EXR_EUR$r   # Mil.USD2007
+  exio_fd_cty_usd <- eval(parse(text=paste0(country, "_fd_exio")))              # Mil.USD2007
   icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))        # Mil.USD2007
   
   colConst_init <- get_purch_price(exio_fd_cty_usd, countrycode(country,"iso3c", "iso2c")) 
@@ -472,10 +505,13 @@ Run_rIPFP <- function(qual_map_init, country = "IND") {
     
     result[[i]] <- final_RAS
     
-    print(i)
+    if (i %% 10 == 0) {print(i)}
+    rCon_new <- rowSums(result_fixed) 
+    rCon_new[-idx_r_removed] <- rCon_new[-idx_r_removed] + rCon_RAS
+    # print(paste("sum of new rCon", draw_count))
     # print(result[[i]][40,])
   }
-  return(list(result, non_converge))
+  return(list(result, non_converge, rCon_new))
 }
 
 

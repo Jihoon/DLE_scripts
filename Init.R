@@ -21,6 +21,8 @@ library(Surrogate)
 library(fields)
 library(WDI)
 library(qdap)
+library(plotrix)
+library(data.table)
 
 # This library needed to do multiple returns from functions
 library(devtools)  
@@ -42,37 +44,43 @@ exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
                "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
-n_draw <- 2000
-D_val_uncertainty <- 1  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
+n_draw <- 1000
+D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
 draw_count <- 1
+options(digits=3)
 
 # DLE DB in PPP 2010$ (PPP in terms of private consumption)
 # EXIO in MER 2007
 # Need this PPP rate to go back to local currency in 2010
 # [LCU/$]
-PPP_IND = WDI(country = "IN", indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = 2010, end = 2010, extra = FALSE, cache = NULL)
-PPP_IND <- PPP_IND$PA.NUS.PRVT.PP
+PPP_cty = WDI(country = c("IN", "BR"), indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = 2010, end = 2010, extra = FALSE, cache = NULL)
+PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP) )
+PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP) )
 
 # Inflation
-CPI <- WDI(country = c("IN", "FR"), indicator = "FP.CPI.TOTL", start = 2007, end = 2011, extra = FALSE, cache = NULL)
-CPI<- CPI %>% rename(cpi=FP.CPI.TOTL)
-attach(CPI)
-CPI_ratio_IND <- cpi[year==2010 & iso2c=='IN'] / cpi[year==2007 & iso2c=='IN']
-CPI_ratio_FRA <- cpi[year==2011 & iso2c=='FR'] / cpi[year==2007 & iso2c=='FR']
-detach(CPI)
+# Deflate currency in 2010 to 2007 (EXIO)
+CPI <- WDI(country = c("IN", "BR", "FR"), indicator = "FP.CPI.TOTL", start = 2007, end = 2010, extra = FALSE, cache = NULL)
+
+CPI_ratio_IND <- as.numeric(CPI %>% filter(year==2010 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
+CPI_ratio_BRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='BR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='BR') %>% select(FP.CPI.TOTL))
+CPI_ratio_FRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='FR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='FR') %>% select(FP.CPI.TOTL))
+
 
 # Exchange rate (MER) [LCU/$]
 EXR_EUR <- WDI(country = "XC", indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
 EXR_EUR <- EXR_EUR %>% rename(r=PA.NUS.FCRF)
-EXR_IND <- WDI(country = "IN", indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
-EXR_IND <- EXR_IND %>% rename(r=PA.NUS.FCRF)
+EXR_cty <- WDI(country = c("IN", "BR"), indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
+EXR_IND <- as.numeric(EXR_cty %>% filter(country=="India") %>% select(PA.NUS.FCRF))
+EXR_BRA <- as.numeric(EXR_cty %>% filter(country=="Brazil") %>% select(PA.NUS.FCRF))
 
 # HH Consumption in India 2007 [US$]
-HH_CON <- WDI(country = "IN", indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.CN"), start = 2007, end = 2011, extra = FALSE, cache = NULL)
-HH_CON <- HH_CON %>% rename(hhcon=NE.CON.PRVT.CD)
-HH_CON[,4:7] <- HH_CON[,4:7]/1e6 #[million US$]
+HH_CON <- WDI(country = c("IN", "BR"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), start = 2007, end = 2011, extra = FALSE, cache = NULL)
+BRA_con_grwth <- as.numeric(HH_CON %>% filter(year==2008 & iso2c=='BR') %>% select(NE.CON.PRVT.KD) / 
+                              HH_CON %>% filter(year==2007 & iso2c=='BR') %>% select(NE.CON.PRVT.KD))
+IND_con_grwth <- as.numeric(HH_CON %>% filter(year==2010 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
+                              HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
 
-
+WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
 
 #####################################################
 ### Read in (CES-Pseudo COICOP) mappings from WB  ###
@@ -106,11 +114,14 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 n_sector_coicop <- 109
 
 # Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
+# wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
 
 # Qualitative mapping (0 or 1)
-bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
-                                                 startRow=3, endRow=2+n_sector_coicop, startCol=2, forceConversion=T)
+# bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
+#                                                  startRow=3, endRow=2+n_sector_coicop, startCol=2, forceConversion=T)
+bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header=FALSE, 
+                                                 startRow=2, endRow=1+n_sector_coicop, startCol=1, endCol= 201, forceConversion=T)
 
 # Compare Gibran's updated qual mapping
 # wb <- XLConnect::loadWorkbook("C:/Users/min/Dropbox/HH environmental consumption/NTNU/product classification/COICOP3_EXIO_bridge.xlsx")
@@ -118,8 +129,8 @@ bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=
 #                                                  startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
 
 # Final COICOP classification with 109 headings
-COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=3, endRow=2+n_sector_coicop, startCol=2, endCol=2)
-EX_catnames <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, startRow=2, endRow=2, startCol=3)
+COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header=FALSE, startRow=2, endRow=1+n_sector_coicop, startCol=1, endCol=1)
+EX_catnames <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header=FALSE, startRow=1, endRow=1, startCol=2)
 
 # Issue: This qual mapping may change depending on countries, which we need to tackle then.
 
@@ -127,7 +138,7 @@ EX_catnames <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, st
 ###        Read in EXIO matrices           ###
 ##############################################
 
-source("EXIO_init.R")
+# source("EXIO_init.R")
 
 
 
@@ -151,6 +162,24 @@ source("Bridging_uncertainty.R")
 
 
 
+#####################################################
+###     Treating CES fuel sectors differently     ###
+#####################################################
+
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/CES_fuel_EXIO.xlsx")
+bridge_fuel_EXIO_q  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T, 
+                                                startRow=2, startCol=3, endCol=202) 
+DLE_fuel_sector_Q  <- XLConnect::readWorksheet(wb, "Sheet2", header=TRUE, forceConversion=T, 
+                                               startRow=2, startCol=3) 
+DLE_fuelnames_std  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T, 
+                                                startRow=2, startCol=2, endCol=2) 
+DLE_fuel_sector_Q[is.na(DLE_fuel_sector_Q)] <- 0
+bridge_fuel_EXIO_q[is.na(bridge_fuel_EXIO_q)] <- 0
+names(bridge_fuel_EXIO_q) <- EX_catnames
+row.names(bridge_fuel_EXIO_q) <- DLE_fuelnames_std[,1]
+names(DLE_fuelnames_std) <- "item"
+
+
 ############################################################
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
@@ -163,14 +192,37 @@ source("Read_direct_energy_from_DB.R")
 # Read total FD for all population
 # dim: n_CES_sector x 2 (or 11 for deciles)
 
+# Comprehensive fuel sectors (union of all DBs)
+DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
+
 # India
 
 IND_FD <- readFinalDemandfromDBbyDecile('IND1')
 IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
-list[IND_FD_ALL, IND_HH] <- readFinalDemandfromDBAllHH('IND1')
+BRA_FD <- readFinalDemandfromDBbyDecile('BRA0')
+BRA1_FD <- readFinalDemandfromDBbyDecile('BRA1')
 
-list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
-list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')
+list[IND_FD_ALL, IND_HH] <- readFinalDemandfromDBAllHH('IND1')
+list[BRA_FD_ALL, BRA_HH] <- readFinalDemandfromDBAllHH('BRA0')
+
+IND_FD_ALL <- data.table(IND_FD_ALL)
+BRA_FD_ALL <- data.table(BRA_FD_ALL)
+BRA_HH <- data.table(BRA_HH, key="hhid")
+setorder(BRA_HH, hhid)
+IND_HH <- data.table(IND_HH, key="hhid")
+setorder(IND_HH, hhid)
+
+save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
+save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
+save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+
+load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
+load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
+load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+# list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
+# list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')
 
 
 # France - No DB, only summary from Lucas
@@ -185,7 +237,7 @@ fd_decile_FRA <- XLConnect::readWorksheet(wb, sheet="ValueDecile", header=T, for
 n_hh_FRA <- 26058600 # interpolated from https://www.ined.fr/en/everything_about_population/data/france/couples-households-families/households/
 
 fd_decile_FRA <- fd_decile_FRA * n_hh_FRA / 1e6 # [M.EUR]
-fd_decile_FRA[,2:11] <- fd_decile_FRA[,2:11]/10 # 1/10 for each decile
+fd_decile_FRA[,2:11] <- fd_decile_FRA[,2:11]/10  / EXR_EUR$r # 1/10 for each decile & to M.USD
 
 # For later use
 # IND2_FD <- readFinalDemandfromDB('IND2')
@@ -218,7 +270,7 @@ source("Init_consumption_vectors.R")
 
 source("Generate_base_ICP-EXIO_mapping.R")
 n_sector_icp <- 151  # Num of ICP sectors
-
+n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
 
 
 ##############################################
@@ -234,11 +286,14 @@ n_sector_icp <- 151  # Num of ICP sectors
 #   2. Some positive EXIO FD values do not match to any ICP sectors. (e.g. stone from EXIO mapped to household maintenance in ICP)
 #     => can be checked by cbind(names(qual_map)[colConst_init!=0 & colSums(qual_map_init)==0], colConst_init[colConst_init!=0 & colSums(qual_map_init)==0])
 
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
-# bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual", header=TRUE, forceConversion=T, endRow=152, endCol=201)
-# No yellow corrections
-bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Q_nochange", header=TRUE, forceConversion=T, endRow=152, endCol=201) 
+# wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
+# bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Q_nochange", header=TRUE, forceConversion=T, endRow=152, endCol=201) 
+
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_UN_Edited.xlsx")
+bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual_UN2", header=TRUE, 
+                                               forceConversion=T, endCol=201) 
 ICP_catnames <- bridge_ICP_EXIO_q[,1]
+
 
 
 ##############################################
@@ -253,57 +308,43 @@ source("Bridge_RAS.R")
 ### Get EXIO FD vectors for countries ###
 #########################################
 
-# Get IND final demand from EXIO [M.EUR]
+# Get IND final demand from EXIO [M.EUR to M.USD]
 IND_place <- which(exio_ctys=="IN")
 IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
-IND_fd <- matrix(final_demand[,IND_idx_fd[1]], nrow=200)
-# dim_fd <- dim(final_demand)
-IND_fd_exio <- rowSums(IND_fd) # Sum all HH FD across countries
-IND_fd_exio_imp <- rowSums(IND_fd[,-IND_place]) # Sum all HH FD across countries
+IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 7 final demand columns per country
+IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD
+IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
+IND_fd_exio_imp <- rowSums(IND_fd_ex[,-IND_place]) # Sum all HH FD across countries
+
+# Get BRA final demand from EXIO [M.EUR to M.USD]
+BRA_place <- which(exio_ctys=="BR")
+BRA_idx_fd <- seq(7*(BRA_place-1)+1, 7*BRA_place)   # 7 final demand columns per country
+BRA_idx_ex <- seq(200*(BRA_place-1)+1, 200*BRA_place)   # 7 final demand columns per country
+# Issue: This 'final_demand' for BRA gives too small values for electricity expenditure.
+# Instead I can use the column from 'BR_output.xls' file.
+# BRA_fd_ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200)
+# BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
+# BRA_fd_exio_imp <- rowSums(BRA_fd_ex[,-BRA_place]) # Sum all HH FD across countries
+BRA_fd_ex <- read_excel("H:/MyDocuments/IO work/Valuation/BR_output.xls", sheet="usebptot", skip=14, col_names=FALSE)
+# Issue: Brazil FD has zero education expediture. (reasons unknown)
+# Simply replace the zero with the values found on actual BRA IO 
+BRA_fd_exio <- as.matrix(BRA_fd_ex[1:200,169]) 
+BRA_fd_exio[174] <- 15600  # M Euro
+BRA_fd_exio <- BRA_fd_exio / EXR_EUR$r  # to M.USD 2007
+# The value 15600 is from H:\MyDocuments\IO work\Bridging\CES-COICOP\BRA IO FD comparison.xlsx
+
 
 # Get FRA final demand from EXIO [M.EUR]
 FRA_place <- which(exio_ctys=="FR")
 FRA_idx_fd <- seq(7*(FRA_place-1)+1, 7*FRA_place)   # 7 final demand columns per country
-FRA_fd <- matrix(final_demand[,FRA_idx_fd[1]], nrow=200)
-# dim_fd <- dim(final_demand)
+FRA_fd <- matrix(final_demand[,FRA_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD
 FRA_fd_exio <- rowSums(FRA_fd) # Sum all HH FD across countries
 FRA_fd_exio_imp <- rowSums(FRA_fd[,-FRA_place]) # Sum all HH FD across countries
 
-# exio_fd <- list(IND_fd_exio, FRA_fd_exio)
-# names(exio_fd) <- c('IND', 'FRA')
+# Scalers
+scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
+scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
+scaler_FRA <- sum(FRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(FRA_fd_exio, "FR"))
 
-
-
-# # names(fd_decile)
-# 
-# soc_transfer_ratio <- fd_decile[,14:24]
-# names(soc_transfer_ratio) <- names(fd_decile)[2:12]
-# 
-# fd_with_soctr <- fd_decile[,2:12] * (1+soc_transfer_ratio)  # Final demand including social transfer allocation
-# # fd_with_soctr_flat <- diag((1+soc_transfer_ratio[,1])) %*% as.matrix(fd_decile[,2:12])    # Final demand including social transfer allocation
-# fd_with_soctr_flat <- fd_decile[,2:12] + soc_transfer_ratio[,1]*fd_decile[,2]   # Flat means identical $/person, I guess.
-# 
-# 
-# 
-# ##################################
-# ### Read in CES-COICOP mapping ### (Specifically for IND for now)
-# ##################################
-# 
-# # Using India CES for French example for now 
-# # Update: Received FRA consumption in NTNT 109 classification, so FRA doesn't use this
-# # Issue: bridge_CES_COICOP may be replaced with the IND mtx from WB (after comparison)
-# # Issue: This is likely to be replaced by the WB mapping.
-# 
-# Mapping <- system.file("IND_CES-COICOP_mapping.xlsx", package = "XLConnect")
-# wb <- loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND_CES-COICOP_mapping.xlsx")
-# 
-# n_sector_coicop <- 109  # Num of COICOP sectors
-# n_row <- 347  # Num of CES items
-# bridge_CES_COICOP <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, 
-#                         startCol=3, endCol=2+n_sector_coicop, forceConversion=T)
-# 
-# CES_catnames <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1+n_row, startCol=1, endCol=1)
-# # COICOP_catnames1 <- readWorksheet(wb, "Sheet2", header=FALSE, startRow=2, endRow=1, startCol=3, endCol=2+n_sector_coicop)
-# 
-# # Order rows of bridge mtx in the alphabatic order of CES item names
-# bridge_CES_COICOP <- bridge_CES_COICOP[order(CES_catnames),]
+init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
+init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA

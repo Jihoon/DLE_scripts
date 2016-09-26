@@ -1,3 +1,6 @@
+# Read in Q_UN_EXIO_e edited version
+Q_UN_EXIO_e <- read_excel("H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
+Q_UN_EXIO_e <- as.matrix(Q_UN_EXIO_e[-dim(Q_UN_EXIO_e)[1],-c(1,dim(Q_UN_EXIO_e)[2])])
 
 # Make a new qual mapping between ICP (instead of NTNU109) and EXIO
 # temp <- icp_ntnu[!is.na(icp_ntnu$NTNU_109),]  # icp_ntnu$NTNU_109 has indices matching each ICP item to NTNU109 items.
@@ -9,7 +12,7 @@ temp <- lapply(temp, as.numeric)              # temp will hold those numerical i
 # Build a list with COICOP-EXIO mapping rows
 bridge_icp_exio_list <- lapply(temp, function(ind) {
   # a <- bridge_COICOP_EXIO_q[ind,-1,drop=FALSE]         # Get the mapping row (or rows if multiple) from the qual mapping
-  a <- Q_UN_EXIO[ind, ,drop=FALSE]         # UN mapping
+  a <- Q_UN_EXIO_e[ind, ,drop=FALSE]         # UN mapping
   b <- as.numeric(apply(a, 2, function(x) { Reduce("|", x) }))  # Logical OR of multiple rows
   return(b)
 })
@@ -28,7 +31,11 @@ bridge_icp_exio <- bridge_icp_exio[-c(len-1, len),]  # We do not need the last t
 bridge_icp_exio <- data.frame(bridge_icp_exio)
 names(bridge_icp_exio) <- EX_catnames  
 row.names(bridge_icp_exio) <- icp_ntnu$ICP_Heading[-c(len-1, len)]
-# row.names(bridge_icp_exio) <- icp_ntnu$ICP_Heading[!is.na(icp_ntnu$NTNU_109)]
+
+bridge_icp_exio[62:65,] <- 0 # Reset original ICP fuel rows mapping
+bridge_icp_exio <- bridge_icp_exio %>% rbind(bridge_fuel_EXIO_q)
+row.names(bridge_icp_exio)[63] <- "Electricity.COICOP"   # Duplicate row names not allowed
+row.names(bridge_icp_exio)[155] <- "Electricity"
 
 Q_UN_ICP_EXIO <- bridge_icp_exio
 write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_UN.csv")

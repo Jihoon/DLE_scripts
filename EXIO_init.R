@@ -27,8 +27,8 @@ fd_materials <- fd_materials[,c(-1,-2)]
 # However these extensions are in TJ unit, which need to be divided by total use by product to get intensities.
 materials <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 materials <- materials[,c(-1,-2)]
-materials_reduc <- read.table(paste(path_iot, "mrMaterials_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
-materials_reduc <- materials_reduc[,c(-1,-2)]
+# materials_reduc <- read.table(paste(path_iot, "mrMaterials_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
+# materials_reduc <- materials_reduc[,c(-1,-2)]
 
 # final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 # final_demand_material <- final_demand_material[,c(-1,-2)]
@@ -55,3 +55,13 @@ y <- 1/tot_demand
 y[is.infinite(y)] <- 0 
 energy_int <- as.matrix(energy_use) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
 indirect_E_int <- energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+
+# To clean up the memory
+save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
+save(tot_use, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
+save(supplym, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
+rm(L_inverse, tot_use, supplym, materials_reduc)
+rm(val_AT_rand, val_FR_rand, val_IN_rand)
+rm(final_alloc_list_FRA, final_alloc_list_FRA_all)
+gc()
+
