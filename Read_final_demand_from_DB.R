@@ -49,8 +49,8 @@ readFinalDemandfromDBbyDecile = function(svy='IND1') {
   
   print(sum(is.na(HHold$income)))
   HHold <- HHold %>% 
-    arrange(income) %>%
-    mutate(cumpop = cumsum(weight)/sum(HHold$weight)) %>%
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
     mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
                         labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
     filter(!is.na(income))
@@ -105,8 +105,8 @@ readFinalDemandfromDBAllHH = function(svy='IND1') {
   # Fuel <- Fuel %>% rename(item = fuel)
   print(sum(is.na(HHold$income)))
   HHold <- HHold %>% rename(hhid = id) %>% 
-    arrange(income) %>%
-    mutate(cumpop = cumsum(weight)/sum(HHold$weight)) %>%
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
     mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
                         labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
     filter(!is.na(income))
@@ -157,3 +157,23 @@ ConstructyFuelTypeSet = function() {
   return(DLE_fuel)
 }
   
+
+
+### Decile divide test
+
+# a <- IND_HH %>% 
+#   filter(!is.na(expenditure)) 
+# aa <- a %>%
+#   arrange(expenditure) %>%
+#   mutate(cumpop = cumsum(hh_size*weight)/sum(a$weight*a$hh_size)) %>%
+#   mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+#                       labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  
+# aa %>% group_by(decile) %>% summarise(sum(hh_size*weight))
+# 
+# 
+# ab <- a %>%
+#   arrange(expenditure/hh_size) %>%
+#   mutate(cumpop = cumsum(hh_size*weight)/sum(a$weight*a$hh_size)) %>%
+#   mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+#                       labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  
+# ab %>% group_by(decile) %>% summarise(sum(hh_size*weight))

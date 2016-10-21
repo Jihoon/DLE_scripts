@@ -162,21 +162,21 @@ list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_BRA, "V", xmax=200, bin_size=0.1, linedata=a)
-save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_orgFD.Rda")
+# save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_orgFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_BRA.Rda")
 list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_AllHH, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
-save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_orgFD.Rda")
+# save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_orgFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_EXIO.Rda")
 list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_HH_adj_EX, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
-save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_adjFD.Rda")
+# save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_adjFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_BRA.Rda")   # Reference case
 list[eHH_BRA, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
@@ -184,7 +184,7 @@ a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
 PlotMainHist(eHH_BRA, "V", xmax=200, 0.1, eHH_summary)
-save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_adjFD.Rda")
+# save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_adjFD.Rda")
 
 # No valuation case BRA
 load("./Saved tables/BRA_intensities_noVal.Rda")
@@ -192,7 +192,7 @@ list[eHH_BRA_noVal, eHH_sd_noVal]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'B
 a <- SummarizeGJPerCapByDecile(eHH_BRA_noVal)
 # eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_BRA_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
-save(eHH_BRA_noVal, file="./Saved tables/BRA_ENEperCap_noVal_adjFD.Rda")
+# save(eHH_BRA_noVal, file="./Saved tables/BRA_ENEperCap_noVal_adjFD.Rda")
 
 
 
@@ -203,14 +203,14 @@ list[eHH_IND, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_IC
 a <- SummarizeGJPerCapByDecile(eHH_IND)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
-save(eHH_IND, file="./Saved tables/IND_ENEperCap_orgFD.Rda")
+# save(eHH_IND, file="./Saved tables/IND_ENEperCap_orgFD.Rda")
 
 # load("./Saved tables/IND_intensities.Rda")
 list[eHH_IND, eHH_sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_IND)
 eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
-save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
+# save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 
 # No valuation case BRA
 load("./Saved tables/IND_intensities_noVal.Rda")
@@ -218,20 +218,20 @@ list[eHH_IND_noVal, eHH_sd_noVal] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND
 a <- SummarizeGJPerCapByDecile(eHH_IND_noVal)
 # eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
-save(eHH_IND_noVal, file="./Saved tables/IND_ENEperCap_noVal_orgFD.Rda")
+# save(eHH_IND_noVal, file="./Saved tables/IND_ENEperCap_noVal_orgFD.Rda")
 
 
 
 # Main decile plot for BRA and IND
 
-pdf(file = paste0(figure_path, "Fig1.1 Primary energy-BRA.pdf"), width = 8, height = 10)
-save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_adjFD.Rda")
+pdf(file = paste0(figure_path, "Fig1.1 Primary energy-BRA rev.pdf"), width = 8, height = 10)
+load(file="./Saved tables/BRA_ENEperCap_valBR_adjFD.Rda")
 PlotMainHistBRA(eHH_BRA, "V", xmax=250, 0.5, eHH_summary)
 title("Primany energy per capita by decile: Brazil", outer=T)
 dev.off()
 
-pdf(file = paste0(figure_path, "Fig1.2 Primary energy-IND.pdf"), width = 8, height = 10)
-save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
+pdf(file = paste0(figure_path, "Fig1.2 Primary energy-IND rev.pdf"), width = 8, height = 10)
+load(file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 PlotMainHistIND(eHH_IND, "V", xmax=100, 0.2, eHH_summary)
 title("Primany energy per capita by decile: India", outer=T)
 dev.off()
@@ -392,10 +392,12 @@ head(b)
 
 TotEmbodEne_BRA <- mean(apply(eHH_BRA[,2:(dim(eHH_BRA)[2]-dim(BRA_HH)[2]), with=FALSE], 2, # in GJ
                               function(x) {sum(x * eHH_BRA$hh_size *eHH_BRA$weight)}))
-TotEmbodEne_IND <- mean(apply(eHH_IND[,2:(dim(eHH_IND)[2]-dim(IND_HH)[2]), with=FALSE], 2, 
+TotEmbodEne_IND <- mean(apply(eHH_IND[,2:(dim(eHH_IND)[2]-dim(IND_HH)[2]-2), with=FALSE], 2, 
                               function(x) {sum(x * eHH_IND$hh_size *eHH_IND$weight)}))
+TotEmbodEne_IND <- sum(apply(eHH_IND[,2:(dim(eHH_IND)[2]-dim(IND_HH)[2]-2), with=FALSE], 1, mean) * eHH_IND$hh_size *eHH_IND$weight)
 TotEmbodEne_BRA / BRA_pop_2007  # Average GJ/capita for the country
 TotEmbodEne_IND / IND_pop_2007
+TotEmbodEne_IND / sum(eHH_IND$hh_size *eHH_IND$weight)
 
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_AllHH, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_HH_adj_EX, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
@@ -493,215 +495,3 @@ int.fdbev.per.usd <- sum(BRA_adj_fdbev.tot * mean.int.fdbev) / sum(BRA_adj_fdbev
 BRA_adj_fdbev.dec <- BRA_adj_fdbev[ICP_food_idx,2:11]  
 BRA_fdbev.ene.dec <- colSums(BRA_adj_fdbev.dec) * int.fdbev.per.usd / 1e3 / BRA.agg$pop
 
-# int.fdbev.by.dec <- BRA.agg$exp * mean.int.fdbev / 1e3 / BRA.agg$pop
-
-# int.fdbev.per.usd <- colSums(BRA_adj_fdbev * mean.int.fdbev) / colSums(BRA_adj_fdbev)
-
-# agg.int.per.cap <- rowSums(data.matrix(BRA.agg.dec[,2:46])) * int.fdbev.per.usd / 1e3 / BRA.agg$pop
-
-#################
-### Functions ###
-#################
-
-IndirecIntensitiesByICPSect <- function(sect_idx, cty) {
-
-  # sect_idx <- grep(ICP_sect_name, ICP_catnames, ignore.case = TRUE)
-  print(ICP_catnames[sect_idx])
-  map_idx <- which(bridge_ICP_EXIO_q[sect_idx,-1]==1)
-  cty_alloc <- eval(parse(text=paste0(countrycode(cty,"iso2c", "iso3c"), "_alloc")))
-  sect_alloc <- do.call("rbind", lapply(cty_alloc, '[', sect_idx,))
-  
-  cty_place <- which(exio_ctys==cty)
-  # cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
-  # cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
-  
-  all_bp_idx <- c(map_idx, trd_idx, trp_idx)
-  own_ex_idx <- (cty_place-1)*200 + all_bp_idx
-  alloc <- apply(sect_alloc[,all_bp_idx], 2, mean)
-  
-  indirec.int <- colSums(indirect_E_int[,own_ex_idx]) * EXR_EUR$r  # MJ/USD2007
-  direc.int <- colSums(energy_int[,own_ex_idx]) * EXR_EUR$r  # MJ/USD2007
-  
-  comp <- rbind(as.integer(all_bp_idx), indirec.int, direc.int, alloc)
-  
-  print(map_idx)
-  print(comp)  # MJ/Eur
-  
-  return(comp)
-}
-
-PlotIncomeByCountry <- function (f_HH, xmax, bin_size=0.1, tick_size = 1) {  # bin/tick size in kilo USD
-  xlcFreeMemory()
-  
-  opar <- par() 
-  
-  par(mfrow=c(10,1), oma = c(0, 0, 0, 0), mar= c(2, 0, 0, 0))
-  
-  for (i in 1:10) {
-    a <- as.matrix(f_HH %>% filter(decile==paste0("decile",i)) %>% select(consumption)) / 1000 # 1000 USD/yr
-    w0 <- f_HH$weight[f_HH$decile==paste0("decile",i)]
-    w1 <- w0[rep(1:length(w0), each=dim(a)[2])]   # dim(a)[2] instead of n_draw because of non-converge runs
-    weighted.hist(a, w1, seq(0, max(a)+bin_size, bin_size), xlim=c(0,xmax), main=NULL, xaxis = FALSE)
-    axis(side = 1, at = seq(0, xmax, tick_size), cex.axis=1.5)
-  }
-  
-  par(opar)
-}
-
-
-
-PlotMainHistBRA <- function (intens_HH, name="V", xmax, bin_size=0.1, linedata, ticksize=10) {
-  xlcFreeMemory()
-  
-  # opar <- par() 
-  layout(matrix(1:11, ncol=1))
-  
-  par(oma = c(0, 0, 2, 0), mar= c(2, 0, 0, 0))
-  
-  for (i in 1:10) {
-    a <- as.matrix(intens_HH %>% filter(decile==paste0("decile",i)) %>% select(starts_with(name)))
-    w0 <- intens_HH$weight[intens_HH$decile==paste0("decile",i)]
-    w1 <- w0[rep(1:length(w0), each=dim(a)[2])]   # dim(a)[2] instead of n_draw because of non-converge runs
-    # weighted.hist(a, w1, seq(0, max(a)+bin_size, bin_size), xlim=c(0,xmax), freq=FALSE, main=NULL, xaxis = FALSE)
-    d<- density(a, weights = w1); d$y <- d$y/sum(d$y) 
-    plot(d, axes=FALSE, xlim=c(1,xmax), main=' ')
-    axis(side = 1, at = seq(0,xmax,ticksize))
-    axis(side = 2)
-    
-    abline(v=(seq(0,250,10)), col="lightgray", lty="dotted")
-    
-    m1 <- linedata[i,8]; m2 <- linedata[i,6]; m3 <- linedata[i,4];m4 <- linedata[i,2];
-    sd1 <- linedata[i,9]; sd2 <- linedata[i,7]; sd3 <- linedata[i,5]; sd4 <- linedata[i,3];
-    
-    # Uncertainty bands
-    polygon(x=c(m1-2*sd1, m1+2*sd1, m1+2*sd1, m1-2*sd1), y=c(0,0,1,1), col=rgb(1,0,0,0.3), border=NA)
-    polygon(x=c(m2-2*sd2, m2+2*sd2, m2+2*sd2, m2-2*sd2), y=c(0,0,1,1), col=rgb(0,0,1,0.3), border=NA)
-    polygon(x=c(m3-2*sd3, m3+2*sd3, m3+2*sd3, m3-2*sd3), y=c(0,0,1,1), col=rgb(0.3,0.8,0.3,0.3), border=NA)
-    polygon(x=c(m4-2*sd4, m4+2*sd4, m4+2*sd4, m4-2*sd4), y=c(0,0,1,1), col=rgb(1,0,1,0.3), border=NA)
-    
-    # Mean lines
-    abline(v=m1,lwd=1, col="red")    
-    abline(v=m2,lwd=1, col="blue")    
-    abline(v=m3,lwd=1, col=rgb(0.3,0.8,0.3,1))    
-    abline(v=m4,lwd=1, col="purple")    
-  }
-  
-  plot.new()
-  legend(x="center", ncol=4, c("ownVal-adjFD", "defVal-adjFD", "ownVal-orgFD", "defVal-orgFD"), 
-         lty = 1, lwd=2, col=c("red", "blue", rgb(0.3,0.8,0.3,1), "purple"), 
-         y.intersp=0.4, cex = 1, bty = "n", 
-         pt.bg = c(rgb(1,0,0,0.3),rgb(0,0,1,0.3),rgb(0.3,0.8,0.3,0.3),rgb(1,0,1,0.3)))
-  
-  # par(opar)
-}
-
-
-PlotMainHistIND <- function (intens_HH, name="V", xmax, bin_size=0.1, linedata, ticksize=10) {
-  xlcFreeMemory()
-  
-  layout(matrix(1:11, ncol=1))
-  par(oma = c(0, 0, 2, 0), mar= c(2, 0, 0, 0))
-  
-  for (i in 1:10) {
-    a <- as.matrix(intens_HH %>% filter(decile==paste0("decile",i)) %>% select(starts_with(name)))
-    w0 <- intens_HH$weight[intens_HH$decile==paste0("decile",i)]
-    w1 <- w0[rep(1:length(w0), each=dim(a)[2])]   # dim(a)[2] instead of n_draw because of non-converge runs
-    # weighted.hist(a, w1, seq(0, max(a)+bin_size, bin_size), xlim=c(0,xmax), freq=FALSE, main=NULL, xaxis = FALSE)
-    d<- density(a, weights = w1); d$y <- d$y/sum(d$y) 
-    plot(d, axes=FALSE, xlim=c(1,xmax), main=' ')
-    axis(side = 1, at = seq(0,xmax,ticksize))
-    axis(side = 2)
-    
-    abline(v=(seq(0,100,10)), col="lightgray", lty="dotted")
-    
-    m1 <- linedata[i,12]; m2 <- linedata[i,10];
-    sd1 <- linedata[i,13]; sd2 <- linedata[i,11]; 
-    
-    # Uncertainty bands
-    polygon(x=c(m1-2*sd1, m1+2*sd1, m1+2*sd1, m1-2*sd1), y=c(0,0,1,1), col=rgb(1,0,0,0.3), border=NA)
-    polygon(x=c(m2-2*sd2, m2+2*sd2, m2+2*sd2, m2-2*sd2), y=c(0,0,1,1), col=rgb(0,0,1,0.3), border=NA)
-    
-    # Mean lines
-    abline(v=m1,lwd=1, col="red")    
-    abline(v=m2,lwd=1, col="blue")    
-  }
-  plot.new()
-  legend(x="center", ncol=2, c("defVal-adjFD", "defVal-orgFD"), 
-         lty = 1, lwd=2, col=c("red", "blue"), 
-         y.intersp=0.4, cex = 1, bty = "n", 
-         pt.bg = c(rgb(1,0,0,0.3),rgb(0,0,1,0.3)))
-}
-
-# Get by-decile summary (mean,sd) of any eHH
-SummarizeGJPerCapByDecile <- function(eHH) {
-  nColTot <- dim(eHH)[2]
-  nColAdd <- dim(BRA_HH)[2]-1   # we do this because # of drawn columns are not equal to n_draw because of no convergences in rIPFP
-  
-  eHH_sum <- data.table(hhid = eHH[,1, with=FALSE],
-                        avg = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, mean), # , with=FALSE all removed (data.table issue)
-                        sd = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, sd),
-                        eHH[,(nColTot-nColAdd+1):nColTot, with=FALSE])
-  
-  eHH_sum <- eHH_sum %>% group_by(decile) %>% summarise(u=weighted.mean(avg, weight), sd=weighted.mean(sd, weight))
-  return(eHH_sum[,-1])
-}
-
-
-PlotNonfuelIntensity <- function(intensity_mtx, noexp, ymax, titlename) {
-  
-  divider <- c(2, 8, 14, 17, 22, 25, 28, 32, 37, 
-               40, 47, 55, 65, 84, 95, 112, 116, 134, 135, 137)
-  idx_section_name <- c(divider)+1
-  section_name <- icp_ntnu$ICP_Heading[idx_section_name]
-  section_name <- gsub("UNBR ", "", section_name)
-  section_name[19] <- "Restaurants and hotels"
-  
-  nonFuelIntensity <- intensity_mtx[,1:151]
-  
-  n_sector_nonfuel <- 151
-  noexp_nonfuel <- noexp[noexp<=151]
-  
-  # Non-fuel
-  boxplot(nonFuelIntensity, range=0, ylim=c(0, ymax), axes = FALSE, add=FALSE)
-  col_div <- c(par("usr")[1], divider+0.5, par("usr")[2])
-  
-  # Paint alternating colors
-  for(i in 1:(length(col_div)-1)) { 
-    color_bgn <- c("gray60", "gray15")[i %% 2]
-    rect(col_div[i], par("usr")[3], col_div[i+1], par("usr")[4],col = color_bgn, border=FALSE)  
-  }
-  boxplot(nonFuelIntensity, ylab ="Primary energy intensity [MJ/2007USD]", 
-          axes = FALSE, ylim=c(0, ymax), add=TRUE, cex.lab=1.3, range=0)
-  # axis(side = 1, at = seq(1,n_sector_icp,10))
-  title(xlab ="Consumption items", line=1, cex.lab=1.3) 
-  axis(side = 2, at = seq(0,ymax,20), cex.axis=1.1)
-  
-  idx_section <- c(divider)+1
-  
-  text(idx_section-1, y=40, section_name, pos=4, offset=0.8, cex = 1, srt = 90)
-  text(1:n_sector_nonfuel+0.5, y=apply(nonFuelIntensity, 2, max), 1:n_sector_nonfuel, pos=3, offset=1, cex = 0.7, srt = 90)
-  text(noexp_nonfuel+0.9, y=apply(nonFuelIntensity[,noexp_nonfuel], 2, max), '+', pos=3, offset=2, cex = 1.2, srt = 90)
-  title(titlename)
-}
-  
-PlotFuelIntensity <- function(intensity_mtx, noexp, ymax) {
-  # Fuel
-  opar <- par()
-  
-  par(mar=c(10,3,1,2))
-  FuelIntensity <- intensity_mtx[,152:164]
-  noexp_fuel <- noexp[noexp>151]-151
-  
-  FuelLabel <- DLE_fuelnames_std$item
-  FuelLabel[2] <- "Charcoal/coal/brisquette"
-  FuelLabel[6] <- "Fuelwood"
-  FuelLabel[8] <- "Fuel oil"
-  
-  boxplot(FuelIntensity, axes = FALSE, ylim=c(0, ymax), add=FALSE, cex.lab=1.3, range=0)
-  
-  axis(side = 2, at = seq(0,ymax,50), cex.axis=1.1)
-  text(noexp_fuel, y=apply(FuelIntensity[,noexp_fuel], 2, max), '+', pos=3, offset=1, cex = 1.2, srt = 90)
-  axis(side = 1, at = 1:dim(DLE_fuelnames_std)[1], labels=FuelLabel, las=2)
-  
-  par(opar)
-}

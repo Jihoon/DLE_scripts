@@ -62,6 +62,7 @@ save(tot_use, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda"
 save(supplym, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
 rm(L_inverse, tot_use, supplym, materials_reduc)
 rm(val_AT_rand, val_FR_rand, val_IN_rand)
-rm(final_alloc_list_FRA, final_alloc_list_FRA_all)
+rm(final_alloc_list_FRA, final_alloc_list_FRA_all, result_FRA, result_FRA_all)
+rm(eHH, all_HH_f, all_HH_fl, eHH_cap)
 gc()
 

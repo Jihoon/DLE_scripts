@@ -1,4 +1,4 @@
-options(java.parameters = "-Xmx8g") 
+options(java.parameters = "-Xmx16g") 
 library(RJDBC)
 library(data.table)
 library(tidyr)
@@ -23,6 +23,8 @@ library(WDI)
 library(qdap)
 library(plotrix)
 library(data.table)
+library(microbenchmark)
+require(ineq)
 
 # This library needed to do multiple returns from functions
 library(devtools)  
@@ -32,6 +34,9 @@ source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list
 library(mipfp)
 
 setwd("H:/MyDocuments/IO work/DLE_scripts")
+
+xlcFreeMemory()
+source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 
 #################
 ### Constants ###
@@ -74,10 +79,13 @@ EXR_IND <- as.numeric(EXR_cty %>% filter(country=="India") %>% select(PA.NUS.FCR
 EXR_BRA <- as.numeric(EXR_cty %>% filter(country=="Brazil") %>% select(PA.NUS.FCRF))
 
 # HH Consumption in India 2007 [US$]
-HH_CON <- WDI(country = c("IN", "BR"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), start = 2007, end = 2011, extra = FALSE, cache = NULL)
+HH_CON <- WDI(country = c("IN", "BR"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), 
+              start = 2004, end = 2011, extra = FALSE, cache = NULL)
 BRA_con_grwth <- as.numeric(HH_CON %>% filter(year==2008 & iso2c=='BR') %>% select(NE.CON.PRVT.KD) / 
                               HH_CON %>% filter(year==2007 & iso2c=='BR') %>% select(NE.CON.PRVT.KD))
-IND_con_grwth <- as.numeric(HH_CON %>% filter(year==2010 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
+IND_con_grwth <- as.numeric(HH_CON %>% filter(year==2011 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
+                              HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
+IND2_con_grwth <- as.numeric(HH_CON %>% filter(year==2004 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
                               HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
 
 WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
@@ -184,8 +192,6 @@ names(DLE_fuelnames_std) <- "item"
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
 
-xlcFreeMemory()
-source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 source("Read_final_demand_from_DB.R")
 source("Read_direct_energy_from_DB.R")
 
@@ -196,6 +202,10 @@ source("Read_direct_energy_from_DB.R")
 DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 
 # India
+IND_HH_Alldata <-selectDBdata(tables='IND1_HH')
+IND_FOOD_Alldata <-selectDBdata(tables='IND1_FOOD')
+save(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
+save(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
 
 IND_FD <- readFinalDemandfromDBbyDecile('IND1')
 IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
@@ -203,23 +213,32 @@ BRA_FD <- readFinalDemandfromDBbyDecile('BRA0')
 BRA1_FD <- readFinalDemandfromDBbyDecile('BRA1')
 
 list[IND_FD_ALL, IND_HH] <- readFinalDemandfromDBAllHH('IND1')
-list[BRA_FD_ALL, BRA_HH] <- readFinalDemandfromDBAllHH('BRA0')
-
 IND_FD_ALL <- data.table(IND_FD_ALL)
-BRA_FD_ALL <- data.table(BRA_FD_ALL)
-BRA_HH <- data.table(BRA_HH, key="hhid")
-setorder(BRA_HH, hhid)
 IND_HH <- data.table(IND_HH, key="hhid")
 setorder(IND_HH, hhid)
 
+list[IND2_FD_ALL, IND2_HH] <- readFinalDemandfromDBAllHH('IND2')
+IND2_FD_ALL <- data.table(IND2_FD_ALL)
+IND2_HH <- data.table(IND2_HH, key="hhid")
+setorder(IND2_HH, hhid)
+
+list[BRA_FD_ALL, BRA_HH] <- readFinalDemandfromDBAllHH('BRA0')
+BRA_FD_ALL <- data.table(BRA_FD_ALL)
+BRA_HH <- data.table(BRA_HH, key="hhid")
+setorder(BRA_HH, hhid)
+
 save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+# save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump_prcadj.Rda")
+save(IND2_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_AllHHConsump.Rda")
 save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
 save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
+save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
 save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
 
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
+load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
 # list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
 # list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')
@@ -343,6 +362,8 @@ FRA_fd_exio_imp <- rowSums(FRA_fd[,-FRA_place]) # Sum all HH FD across countries
 
 # Scalers
 scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
+# scaler2_IND <- sum(IND2_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND2_fd_exio, "IN"))
+scaler_IND2 <- scaler_IND
 scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
 scaler_FRA <- sum(FRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(FRA_fd_exio, "FR"))
 

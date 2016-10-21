@@ -34,25 +34,6 @@ BRA_inten_comb_all[,no_expense_BRA] <- BRA_nonRAS_all[,no_expense_BRA]
 
 
 
-# Intensity under ICP classification
-# In the end, I will replace the codes above with this function.
-DeriveIntensities <- function(country='IND') {
-  icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))
-  
-  list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
-  final_alloc_list_all <- lapply(result_all, func1)
-  
-  alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
-  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"))
-  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"))
-  
-  no_expense <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (icp_fd_cty_usd[,1]==0))
-  no_expense <- no_expense[!(no_expense %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
-  # inten_comb_all <- inten_RAS_all
-  # inten_comb_all[,no_expense] <- nonRAS_all[,no_expense]
-  
-  return(list(inten_RAS_all, final_alloc_list_all, NC_all, FD_adj))
-}
 
 ########################################
 ### Primary energy per HH and capita ###
@@ -116,40 +97,7 @@ save(eHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_GJperHH.Rda"
 
 
 # Sectoral 
-GetHHSectoralEnergyPerCap <- function(idx, country='IND', fd_HH, int_sect) {
-  xlcFreeMemory()
-  scaler <- eval(parse(text=paste0("scaler_",country)))
-  eHH_sect <- t(int_sect[,idx, drop=FALSE] %*% fd_HH[idx, , drop=FALSE] / 1000) / scaler # MJ to GJ / HH
-  
-  xlcFreeMemory()
-  eHH_sect <- data.table(hhid = colnames(fd_HH), eHH_sect)
-  idx_end <- dim(eHH_sect)[2]
-  setkey(eHH_sect, hhid)
-  
-  xlcFreeMemory()
-  cty_HH <- eval(parse(text=paste0(country, "_HH")))
-  eHH_sect <- merge(eHH_sect, cty_HH, by="hhid") 
-  setkey(eHH_sect, hhid, consumption)
 
-  # eHH.per.cap.by.decile <- eHH_sect %>% group_by(decile) %>% mutate(pop=weight*hh_size) %>% mutate_at(vars(V1:V500), funs(.*weight)) %>% 
-  #   summarise_at(vars(V1:V500,pop), sum) %>% mutate_at(vars(V1:V500), funs(./pop))
-  
-  xlcFreeMemory()
-  # Data.table doesn't look reliable. The column division doesn't work!!! (WTF)
-  eHH_cap_sect <- eHH_sect
-  eHH_cap_sect <- eHH_cap_sect[, 2:idx_end := eHH_cap_sect[,2:idx_end, with=FALSE] / hh_size]  # idx_end instead of (n_draw+1) because of no-converge runs
-  eHH_cap_sd <- data.table(hhid = colnames(fd_HH),
-                           sd = apply(eHH_cap_sect[,2:idx_end, with=FALSE], 1, sd),
-                           eHH_cap_sect[,(idx_end+1):dim(eHH_sect)[2], with=FALSE])
-
-  # eHH_cap_sect <- data.frame(eHH_sect)
-  # eHH_cap_sect[, 2:idx_end] <- eHH_cap_sect[, 2:idx_end] / eHH_cap_sect$hh_size # idx_end instead of (n_draw+1) because of no-converge runs
-  # eHH_cap_sd <- data.table(hhid = colnames(fd_HH),
-  #                      sd = apply(eHH_cap_sect[,2:idx_end], 1, sd),
-  #                      eHH_cap_sect[,(idx_end+1):dim(eHH_sect)[2]])
-
-  return(list(eHH_cap_sect, eHH_cap_sd))
-}
 
 ICP_food_idx <- 1:40
 list[all_HH_f, mean_HH_f] <- GetHHSectoralEnergyPerCap(ICP_food_idx)
@@ -181,28 +129,6 @@ pdf(file = paste0(figure_path, "IIOA5.2 - IND stdev by decile.pdf"), width = 8, 
 PlotIntensityHist(eHH_cap_avg, "sd", xmax=3)
 dev.off()
 
-# All 
-PlotIntensityHist <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline=TRUE, linedata, ticksize=10) {
-  xlcFreeMemory()
-  
-  opar <- par() 
-  
-  par(mfrow=c(10,1), oma = c(0, 0, 0, 0), mar= c(2, 0, 0, 0))
-  
-  for (i in 1:10) {
-    a <- as.matrix(intens_HH %>% filter(decile==paste0("decile",i)) %>% select(starts_with(name)))
-    w0 <- intens_HH$weight[intens_HH$decile==paste0("decile",i)]
-    w1 <- w0[rep(1:length(w0), each=dim(a)[2])]   # dim(a)[2] instead of n_draw because of non-converge runs
-    # weighted.hist(a, w1, seq(0, max(a)+bin_size, bin_size), xlim=c(0,xmax), main=NULL, xaxis = FALSE)
-    d<- density(a, weights = w1)
-    plot(d, axes=FALSE, xlim=c(1,xmax), main=' ')
-    axis(side = 1, at = seq(0,xmax,ticksize))
-    if (drawline) {
-      abline(v=linedata[i,1], col="red")    
-    }
-  }
-  par(opar)
-}
 
 
 ##### Derive final values to plot #####

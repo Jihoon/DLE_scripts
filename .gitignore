@@ -56,3 +56,7 @@ Test/Empty/.Rproj.user/*
 Splitting and saving files for dir engy anal.R
 .Rproj.user/*
 .Rhistory
+*.Rda
+*.tiff
+Plots/Fig1.2 Primary energy-IND.tif
+*.bak
