@@ -24,7 +24,9 @@ library(qdap)
 library(plotrix)
 library(data.table)
 library(microbenchmark)
-require(ineq)
+library(ineq)
+library(gdxrrw)
+library(gridExtra)
 
 # This library needed to do multiple returns from functions
 library(devtools)  
@@ -359,13 +361,3 @@ FRA_idx_fd <- seq(7*(FRA_place-1)+1, 7*FRA_place)   # 7 final demand columns per
 FRA_fd <- matrix(final_demand[,FRA_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD
 FRA_fd_exio <- rowSums(FRA_fd) # Sum all HH FD across countries
 FRA_fd_exio_imp <- rowSums(FRA_fd[,-FRA_place]) # Sum all HH FD across countries
-
-# Scalers
-scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
-# scaler2_IND <- sum(IND2_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND2_fd_exio, "IN"))
-scaler_IND2 <- scaler_IND
-scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
-scaler_FRA <- sum(FRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(FRA_fd_exio, "FR"))
-
-init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
-init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA

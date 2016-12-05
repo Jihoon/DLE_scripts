@@ -1,4 +1,4 @@
-n_draw <- 100
+n_draw <- 10
 
 D_val_uncertainty <- 0
 

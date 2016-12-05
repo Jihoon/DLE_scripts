@@ -55,4 +55,11 @@ for (type in c("FOOD","OTHCON")) {
   tryCatch({dbSendUpdate(conn, gsub("SCODE", scode, gsub("XX", type, sql)))}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})
 }
 
+# Modify column name
+sql = "ALTER TABLE IND1_MAP RENAME COLUMN ICP_SEQ TO ICP_CODE"
+tryCatch({dbSendUpdate(conn, sql)}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})
 
+sql = "INSERT INTO IND_FOOD_AVG_WT (ITEM,AVG_WT) VALUES ('Orange, mausami', 0.1)"
+sql = "INSERT INTO IND_FOOD_AVG_WT (ITEM,AVG_WT) VALUES ('Lemon', 0.7)"
+sql = "UPDATE IND_FOOD_AVG_WT SET AVG_WT=0.07 WHERE ITEM='Lemon'"
+tryCatch({dbSendUpdate(conn, sql)}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})

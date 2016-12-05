@@ -279,6 +279,18 @@ save(BRA_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
 load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_harmonized.Rda")
 
+
+# Set Scalers
+scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
+# scaler2_IND <- sum(IND2_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND2_fd_exio, "IN"))
+scaler_IND2 <- scaler_IND
+scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
+# scaler_FRA <- sum(FRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(FRA_fd_exio, "FR"))
+
+init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
+init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
+
+
 #### 3.1 France - Inflation 
 
 # This is in 109 NTNU COICOP classifications.

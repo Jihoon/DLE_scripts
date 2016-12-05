@@ -346,6 +346,49 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN")
 }
 
 
+# Emission intensity in ICP classification
+SetupEmissionIntensities <- function (mapping_list, not_conv_idx , country = "IN") {
+  ind_intensity <- vector()
+  n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
+  
+  null_demand_int <- matrix(0, 9600, n_sector)
+  SectoralE_per_hh <- vector()
+  
+  cty_place <- which(exio_ctys==country)
+  cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
+  cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
+  
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  a <- diag(1/rowSums(cty_fd))
+  a[is.infinite(a)] <- 0
+  cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  
+  for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
+    draw_count <<- i  # Used in get_basic_price
+    
+    # Identity mtx representing 1 2007USD spending in each ICP sector, now mapped to 200 EXIO sectors
+    unit_exio <- diag(n_sector) %*% mapping_list[[i]]  # 164x200 
+    
+    # To run without valuation, toggle comment on this line.
+    # fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
+    fd_bp <- t(unit_exio)
+    
+    a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))   # 48 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X164
+    
+    energy_int <- indirect_em_int %*% fd_bp * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007)
+
+    ind_intensity <- rbind(ind_intensity, colSums(energy_int)) # Total indirect energy/cap by decile
+  }
+  
+  # not_conv_idx has 1 where the RAS did not converge.
+  ind_intensity <- ind_intensity[not_conv_idx!=1,]
+  
+  return(ind_intensity)
+}
+
+
 RemoveConflictsInConstraints <- function(qmap_i, country="IND") {
   
   # Convert to pp without tax

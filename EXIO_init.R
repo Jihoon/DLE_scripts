@@ -33,6 +33,13 @@ materials <- materials[,c(-1,-2)]
 # final_demand_material <- read.table(paste(path_iot, "mrFDMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 # final_demand_material <- final_demand_material[,c(-1,-2)]
 
+emissions <- read.table(paste(path_iot, "mrEmissions_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", 
+                        skip=2, nrows=85, stringsAsFactors = FALSE)
+emissions <- emissions %>% select(-V2, -V3) %>% filter(grepl('CH4|CO2|N2O', V1)) 
+GHG_item <- emissions$V1
+emissions <- emissions %>% select(-V1)
+
+
 # From SUT folder
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 tot_use <- tot_use[,c(-1,-2,-3)]
@@ -55,6 +62,9 @@ y <- 1/tot_demand
 y[is.infinite(y)] <- 0 
 energy_int <- as.matrix(energy_use) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
 indirect_E_int <- energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+
+# indirect emission intensity
+indirect_em_int <- as.matrix(emissions) %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 
 # To clean up the memory
 save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
