@@ -6,10 +6,11 @@ OrganizeOptOutputs <- function(scenariosOpt) {
   
   l_consum <- list()
   l_param <- list()
+  l_kg <- list()
   l_nutr <- list()
   
   for(i in 1:l) {
-    list[l_consum[[i]], l_param[[i]], l_nutr[[i]]] <- OptimizationResultSummary(scenarios[[i]])
+    list[l_consum[[i]], l_param[[i]], l_nutr[[i]], l_kg[[i]]] <- OptimizationResultSummary(scenariosOpt[[i]])
     # only for MA now
     xlsx::write.xlsx(ArrConsumption(l_consum[[i]], "MA"), "Consumption_outputs_inc.xlsx", names(scenariosOpt)[i], 
                      row.names = FALSE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
@@ -17,6 +18,8 @@ OrganizeOptOutputs <- function(scenariosOpt) {
                      row.names = TRUE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
     xlsx::write.xlsx(t(l_nutr[[i]]), "Nutrient_outputs_inc.xlsx", names(scenariosOpt)[i], 
                      row.names = TRUE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
+    xlsx::write.xlsx(l_kg[[i]], "Kg_outputs_inc.xlsx", names(scenariosOpt)[i], 
+                     row.names = FALSE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
     print(paste0("Writing files... ", names(scenariosOpt)[i]))
     if (sum(l_consum[[i]][,-1] <0)) {
       name_NF <- names(l_consum[[i]][,-1])[which((l_consum[[i]][,-1] <0), arr.ind = TRUE)[,2]]   
@@ -41,14 +44,14 @@ OrganizeOptOutputs <- function(scenariosOpt) {
 OptResultsForPlot <- function(scenariosOpt) {
   
   n_scene <- length(scenariosOpt)
-  n_cls <- length((scenarios)[[1]])
+  n_cls <- length((scenariosOpt)[[1]])
   
   # Total cost and emission for now (scenarios[[i]][[2]])
   TC <- matrix(, nrow = n_cls, ncol = 0)
   TE <- matrix(, nrow = n_cls, ncol = 0)
   
   for(i in 1:n_scene) {
-    Scene <- OptimizationResultSummary(scenarios[[i]])[[2]] 
+    Scene <- OptimizationResultSummary(scenariosOpt[[i]])[[2]] 
     if (i==1) {
       TC <- cbind(TC, t(Scene[c(1,2),]))
       TE <- cbind(TE, t(Scene[c(3,4),]))
@@ -61,10 +64,10 @@ OptResultsForPlot <- function(scenariosOpt) {
   
   TC <- data.frame(TC)
   TE <- data.frame(TE)
-  row.names(TC) <- names((scenarios)[[1]])
-  row.names(TE) <- names((scenarios)[[1]])
-  names(TC) <- c("base", names(scenarios))
-  names(TE) <- c("base", names(scenarios))
+  row.names(TC) <- names((scenariosOpt)[[1]])
+  row.names(TE) <- names((scenariosOpt)[[1]])
+  names(TC) <- c("base", names(scenariosOpt))
+  names(TE) <- c("base", names(scenariosOpt))
   
   # PlotBar(TC, TE)
   
@@ -119,13 +122,14 @@ OptimizationResultSummary <- function(result_opt) {
   
   consumption <- data.frame(matrix(ncol = 0, nrow = n_fooditem))
   params_opt <- data.frame(matrix(ncol = 0, nrow = 4))
+  kg_opt <- data.frame(matrix(ncol = 0, nrow = n_fooditem))
   nutri <- data.frame(matrix(ncol = 0, nrow = 4))
   
   for (i in names(result_opt)) {
     
     # Result consumption
     snapshot <- data.frame(result_opt[[i]]$x$val) %>% spread(key=X2, value = X3, sep="_") %>%
-      rename(num=X1) %>% right_join(data.frame(num=1:114))
+      rename(num=X1) %>% right_join(data.frame(num=1:n_fooditem))
     snapshot[is.na(snapshot)] <- 0
     
     # Baseline consumption
@@ -149,13 +153,24 @@ OptimizationResultSummary <- function(result_opt) {
                           result_opt[[i]]$base_tem$val, result_opt[[i]]$result_tem$val))
     names(param) <- i
     params_opt <- cbind(params_opt, param)
+    
+    # Total kg
+    n_food <- data.frame(item_no=1:n_fooditem)
+    kg_base <- data.frame(result_opt[[i]]$base_kg$val)
+    names(kg_base) <- c("item_no", paste0(i, "kg_base"))
+    kg_result <- data.frame(result_opt[[i]]$result_kg$val)
+    names(kg_result) <- c("item_no", paste0(i, "kg_opt"))
+    kg_summary <- n_food %>% left_join(kg_base) %>% left_join(kg_result) %>% select(-item_no)
+    kg_summary[is.na(kg_summary)] <- 0
+    kg_opt <- cbind(kg_opt, kg_summary)
   }
   
   consumption <- data.frame(item=nutrients$item, consumption)
+  kg_opt <- data.frame(item=nutrients$item, kg_opt)
   row.names(params_opt) <- c("Baseline TC", "Result TC", "Baseline TE", "Result TE")
   row.names(nutri) <- c("MA", "FA", "MM", "FM")
   
-  return(list(consumption, params_opt, nutri))
+  return(list(consumption, params_opt, nutri, kg_opt))
 }
 
 

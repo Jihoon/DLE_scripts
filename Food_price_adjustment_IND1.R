@@ -11,8 +11,8 @@ fooditems <- fooditems[-10]  # Remove 'baby food'
 
 xlcFreeMemory()
 
-load(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
-load(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
 svy <- "IND1"
 # IND_Food_org <- selectDBdata(SURVEY, ID, ITEM, VAL_TOT, QTY_TOT, UNIT, CODE, tables=c(paste0(svy, '_FOOD'))) 
 # IND_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) 
@@ -37,6 +37,7 @@ mean_p <- IND_Food %>% group_by(code) %>% summarise(mean_p = weighted.mean(unit_
 IND_Food <- IND_Food %>% left_join(mean_p) %>% mutate(val_totadj = qty_tot * mean_p, scale_p = unit_price/mean_p)
 IND_Food$val_totadj <- val_tot * IND_Food$unit_price
 IND_Food <- IND_Food %>% left_join(IND_HH_region)
+
 detach(IND_Food)
 
 # Just to check the PDS price differences across region
@@ -92,3 +93,18 @@ tryCatch({dbSendUpdate(db_conn, sql)}, error=function(e){cat("SKIPPED ERROR :",c
 
 sql <- "ALTER TABLE IND1_FOOD RENAME COLUMN VAL_TOT_ADJ TO VAL_TOT" # ALTER TABLE IND1_FOOD DROP COLUMN "
 tryCatch({dbSendUpdate(db_conn, sql)}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})
+
+# Price normalization index by decile
+IND_Food_org <- selectDBdata(SURVEY, ID, ITEM, VAL_TOT_ORG, VAL_TOT, QTY_TOT, UNIT, CODE, tables=c(paste0(svy, '_FOOD')))
+names(IND_Food_org)[2] <- "hhid"
+IND_Food_org <- filter(IND_Food_org, item %in% fooditems) %>% left_join(IND_HH)
+IND_Food_org <- IND_Food_org %>% mutate(price_scale = val_tot_org / val_tot)
+
+p_normal_idx <- IND_Food_org %>% group_by(decile, code) %>% summarise(mean_idx = weighted.mean(price_scale, weight, na.rm = TRUE)) %>% 
+  left_join(food_group) %>% select(-food_grp) %>% filter(!is.na(decile)) %>% filter(code!=120)
+
+ggplot(p_normal_idx, aes(x=decile, y=mean_idx, shape = item)) +   
+  geom_line(aes(group = item)) + geom_point(size=4) +
+  scale_shape_manual(values = c(0:9)) +
+  labs(x="Decile", y="Price normalization index") + 
+  scale_x_discrete(labels=1:10)

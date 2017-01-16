@@ -213,6 +213,7 @@ IND2_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND2_FD_code[1:(dim(IND2_FD_code)[1]
   rbind(IND2_FD_code[-(1:(dim(IND2_FD_code)[1]-n_CES_fuel)),-c(1,2)]) # for all deciles and total
 IND2_FD_ICP <- as.matrix(IND2_FD_ICP)
 
+# Total final demand in ICP cat for all HH (not scaled up to Nat Acc level yet) (USD 2010 PPP as in DLE DB)
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHH_w_CODE.Rda")
 IND_FD_ICP_AllHH <- crossprod(CES_ICP_IND, as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
   rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
@@ -254,7 +255,7 @@ IND_FD_ICP_usd2007 <- IND_FD_ICP_usd2011 / IND_con_grwth
 # This scaling by consumption_growth will go obsolete and simply use IND_con_grwth.
 
 # All households
-IND_FD_AllHH_2011 <- IND_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND 
+IND_FD_AllHH_2011 <- IND_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND    # From USD 2010 PPP to USD 2007 (MER)
 IND2_FD_AllHH_2004 <- IND2_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND  # to USD 2007 (MER)
 IND_FD_ICP_AllHH <- IND_FD_AllHH_2011 / IND_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
 

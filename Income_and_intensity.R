@@ -68,14 +68,13 @@ IND_HH_sum_nocook <- GetSummaryForPlot(eHH_IND_nocook, IND_FD_ICP_HH_adj, "IND",
 # 
 # IND_HH_sum_nofw <- eHH_IND_nofw %>% select(hhid, weight:intensity) %>%
 #   left_join(IND_HH_region %>% select(hhid, region, urban), by="hhid")
-IND_HH_sum_food <- GetSummaryForPlot(eHH_IND_food, IND_FD_ICP_HH_adj, "IND", idx_fuelwood)
-
+# IND_HH_sum_food <- GetSummaryForPlot(eHH_IND_food, IND_FD_ICP_HH_adj, "IND", idx_fuelwood)
 
 # Food intensity
 max.int <- 25
 max.exp <- 30000
 
-idx_food <- 1:40  #c(157,162) #c(153, 157,161,162)   # 
+idx_food <- 1:45  #c(157,162) #c(153, 157,161,162)   # 
 list[eHH_IND_food, eHH_sd_food] <-  GetHHSectoralEnergyPerCap(idx_food, 'IND', IND_FD_ICP_HH_adj, IND_intensity)
 
 # eHH_IND_food <- eHH_IND_food %>% mutate(totexpense2007MER = colSums(IND_FD_ICP_HH_adj / scaler_IND)) %>%
@@ -95,6 +94,11 @@ qplot(totexpense2007MER, intensity, data=IND_HH_sum_food %>% filter(urban==1), g
       xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD (Food)", size=I(0.15)) +
   stat_smooth()
 
+a <- eHH_IND_food %>% cbind(sd_GJ_per_cap = apply(eHH_IND_food %>% select(V1:V500),1,sd))
+library(Hmisc)
+wtd.mean(IND_HH_sum_food$pri_e_avg/IND_HH_sum_food$hh_size, w=IND_HH_sum_food$weight)
+sqrt(wtd.var(IND_HH_sum_food$pri_e_avg/IND_HH_sum_food$hh_size, w=IND_HH_sum_food$weight))
+wtd.mean(a$sd_GJ_per_cap, w=a$weight)
 
 # Plotting intensities vs hh expenditure
 # PlotIntensityHist(eHH_IND, "intensity", xmax=150, bin_size=0.1, drawline = F)
@@ -108,20 +112,21 @@ qplot(expense2007MER, intensity, data=IND_HH_sum, geom="auto", xlim=c(0,max.exp)
       xlab="Annual expenditure [USD 2007MER] (All India)", ylab="MJ/USD", size=I(0.15)) +
   stat_smooth()
 qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook, geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
-      xlab="Annual expenditure [USD 2007MER] (All India)", ylab="MJ/USD w/o fuelwood and coal", size=I(0.15)) +
+      xlab="Annual expenditure [USD 2007MER] (All India)", ylab="MJ/USD w/o solid fuel & LPG", size=I(0.15)) +
   stat_smooth()
-qplot(expense2007MER, intensity, data=IND_HH_sum %>% filter(urban==0), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+IND_p1 <-qplot(expense2007MER, intensity, data=IND_HH_sum %>% filter(urban==0), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
       xlab="Annual expenditure [USD 2007MER] (Rural India)", ylab="MJ/USD", size=I(0.15)) +
   stat_smooth()
-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook %>% filter(urban==0), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
-      xlab="Annual expenditure [USD 2007MER] (Rural India)", ylab="MJ/USD w/o fuelwood and coal", size=I(0.15)) +
+IND_p2 <-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook %>% filter(urban==0), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+      xlab="Annual expenditure [USD 2007MER] (Rural India)", ylab="MJ/USD w/o solid fuel & LPG", size=I(0.15)) +
   stat_smooth()
-qplot(expense2007MER, intensity, data=IND_HH_sum %>% filter(urban==1), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+IND_p3 <-qplot(expense2007MER, intensity, data=IND_HH_sum %>% filter(urban==1), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
       xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD", size=I(0.15)) +
   stat_smooth()
-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook %>% filter(urban==1), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
-      xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD w/o fuelwood and coal", size=I(0.15)) +
+IND_p4 <-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook %>% filter(urban==1), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+      xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD w/o solid fuel & LPG", size=I(0.15)) +
   stat_smooth()
+grid.arrange(IND_p1, IND_p2, IND_p3, IND_p4, nrow=2, ncol=2)
 
 # Impact of Coal by region(?)
 qplot(totexpense2007MER, intensity, data=IND_HH_sum_nofw %>% filter(region=="Jammu and Kashmir"), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 

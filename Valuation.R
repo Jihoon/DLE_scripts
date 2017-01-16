@@ -261,7 +261,6 @@ get_basic_price <- function(v_pp, country = 'IN'){
   return(v_bp)
 }
 
-
 get_purch_price <- function(v_bp, country = 'IN'){
   # if(country=='FR') {country <- 'AT'}
   if (D_val_uncertainty == 0) {

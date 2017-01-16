@@ -20,6 +20,8 @@ ex <- read.csv(paste(fpath,"WHo - Health expenditure per capita, all countries, 
 wd <- read.csv(paste(fpath,"WHO - Health workforce Density per 1000.csv", sep=""), header=TRUE)
 infra <- read.csv(paste(fpath,"WHO - Health infrastructure.csv", sep=""), header=TRUE)
 me <- read.csv(paste(fpath,"WHO - Medical equipment.csv", sep=""), header=TRUE)
+hb <- read.csv(paste(fpath,"UN - Hospital beds.csv", sep=""), header=TRUE, nrows=326)
+hb_wb <- read.csv(paste(fpath,"WB - Hospital beds.csv", sep=""), header=TRUE, nrows=269, skip=4) %>% select(2,X2008:X2012)
 
 cm <- cm[cm$Year=="2012",1:3]
 names(cm)[2:3] <- c("YearCM", "InfMort")
@@ -60,7 +62,16 @@ infra <- infra[infra$Year=="2013",]
 # infra <- aggregate(.~Country, infra[,1:3], head, 1)
 names(infra) <- c("Country", "YearHosp", "HospitalPer1M" ,"HealthPosts", "HealthCentres", "DistRuralHosp", 
                   "ProvHosp" ,"SpecHosp")
-  
+
+hb <- hb %>% select(-4) %>% mutate(Value=Value/10)   # Originally beds per 10,000
+names(hb) <- c("Country", "Year", "BedPer1000")
+# hb <- hb %>% filter(Year==2009)   # Most countries in 2009
+
+names(hb_wb)[1] <- "code"
+# hb_wb <- hb_wb %>% rowwise() %>% mutate(Avg = mean(c(X2010, X2011, X2012), rm.na=TRUE))
+hb_wb <- hb_wb %>% mutate(BedPer1000 = rowMeans(.[,-1], na.rm=TRUE)) %>% filter(!is.nan(BedPer1000)) %>%
+  select(-starts_with("X")) #%>% filter(!grepl("income",Country))
+
 me <- me[,1:4]
 names(me)[2:4] <- c("YearEquip", "MRIPer1M", "CTPer1M")
 me <- aggregate(.~Country, me, head, 1) 
@@ -68,6 +79,7 @@ me <- aggregate(.~Country, me, head, 1)
 CtyPerf <- Reduce(function(...) merge(..., all=T, by="Country"), 
        list(le, cm, av, ex, wd, infra, me))
 CtyPerf$code <- countrycode(CtyPerf$Country, "country.name", "iso3c")
+CtyPerf <- CtyPerf %>% left_join(hb_wb)
 CtyPerf <- merge(CtyPerf, PPP_scaler, by="code")
 
 # Scale health expenditures (from WHO) by health PPP rates
@@ -92,7 +104,7 @@ CtyPerf$PerfIdx <- (CtyPerf$cmIdx + CtyPerf$leIdx)/2
 CtyPerf$FacilitiesPer1M <- CtyPerf$HospitalPer1M + CtyPerf$HealthCentres + CtyPerf$HealthPosts
 CtyPerf$GovSupport <- CtyPerf$GovExpPerCapita / CtyPerf$TotExpPerCapita
 CtyPerf$HospitalPer1M[CtyPerf$HospitalPer1M > 40] <- NA   # Wrong entry for Guinea-Bissau? (HospitalPer1M > 50)
-CtyPerf$HealthExpRatio <- TotExpPerCapita/GDP2012
+CtyPerf$HealthExpRatio <- CtyPerf$TotExpPerCapita/CtyPerf$GDP2012
 
 # Set country code
 CtyPerf$ColIdx <- ceiling(CtyPerf$PerfIdx*1000) 
@@ -131,6 +143,11 @@ dev.off()
 png(file = paste(figure_path, "phy_im.png", sep=""), width = 581, height = 453, units = "px")
 plot(PhysicianPer1000, InfMort, xlab="Physicians per 1000 population", ylab="Infant Mortality", pch=14)
 dev.off()
+
+
+plot(CtyPerf$BedPer1000, CtyPerf$PerfIdx, xlab="Number of hospital beds per 1000", ylab="Health status index", pch=14)
+
+median(CtyPerf$PerfIdx[CtyPerf$BedPer1000>1], na.rm = T)
 
 #   plot(GovExpPerCapita, PerfIdx, ylab="Performance index", pch=14)
 #   plot(MRIPer1M, PerfIdx, ylab="Performance index", pch=14)
@@ -357,6 +374,26 @@ detach(CtyPerf)
 
 
 
+### Health energy intensity (indirect) for EXIO countries
+idx_health_sectors <- seq(175, 9600, 200)
+idx_edu_sectors <- seq(174, 9600, 200)
+idx_rice_sectors <- seq(1, 9600, 200)
+health_int <- data.frame(iso2c=exio_ctys, int = colSums(indirect_E_int[,idx_health_sectors])*EXR_EUR$r) %>% 
+  left_join(WDI(country = exio_ctys, indicator = c("NY.GDP.PCAP.PP.CD", "NY.GDP.PCAP.CD"), 
+                start = 2007, end = 2007, extra = FALSE, cache = NULL)) %>%
+  rename(PPP=NY.GDP.PCAP.PP.CD, MER=NY.GDP.PCAP.CD) %>%
+  filter(!is.na(country))
+edu_int <- data.frame(iso2c=exio_ctys, int = colSums(indirect_E_int[,idx_edu_sectors])*EXR_EUR$r) %>% 
+  left_join(WDI(country = exio_ctys, indicator = c("NY.GDP.PCAP.PP.CD", "NY.GDP.PCAP.CD"), 
+                start = 2007, end = 2007, extra = FALSE, cache = NULL)) %>%
+  rename(PPP=NY.GDP.PCAP.PP.CD, MER=NY.GDP.PCAP.CD) %>%
+  filter(!is.na(country))
+ggplot(data=edu_int, aes(x=PPP, y=int))+
+  geom_point(size=3, aes(color="blue"))+
+  theme(legend.position="none") + 
+  labs(x='GDP per capita (PPP USD) in 2007',y="Energy intensity: Health sector (MJ/USD)")+
+  # geom_text(data=health_int, aes(label=iso2c), hjust=0, vjust=0.5, offset=1, size=3)
+  geom_text_repel(aes(label=countrycode(iso2c, "iso2c", "iso3c")), size = 3)
 
 
 

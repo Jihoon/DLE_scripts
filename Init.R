@@ -27,6 +27,8 @@ library(microbenchmark)
 library(ineq)
 library(gdxrrw)
 library(gridExtra)
+library("ggrepel")
+library(colorRamps)
 
 # This library needed to do multiple returns from functions
 library(devtools)  

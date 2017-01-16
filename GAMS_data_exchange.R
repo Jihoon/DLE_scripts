@@ -54,7 +54,7 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
   } else if (scenario=="te_min_khes") {
     grp_map <- group_map_kh
   } else {
-      grp_map <- group_map
+    grp_map <- group_map
   }
   
   grp <- list(name='grp',  type='parameter', dim=2, form='full', uels=c(food_items, food_groups), 
@@ -109,6 +109,7 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
     }
     
     result <- list()
+    Sys.sleep(0.1)
     
     result$x <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="x"))
     result$base_tc <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_cost"))
@@ -117,6 +118,8 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
     result$result_tem <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_emission"))
     result$base_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_nutri"))
     result$result_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_nutri"))
+    result$base_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_kg"))
+    result$result_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_kg"))
     
     result_cluster[[i]] <- result
   }
@@ -126,7 +129,7 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
 }
 
 # Write GDX for one case (mainly for debugging)
-WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") { #"reg-urb" or "reg-urb-inc"
+WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1", nutri) { #"reg-urb" or "reg-urb-inc"
   
   setwd("C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/")
   gms_file <- "DLE_diet_gdx.gms"
@@ -141,14 +144,14 @@ WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") {
   # Constants (nutrients, energy intensity)
   # Re-format for wgdx
   idx <- 1:dim(items_to_optimize)[1]
-  c <- cbind(idx, nutrients$energy)
+  c <- cbind(idx, nutri$energy)
   e <- cbind(idx, ef_all$ef_per_kg_eaten)
   
   # Define the GAMS entities (lists)
   f  <- list(name='f',  type='set', uels=food_items, ts='Food items')
   fg  <- list(name='fg',  type='set', uels=food_groups, ts='Food groups')
   a  <- list(name='a',  type='parameter', dim=2, form='full', uels=c(food_items, nut_groups), 
-             val= as.matrix(nutrients %>% ungroup() %>% select(protein, iron, zinc, vita)), 
+             val= as.matrix(nutri %>% ungroup() %>% select(protein, iron, zinc, vita)), 
              ts="nutritive value of foods (mg/g per kg)", domains=c("f", "n"))
   c  <- list(name='c',  type='parameter', dim=1, form='sparse', uels=food_items, 
              val= c, 
@@ -169,7 +172,9 @@ WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") {
   grp <- list(name='grp',  type='parameter', dim=2, form='full', uels=c(food_items, food_groups), 
               val= as.matrix(grp_map %>% select(-item)), 
               ts="Mapping of food items to major groups", domains=c("f", "fg"))
-
+  
+  result_cluster <- list()
+  
   if (cluster=="reg-urb") {
     clsnames <- unique(food_by_cluster$cluster)
   }  else if (cluster=="reg-urb-inc") {
@@ -186,7 +191,7 @@ WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") {
   # Reformat for wgdx
   pr <- cbind(idx, eval(parse(text=paste0("price_by_cls$price_", zone))))
   r <-  cbind(idx, eval(parse(text=paste0("kg_by_cls$kg_", zone))))
-  ig <- cbind(idx, eval(parse(text=paste0("ignore$ign_", zone))))
+  ig <-  cbind(idx, eval(parse(text=paste0("ignore$ign_", zone))))
   
   # consumption per person
   r <- r[,c(2,2,2,2)] %*% diag(CU$cu_eq)  
@@ -195,7 +200,7 @@ WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") {
   pr <- list(name='pr', type='parameter', dim=1, form='sparse', uels=food_items, 
              val= pr, # ordered alphabetically
              ts="price of food f ($ per kg)", domains="f")
-  r <- list(name='r',  type='parameter', dim=2, form='full', uels=c(food_items, pop_groups), 
+  r  <- list(name='r',  type='parameter', dim=2, form='full', uels=c(food_items, pop_groups), 
              val= r, 
              ts="current level of food f intake by person of type p (kg per person)", domains=c("f", "p"))
   ig <- list(name='ig', type='parameter', dim=1, form='sparse', uels=food_items, 
@@ -205,10 +210,10 @@ WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1") {
   wgdx(paste0("C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/DLE_data.gdx"), 
        f, fg, a, pr, c, e, r, grp, nn, ig)  # Not sure how I can use gdx with diff names in the .gms file
 }
-WriteOptGDX("tc_min", zone="E0_1")
+
 
 scenarios <- list()
-nutr <- food_nutrients_new
+nutr <- food_nutrients_org
 scenarios[[1]] <- RunFoodOpt("tc_min", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc
 scenarios[[2]] <- RunFoodOpt("tc_min_cap", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc
 scenarios[[3]] <- RunFoodOpt("tc_min_nobf", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (no beef)
@@ -224,6 +229,9 @@ names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_c
 
 OrganizeOptOutputs(scenarios)
 
+
+# Test purpose (certain scenario and certain zone)
+WriteOptGDX("tc_min", cluster="reg-urb-inc", zone="E0_4", nutr)
 
 
 # Identify contributions to cost/emission decrease

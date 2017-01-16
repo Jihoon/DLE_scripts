@@ -212,6 +212,7 @@ eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
 # save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 
+
 # No valuation case BRA
 load("./Saved tables/IND_intensities_noVal.Rda")
 list[eHH_IND_noVal, eHH_sd_noVal] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, inten_IND_noVal)
