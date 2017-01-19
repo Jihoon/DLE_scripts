@@ -13,11 +13,6 @@ svy <- "BRA0"
 BRA_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) %>% data.table(key="id")
 names(BRA_HH_region)[2] <- "hhid"
 
-svy <- "IND2"
-IND2_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) %>% data.table(key="id")
-names(IND2_HH_region)[2] <- "hhid"
-# n_col <- dim(eHH_BRA)[2]
-
 eHH_BRA <- eHH_BRA %>% mutate(expense2007MER = colSums(BRA_FD_ICP_HH_adj_BR) / scaler_BRA) %>%
   mutate(pri_e_avg = rowMeans(select(eHH_BRA,V1:V500), na.rm = TRUE) * hh_size) %>%
   mutate(intensity = pri_e_avg / expense2007MER * 1000)  # In MJ/USD (2007 MER)
@@ -45,11 +40,9 @@ View(a)
 # [163] "Natural gas"                                                              
 # [164] "Other household fuel"   
 
-# Try excluding cooking fuel (fuelwood, LPG)
-idx_cookingfuel <-  c(153, 157, 162)  #c(157,162) #c(153, 157,161,162)   # 
-idx_fuelwood <- 157  #c(157,162) #c(153, 157,161,162)   # 
-list[eHH_BRA_nocook, eHH_sd_nocook] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_idx,idx_cookingfuel), 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
-list[eHH_BRA_nofw, eHH_sd_nofw] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_idx,idx_fuelwood), 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
+
+# idx_fuelwood <- 157  #c(157,162) #c(153, 157,161,162)   # 
+# list[eHH_BRA_nofw, eHH_sd_nofw] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_idx,idx_fuelwood), 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
 
 # eHH_BRA_nocook <- eHH_BRA_nocook %>% mutate(totexpense2007MER = colSums(BRA_FD_ICP_HH_adj_BR / scaler_BRA)) %>%
 #   mutate(expense2007MER = colSums(BRA_FD_ICP_HH_adj_BR[setdiff(ICP_all_idx,idx_cookingfuel),] / scaler_BRA)) %>%
@@ -59,7 +52,6 @@ list[eHH_BRA_nofw, eHH_sd_nofw] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_id
 # BRA_HH_sum_nocook <- eHH_BRA_nocook %>% select(hhid, weight:intensity) %>%
 #   left_join(BRA_HH_region %>% select(hhid, region, urban), by="hhid")
 
-BRA_HH_sum_nocook <- GetSummaryForPlot(eHH_BRA_nocook, BRA_FD_ICP_HH_adj_BR, "BRA", idx_cookingfuel)
 
 # eHH_BRA_nofw <- eHH_BRA_nofw %>% mutate(totexpense2007MER = colSums(BRA_FD_ICP_HH_adj_BR / scaler_BRA)) %>%
 #   mutate(expense2007MER = colSums(BRA_FD_ICP_HH_adj_BR[setdiff(ICP_all_idx,idx_fuelwood),] / scaler_BRA)) %>%
@@ -68,6 +60,7 @@ BRA_HH_sum_nocook <- GetSummaryForPlot(eHH_BRA_nocook, BRA_FD_ICP_HH_adj_BR, "BR
 # 
 # BRA_HH_sum_nofw <- eHH_BRA_nofw %>% select(hhid, weight:intensity) %>%
 #   left_join(BRA_HH_region %>% select(hhid, region, urban), by="hhid")
+
 BRA_HH_sum_food <- GetSummaryForPlot(eHH_BRA_food, BRA_FD_ICP_HH_adj_BR, "BRA", idx_fuelwood)
 
 
@@ -96,7 +89,12 @@ qplot(totexpense2007MER, intensity, data=BRA_HH_sum_food %>% filter(urban==1), g
   stat_smooth()
 
 
-# Plotting intensities vs hh expenditure
+# Try excluding cooking fuel (fuelwood, LPG)
+idx_cookingfuel <-  c(153, 157, 162)  #c(157,162) #c(153, 157,161,162)   # 
+list[eHH_BRA_nocook, eHH_sd_nocook] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_idx,idx_cookingfuel), 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
+BRA_HH_sum_nocook <- GetSummaryForPlot(eHH_BRA_nocook, BRA_FD_ICP_HH_adj_BR, "BRA", idx_cookingfuel)
+
+
 # PlotIntensityHist(eHH_BRA, "intensity", xmax=150, bin_size=0.1, drawline = F)
 
 # Urban/Rural intensities
@@ -210,7 +208,7 @@ detach(BRA_summary)
 BRA_FD_HH_adj_2011 <- BRA_FD_AllHH_2011 * (chng_pct_BRA + 1)
 idx_inf <- which(is.infinite(chng_pct_BRA))  # Identify rows with Inf adjustments
 r_HH <- colSums(BRA_FD_AllHH_2011)/sum(BRA_FD_AllHH_2011)  # ratio of hh total to (unweighted) total
-BRA_FD_HH_adj_2011[idx_inf,] <- t(sapply(BRA_FD_adj[idx_inf] * 1e6, # M.USD to USD
+BRA_FD_HH_adj_2011[idx_inf,] <- t(sapply(BRA_FD_adj_val_BRA[idx_inf] * 1e6, # M.USD to USD
                                          function(x) x * r_HH / sum(r_HH * BRA_HH$weight))) * scaler_BRA * BRA_con_grwth  
 rm(r_HH)
 gc()
@@ -221,7 +219,7 @@ list[eHH_BRA_2011, eHH_sd_2011] <-  GetHHSectoralEnergyPerCap(1:164, 'BRA', BRA_
 BRA_HH_sum_2011 <- GetSummaryForPlot(eHH_BRA_2011, BRA_FD_ICP_HH_adj_BR, "BRA", 0)
 
 # Get total primary energy for all HHs, but excluding cooking fuel (fuelwood, LPG) and coal
-idx_cookingfuel <-  c(153, 157, 162)   
+idx_cookingfuel <-  c(60, 155)   #c(153:164)   #
 list[eHH_BRA_2011_nosolid, eHH_sd_2011_nosolid] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_all_idx,idx_cookingfuel), 'BRA', 
                                                                               BRA_FD_ICP_HH_adj_BR, BRA_intensity)
 

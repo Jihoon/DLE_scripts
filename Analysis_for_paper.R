@@ -400,6 +400,11 @@ TotEmbodEne_BRA / BRA_pop_2007  # Average GJ/capita for the country
 TotEmbodEne_IND / IND_pop_2007
 TotEmbodEne_IND / sum(eHH_IND$hh_size *eHH_IND$weight)
 
+# Food energy per capita
+TotFoodEne_IND <- mean(apply(all_HH_f_IN[,2:(dim(all_HH_f_IN)[2]-dim(IND_HH)[2]-2), with=FALSE], 2, 
+                              function(x) {sum(x * all_HH_f_IN$hh_size *all_HH_f_IN$weight)}))
+TotFoodEne_IND / IND_pop_2007
+
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_AllHH, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_HH_adj_EX, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
 TotHHFD_IND <- sum(apply(IND_FD_ICP_AllHH, 1, function(x) {sum(x * eHH_IND$weight)})) /1e6

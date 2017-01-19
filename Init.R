@@ -335,7 +335,7 @@ source("Bridge_RAS.R")
 IND_place <- which(exio_ctys=="IN")
 IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
 IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 7 final demand columns per country
-IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD
+IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
 IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
 IND_fd_exio_imp <- rowSums(IND_fd_ex[,-IND_place]) # Sum all HH FD across countries
 

@@ -190,6 +190,21 @@ Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") %>%
 Cost_pl <- Cost_pl %>% left_join(Infeasibles)
 Emission_pl <- Emission_pl %>% left_join(Infeasibles)
 
+# Total non-CO2 emission per capita for te_min_cap 
+EmissionPerCap <- Emission %>% select(base, te_min_cap, te_min_cost, n_hh) %>%   # kTon CO2e/yr
+  mutate(zone = row.names(Emission)) %>%
+  mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) 
+EmissionPerCap <- cbind(do.call("rbind", lapply(strsplit(EmissionPerCap$zone, ""), '[', -3)), EmissionPerCap) 
+names(EmissionPerCap)[1:3] <- c("state", "urban", "inc")
+EmissionPerCap <- EmissionPerCap %>% select(-te_min_cost, -zone) %>% group_by(inc) %>% 
+  summarise(totE_base = sum(base), totE_opt = sum(te_min_cap), n_hh = sum(n_hh)) %>% cbind(pop_inc) %>%
+# EmissionPerCap <- EmissionPerCap %>% rbind(c(0, colSums(EmissionPerCap[,-1]))) 
+  mutate(perCap_base=totE_base/pop_inc*1e6, perCap_opt=totE_opt/pop_inc*1e6)  # kgCO2e
+sum(EmissionPerCap$totE_base) / sum(EmissionPerCap$pop_inc)*1e6
+sum(EmissionPerCap$totE_opt) / sum(EmissionPerCap$pop_inc)*1e6
+write.table(EmissionPerCap[,6:7], "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+
+
 ### Nutritional info set
 
 food_nutrients_org = read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/NSS_food_items-VitA.xlsx', sheet='NSS_food_items_values')
@@ -236,11 +251,17 @@ GetTOtalQuantities_kg <- function() {
     sum_kg <- sweep(kg, 2, hh_count, '*')
     base_tot <- rowSums(sum_kg[,seq(1, ncol(sum_kg), by = 2)])        # national total kg at the baseline (survey)
     opt_tot <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 2)])         # national total kg optimized 
-    opt_tot_low_inc <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for lowest income group
-    opt_tot_hi_inc <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for highest income group
+    # opt_tot_low_inc <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for lowest income group
+    # opt_tot_hi_inc <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for highest income group
+    opt_tot_1 <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for 1 income group
+    opt_tot_2 <- rowSums(sum_kg[,seq(4, ncol(sum_kg), by = 8)])   # total kg for 2 income group
+    opt_tot_3 <- rowSums(sum_kg[,seq(6, ncol(sum_kg), by = 8)])  # total kg for 3 income group
+    opt_tot_4 <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for 4 income group
     
-    tot <- data.frame(base_tot, opt_tot, opt_tot_low_inc, opt_tot_hi_inc)
-    names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
+    tot <- data.frame(base_tot, opt_tot, opt_tot_1, opt_tot_2, opt_tot_3,opt_tot_4)
+    names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_2", "opt_3", "opt_4"))
+    # tot <- data.frame(base_tot, opt_tot, opt_tot_low_inc, opt_tot_hi_inc)
+    # names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
     
     Tot_kg <- cbind(Tot_kg, tot)
   }
@@ -251,13 +272,63 @@ GetTOtalQuantities_kg <- function() {
 Consumption_kg <- GetTOtalQuantities_kg()  # kg/yr in NSS categories
 Consumption_kg <- Consumption_kg %>% left_join(food_group) %>% select(-food_grp) %>% arrange(code) %>% 
   left_join(food_avgs_national %>% select(code, avg_price))
-Consumption_price <- Consumption_kg %>% mutate_at(vars(contains("min")), funs(.*avg_price))
+# Consumption_price <- Consumption_kg %>% mutate_at(vars(contains("min")), funs(.*avg_price))
+# Total food expenditure (USD 2007 MER)
+Consumption_price <- Consumption_kg %>% mutate_at(vars(contains("min")), 
+                                                  funs(.*avg_price * PPP_IND / CPI_ratio_IND / EXR_IND )) #/ IND_con_grwth 
 
-a<-data.frame(code=as.numeric(row.names(CES_ICP_IND))) %>% left_join(Consumption_price) 
+# Get hh size & n_hh by four income groups 
+a <- hh_sum %>% group_by(inc_grp) %>%
+  summarise(MA_avg=weighted.mean(male_adult, weight, na.rm=TRUE),
+            FA_avg=weighted.mean(female_adult, weight, na.rm=TRUE),
+            MM_avg=weighted.mean(male_minor, weight, na.rm=TRUE),
+            FM_avg=weighted.mean(female_minor, weight, na.rm=TRUE),
+            n_hh = sum(weight))
+hh_size_inc <- rowSums(a[,2:5])
+
+n_hh_inc <- hh_dem_cts %>% group_by(inc_grp) %>% summarise(n_hh = sum(n_hh))
+pop_inc <- hh_size_inc*n_hh_inc$n_hh 
+pop_share_inc <- pop_inc / sum(pop_inc)
+
+# Survey total food consumption (USD 2007 MER)
+# combined with the baseline from the optimization data
+food_baseline_NSS <- IND_FD_code[1:331,] %>% select(item, total, CODE) %>% 
+  left_join(select(Consumption_price, starts_with("te_min_cap"), code), by=c("CODE" = "code")) %>%
+  mutate(total = total * PPP_IND / CPI_ratio_IND / EXR_IND  ) #/ IND_con_grwth
+food_baseline_NSS <- food_baseline_NSS %>% 
+  mutate_cond(CODE >= 280 & CODE <=290, total=0) %>% 
+  mutate_cond(CODE >= 325, total=0) %>% 
+  mutate_cond(is.na(te_min_cap_base), te_min_cap_base=total, te_min_cap_opt_tot=total,
+              te_min_cap_opt_1=total*pop_share_inc[1], te_min_cap_opt_2=total*pop_share_inc[2],
+              te_min_cap_opt_3=total*pop_share_inc[3], te_min_cap_opt_4=total*pop_share_inc[4]) %>%
+  rename(NSS = total, Opt_baseline = te_min_cap_base, Opt_result = te_min_cap_opt_tot, 
+         Opt_result1 = te_min_cap_opt_1, Opt_result2 = te_min_cap_opt_2, Opt_result3 = te_min_cap_opt_3, Opt_result4 = te_min_cap_opt_4)
+colSums(food_baseline_NSS[,2:9])
+
+### Deriving GJ/cap from food
+
+# 1. Only from the Optimization items (114 of them)
+a <- data.frame(code=as.numeric(row.names(CES_ICP_IND))) %>% left_join(Consumption_price) 
 a[is.na(a)] <- 0
 a.mat <- as.matrix(a %>% select(-item, -group, -code))
 Consumption_ICP <- data.frame(t(CES_ICP_IND) %*% a.mat)   # $/yr in ICP categories
 Consumption_ICP <- Consumption_ICP %>% select(starts_with("te_min_cap"))
-colSums(Consumption_ICP * apply(IND_intensity, 2, mean)[1:151] / 1000) / c(IND_pop_2007, IND_pop_2007, b$n_hh[1]*4.5, b$n_hh[4]*4.5)
 
-b <- hh_dem_cts %>% group_by(inc_grp) %>% summarise(n_hh = sum(n_hh))
+colSums(Consumption_ICP * apply(IND_intensity, 2, mean)[1:151] / 1000) / c(sum(pop_inc), sum(pop_inc), pop_inc[1], pop_inc[4])
+
+# 2. Including those food items excluded from the optimization
+fd.mat <- as.matrix(food_baseline_NSS[,c(2,4:9)])
+fd.mat[is.na(fd.mat)] <- 0
+Consumption_base_ICP <- data.frame(t(CES_ICP_IND) %*% fd.mat)   # $/yr in ICP categories
+foodEperCapita <- colSums(Consumption_base_ICP * apply(IND_intensity, 2, mean)[1:151] / 1000, na.rm=TRUE) / 
+  c(sum(pop_inc), sum(pop_inc), sum(pop_inc), pop_inc)
+foodEperCapita.sd <- colSums(Consumption_base_ICP * apply(IND_intensity, 2, sd)[1:151] / 1000, na.rm=TRUE) / 
+  c(sum(pop_inc), sum(pop_inc), sum(pop_inc), pop_inc)
+write.table(foodEperCapita, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+write.table(foodEperCapita.sd, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+
+
+# Survey total food consumption (USD 2007 MER)
+# food_baseline_NSS <- IND_FD_code[1:150,2]
+# compare_baseline_food <- cbind((IND_FD_ICP_usd2007)[1:45,1]*1e6 / scaler_IND, Consumption_ICP[1:45,1])
+# compare_baseline_food[compare_baseline_food[,2]==0,]
