@@ -1,46 +1,5 @@
-options(java.parameters = "-Xmx16g") 
-library(RJDBC)
-library(data.table)
-library(tidyr)
-library(openxlsx)
-library(XLConnect)
-library(readxl)
-library(Surrogate)
-library(ggplot2)
-library(stringr)
-library(plyr)
-library(dplyr)
-library(pastecs)
-library(countrycode)
-library(scatterplot3d)
-library(rgl)
-library(car)
-library(shape)
-library(graphics)
-library(Surrogate)
-library(fields)
-library(WDI)
-library(qdap)
-library(plotrix)
-library(data.table)
-library(microbenchmark)
-library(ineq)
-library(gdxrrw)
-library(gridExtra)
-library("ggrepel")
-library(colorRamps)
+# This file needs to be run once at the very beginning of an analysis
 
-# This library needed to do multiple returns from functions
-library(devtools)  
-source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list.R")
-
-# Run RAS and construct final matrix in original dimension
-library(mipfp)
-
-setwd("H:/MyDocuments/IO work/DLE_scripts")
-
-xlcFreeMemory()
-source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 
 #################
 ### Constants ###
@@ -72,7 +31,6 @@ CPI <- WDI(country = c("IN", "BR", "FR"), indicator = "FP.CPI.TOTL", start = 200
 
 CPI_ratio_IND <- as.numeric(CPI %>% filter(year==2010 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
 CPI_ratio_BRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='BR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='BR') %>% select(FP.CPI.TOTL))
-CPI_ratio_FRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='FR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='FR') %>% select(FP.CPI.TOTL))
 
 
 # Exchange rate (MER) [LCU/$]
@@ -115,7 +73,6 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 #        How to combine fuel consumption and other (food etc)
 #       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
 
-
 #########################################
 ### Read in COICOP-EXIO Qual mapping  ###
 #########################################
@@ -146,10 +103,13 @@ EX_catnames <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header
 
 # Issue: This qual mapping may change depending on countries, which we need to tackle then.
 
+
 ##############################################
 ###        Read in EXIO matrices           ###
 ##############################################
 
+# Takes long time to run. 
+# Some .Rda files are already created to save time.
 # source("EXIO_init.R")
 
 
@@ -157,8 +117,6 @@ EX_catnames <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header
 ##########################################
 ### Read in function 'get_basic_price' ###
 ##########################################
-
-# Currently does this only for FRA
 
 source("Valuation.R")
 
@@ -239,34 +197,7 @@ save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
 save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
 save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
 
-load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
-load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
-load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
-load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
-load( file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
-# list[IND_DE, IND_FD_DE] <- readDirectEnergyfromDBbyDecile('IND1')
-# list[IND2_DE, IND2_FD_DE] <- readDirectEnergyfromDBbyDecile('IND2')
 
-
-# France - No DB, only summary from Lucas
-
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/2011_FRHHBS_per_decile.xlsx")
-
-n_sector_coicop <- 109  # Num of COICOP sectors
-n_col <- 11  # Num of columns (10 deciles + avg)
-
-# Final demand per HH [Euro/HH]
-fd_decile_FRA <- XLConnect::readWorksheet(wb, sheet="ValueDecile", header=T, forceConversion=T) %>% select(2:(n_col+1))
-n_hh_FRA <- 26058600 # interpolated from https://www.ined.fr/en/everything_about_population/data/france/couples-households-families/households/
-
-fd_decile_FRA <- fd_decile_FRA * n_hh_FRA / 1e6 # [M.EUR]
-fd_decile_FRA[,2:11] <- fd_decile_FRA[,2:11]/10  / EXR_EUR$r # 1/10 for each decile & to M.USD
-
-# For later use
-# IND2_FD <- readFinalDemandfromDB('IND2')
-# IDN_FD <- readFinalDemandfromDB('IDN1')
-# BRA_FD <- readFinalDemandfromDB('BRA1')
-# ZAF_FD <- readFinalDemandfromDB('ZAF1')
 
 
 
@@ -356,10 +287,3 @@ BRA_fd_exio[174] <- 15600  # M Euro
 BRA_fd_exio <- BRA_fd_exio / EXR_EUR$r  # to M.USD 2007
 # The value 15600 is from H:\MyDocuments\IO work\Bridging\CES-COICOP\BRA IO FD comparison.xlsx
 
-
-# Get FRA final demand from EXIO [M.EUR]
-FRA_place <- which(exio_ctys=="FR")
-FRA_idx_fd <- seq(7*(FRA_place-1)+1, 7*FRA_place)   # 7 final demand columns per country
-FRA_fd <- matrix(final_demand[,FRA_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD
-FRA_fd_exio <- rowSums(FRA_fd) # Sum all HH FD across countries
-FRA_fd_exio_imp <- rowSums(FRA_fd[,-FRA_place]) # Sum all HH FD across countries

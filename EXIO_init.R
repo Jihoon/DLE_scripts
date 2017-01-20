@@ -76,3 +76,14 @@ rm(final_alloc_list_FRA, final_alloc_list_FRA_all, result_FRA, result_FRA_all)
 rm(eHH, all_HH_f, all_HH_fl, eHH_cap)
 gc()
 
+# Return EXIO indirect intensity in MJ/USD2007
+GetSpecificEXIOSectorIntensity <- function(cty, exio_sect) {
+  cty_place <- which(exio_ctys==cty)
+  # cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
+  cty_idx_ex <- seq(200*(cty_place-1)+1, 200*cty_place)   # 7 final demand columns per country
+  ex_idx <- which(EX_catnames==exio_sect)
+  
+  int <- colSums(indirect_E_int[,cty_idx_ex])[ex_idx] * EXR_EUR$r   # MJ/EUR to MJ/USD2007
+  
+  return(int)
+}

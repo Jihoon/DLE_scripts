@@ -21,6 +21,51 @@
 #  if (interactive()) 
 #    fortunes::fortune()
 
+options(java.parameters = "-Xmx16g") 
+library(RJDBC)
+library(data.table)
+library(tidyr)
+library(openxlsx)
+library(XLConnect)
+library(readxl)
+library(Surrogate)
+library(ggplot2)
+library(stringr)
+library(plyr)
+library(dplyr)
+library(pastecs)
+library(countrycode)
+library(scatterplot3d)
+library(rgl)
+library(car)
+library(shape)
+library(graphics)
+library(Surrogate)
+library(fields)
+library(WDI)
+library(qdap)
+library(plotrix)
+library(data.table)
+library(microbenchmark)
+library(ineq)
+library(gdxrrw)
+library(gridExtra)
+library("ggrepel")
+library(colorRamps)
+library(devtools)  # This library needed to do multiple returns from functions
+
+source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list.R")
+
+# Run RAS and construct final matrix in original dimension
+library(mipfp)
+
+setwd("H:/MyDocuments/IO work/DLE_scripts")
+
+xlcFreeMemory()
+source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
+
+
+
 .First <- function(){
 	.ls.objects <- function (pos = 1, pattern, order.by,
 	                        decreasing=FALSE, head=FALSE, n=5) {

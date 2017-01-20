@@ -97,20 +97,6 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
       D[[i]] <- d_out
     }
   }
-  # 
-  # F <- diag(y_bp[1:200,1])
-  # F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
-  # F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
-  # 
-  # F[trp_idx, trp_idx] <- diag(y_bp[trp_idx,]-colSums(trp_margin_disag[-trp_idx,]))
-  # F[trd_idx, trd_idx] <- diag(y_bp[trd_idx,]-colSums(trd_margin_disag[-trd_idx,]))
-  # F <- cbind(F,prod_tax)
-  # 
-  # # cbind(y_pp, rowSums(F))
-  # 
-  # y <- 1/y_pp[,1]
-  # y[is.infinite(y)] <- 0 
-  # D <- diag(y) %*% as.matrix(F)
   
   return(D)
 }
@@ -158,8 +144,6 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 
 
 
-
-
 #################################################################################
 #  Read in valuation files from NTNU and build basis (ranges) for random draws  #
 #################################################################################
@@ -168,15 +152,9 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 # For now, use three countries
 
 val_IN <- get_valuation_mtx('IN', 0)
-# val_ID <- get_valuation_mtx('ID', 0)
 val_BR <- get_valuation_mtx('BR', 0)
-# val_CN <- get_valuation_mtx('CN', 0)
-# val_ZA <- get_valuation_mtx('ZA', 0)
-# val_AT <- get_valuation_mtx('AT', 0)
 val_FR <- get_valuation_mtx('FR', 0)
 val_US <- get_valuation_mtx('US', 0)
-# val_mtx <- list(val_IN, val_ID, val_BR, val_CN, val_ZA, val_AT, val_US)
-# names(val_mtx) <- c('IN', 'ID', 'BR', 'CN', 'ZA', 'AT', 'US')
 val_mtx <- list(val_FR, val_BR, val_US, val_IN)
 names(val_mtx) <- c('FR', 'BR', 'US', 'IN')
 
@@ -236,7 +214,6 @@ trade_brkdn_draws <- get_draws(n_draw, dim(trade_margin_breakdown)[1], trade_mar
 # val_AT_rand <- get_valuation_mtx('AT', 1)
 # val_FR_rand <- get_valuation_mtx('FR', 1)
 # val_US_rand <- get_valuation_mtx('US', 1)
-
 
 
 
