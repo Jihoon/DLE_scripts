@@ -1,12 +1,6 @@
-getcu= function(group) {
-  x = cu_eqs %>%
-    filter(group==Group) %>%
-    select(cu_eq)
-  return(as.numeric(x))
-}
 
-cu_eqs=read.csv("C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/cu_eq.csv")
-states=read.csv("C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/states.csv")
+cu_eqs=read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/cu_eq.csv")
+states=read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/states.csv")
 # valid_column_names <- make.names(names=names(food_nutrients), unique=TRUE, allow_ = TRUE)
 
 hh_sum=selectDBdata(SURVEY, ID, HH_SIZE, REGION, AGE, SOCIAL_GROUP, RELIGION, MALE, MALE_ADULT, MALE_MINOR, EDUC_YEARS, MINOR, DWELL_STATUS, WORKER_TYPE, OCCUPATION, EXPENDITURE, WEIGHT, URBAN, tables='IND1_HH')
@@ -94,70 +88,43 @@ food_price_indiv <- food_items%>%
   inner_join(hh_sum%>% select(survey, id, hh_size, cluster, weight, urban, inc_grp, region)) 
 
 
-
-### Get total cost and emission (default output from GAMS run)
-GetTOtalQuantities <- function() {
-  
-  n_cls <- length((scenarios)[[1]])
-  n_scene <- length(scenarios)
-  
-  TotC <- matrix(, nrow = n_cls, ncol = 0)
-  TotE <- matrix(, nrow = n_cls, ncol = 0)
-  
-  for (j in 1:n_scene) {
-    params_opt = read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/Parameter_outputs_inc.xlsx', 
-                            sheet=names(scenarios)[j])
-    if (j==1) {
-      TotC <- cbind(TotC, t(params_opt[c(1,2),-1]))
-      TotE <- cbind(TotE, t(params_opt[c(3,4),-1]))
-    }  else  {
-      TotC <- cbind(TotC, t(params_opt[2,-1]))
-      TotE <- cbind(TotE, t(params_opt[4,-1]))
-    }
-  }
-  
-  TotC <- data.frame(TotC, hh_dem_cts %>% ungroup() %>% select(n_hh))
-  TotE <- data.frame(TotE, hh_dem_cts %>% ungroup() %>% select(n_hh))
-  
-  names(TotC) <- c("base", names(scenarios), "n_hh")
-  names(TotE) <- c("base", names(scenarios), "n_hh")
-  
-  TotC <- TotC %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # M.USD/yr
-  TotE <- TotE %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # kTon CO2e/yr
-  
-  row.names(TotC) <- names((scenarios)[[1]])
-  row.names(TotE) <- names((scenarios)[[1]])
-  
-  return(list(TotC, TotE))
-}
-
+# National total cost and emission
 list[Cost, Emission] <- GetTOtalQuantities()  # M.USD/yr   &   kTon CO2e/yr
 
 
-# Infeasible (manually put together..)
-inf1 <- c("N1_1", "S1_1", "W0_1", "W1_1")             # "te_min" 
-inf2 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")    # "te_min_cap"
-inf3 <- c("S1_1", "W0_1", "W1_1")    # "te_min_nogrp" & "te_min_khes"
+# Infeasible (manually put together..) - previous data
+# inf1 <- c("N1_1", "S1_1", "W0_1", "W1_1")             # "te_min" 
+# inf2 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")    # "te_min_cap"
+# inf3 <- c("S1_1", "W0_1", "W1_1")    # "te_min_nogrp" & "te_min_khes"
+
+# Infeasible (manually put together..) - new data (IFCT 2017 + FAO EF)
+inf1 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")             # "te_min", "te_min_cap", "te_min_nogrp" & "te_min_khes"
+inf2 <- "S1_1"  # "min_pds
 
 # Gap total
-tc_gap <- Cost %>% mutate_cond(row.names(.) %in% inf1, te_min=NA) %>% 
-  mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
-  mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
+tc_gap <- Cost %>% mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>% 
+  mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
+  # mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
+  # mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+  mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
   rbind(colSums(.)) 
 tc_gap[abs(tc_gap) < 1] <- 0
 row.names(tc_gap) <- c(row.names(Cost), "tot")
 
-te_gap <- Emission %>% mutate_cond(row.names(.) %in% inf1, te_min=NA) %>% 
-  mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
-  mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
+# in kTon CO2e/yr
+te_gap <- Emission %>% mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>% 
+  mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
+  # mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
+  # mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+  mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
   rbind(colSums(.))
@@ -167,25 +134,28 @@ row.names(te_gap) <- c(row.names(Cost), "tot")
 # data frame for plotting
 Cost_pl <- Cost %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
   mutate(zone = row.names(Cost)) %>%
-  mutate_cond(zone %in% inf1, te_min=te_min_cost) %>%
-  mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
-  mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
+  mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+  mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
+  # mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
+  # mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
   gather("scenario", "expenditure", 2:10) %>% arrange(zone) %>% mutate_cond(abs(expenditure) < 1e-10, expenditure=0) # USD/year
 Cost_pl <- cbind(do.call("rbind", lapply(strsplit(Cost_pl$zone, ""), '[', -3)), Cost_pl) 
 names(Cost_pl)[1:3] <- c("state", "urban", "inc")
 
 Emission_pl <- Emission %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
   mutate(zone = row.names(Emission)) %>%
-  mutate_cond(zone %in% inf1, te_min=te_min_cost) %>%
-  mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
-  mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
+  mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+  mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
+  # mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
+  # mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
   gather("scenario", "kgCO2e", 2:10) %>% arrange(zone) %>% mutate_cond(abs(kgCO2e) < 1e-10, kgCO2e=0) # kgCO2e/year
 Emission_pl <- cbind(do.call("rbind", lapply(strsplit(Emission_pl$zone, ""), '[', -3)), Emission_pl) 
 names(Emission_pl)[1:3] <- c("state", "urban", "inc")
 
 Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") %>%
-  mutate_cond(zone %in% inf1 & scenario=="te_min", inf="Infeasible") %>%
-  mutate_cond(zone %in% inf2 & scenario=="te_min_cap", inf="Infeasible") 
+  mutate_cond(zone %in% inf1 & (scenario=="te_min" | scenario=="te_min_cap" | scenario=="te_min_nogrp" | scenario=="te_min_khes"), 
+              inf="Infeasible") %>%
+  mutate_cond(zone %in% inf2 & scenario=="te_min_pds", inf="Infeasible") 
 
 Cost_pl <- Cost_pl %>% left_join(Infeasibles)
 Emission_pl <- Emission_pl %>% left_join(Infeasibles)
@@ -193,7 +163,7 @@ Emission_pl <- Emission_pl %>% left_join(Infeasibles)
 # Total non-CO2 emission per capita for te_min_cap 
 EmissionPerCap <- Emission %>% select(base, te_min_cap, te_min_cost, n_hh) %>%   # kTon CO2e/yr
   mutate(zone = row.names(Emission)) %>%
-  mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) 
+  mutate_cond(zone %in% inf1, te_min_cap=te_min_cost) 
 EmissionPerCap <- cbind(do.call("rbind", lapply(strsplit(EmissionPerCap$zone, ""), '[', -3)), EmissionPerCap) 
 names(EmissionPerCap)[1:3] <- c("state", "urban", "inc")
 EmissionPerCap <- EmissionPerCap %>% select(-te_min_cost, -zone) %>% group_by(inc) %>% 
@@ -202,72 +172,11 @@ EmissionPerCap <- EmissionPerCap %>% select(-te_min_cost, -zone) %>% group_by(in
   mutate(perCap_base=totE_base/pop_inc*1e6, perCap_opt=totE_opt/pop_inc*1e6)  # kgCO2e
 sum(EmissionPerCap$totE_base) / sum(EmissionPerCap$pop_inc)*1e6
 sum(EmissionPerCap$totE_opt) / sum(EmissionPerCap$pop_inc)*1e6
+sum(EmissionPerCap$totE_opt) /  *1e6
 write.table(EmissionPerCap[,6:7], "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 
-### Nutritional info set
 
-food_nutrients_org = read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/NSS_food_items-VitA.xlsx', sheet='NSS_food_items_values')
-valid_column_names <- make.names(names=names(food_nutrients_org), unique=TRUE, allow_ = TRUE)
-names(food_nutrients_org) <- valid_column_names
-
-food_nutrients_org = food_nutrients_org %>% select(item, energy,protein, vita, iron, zinc) %>% right_join(food_wgrp) %>%
-  mutate_cond(item=="Kharbooza", zinc=0) %>% arrange(item) %>% mutate_if(is.numeric, funs(.*10)) %>%  # nutrients per kg
-  select(item, energy, protein, iron, zinc, vita)
-
-food_nutrients_new = read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/NSS_food_items-VitA.xlsx', sheet='NSS_food_items_new')
-valid_column_names <- make.names(names=names(food_nutrients_new), unique=TRUE, allow_ = TRUE)
-names(food_nutrients_new) <- valid_column_names
-
-food_nutrients_new = food_nutrients_new %>% select(item, energy,protein, vita, iron, zinc) %>% right_join(food_wgrp) %>%
-  mutate_cond(item=="Kharbooza", zinc=0) %>% arrange(item) %>% mutate_if(is.numeric, funs(.*10))  %>%  # nutrients per kg
-  select(item, energy, protein, iron, zinc, vita)
-### National sum
-
-
-
-### Get total food kg consumptions
-GetTOtalQuantities_kg <- function() {
-  
-  # n_fooditem <- dim(items_to_optimize)[1]
-  n_scene <- length(scenarios)
-  
-  Tot_kg <- matrix(, nrow = n_fooditem, ncol = 0)
-  hh_count <- rep(as.matrix(hh_dem_cts %>% ungroup() %>% select(n_hh)), each=2)
-  
-  for (j in 1:n_scene) {
-    consum_opt = read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
-                            sheet=names(scenarios)[j])   # kg total per food item of a household
-    
-    if (j == 5) {  # To deal with those infeasible groups (<- replace them with the counterparts from "te_min_cost" scenario)
-      replace_inf <- read_excel('C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
-                                sheet="te_min_cost")   # kg total per food item of a household
-      
-      vars <- paste0(inf2, "kg_opt")
-      consum_opt[,vars] <- replace_inf[,vars]
-    }
-    
-    kg <- consum_opt[,-1]
-    sum_kg <- sweep(kg, 2, hh_count, '*')
-    base_tot <- rowSums(sum_kg[,seq(1, ncol(sum_kg), by = 2)])        # national total kg at the baseline (survey)
-    opt_tot <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 2)])         # national total kg optimized 
-    # opt_tot_low_inc <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for lowest income group
-    # opt_tot_hi_inc <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for highest income group
-    opt_tot_1 <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for 1 income group
-    opt_tot_2 <- rowSums(sum_kg[,seq(4, ncol(sum_kg), by = 8)])   # total kg for 2 income group
-    opt_tot_3 <- rowSums(sum_kg[,seq(6, ncol(sum_kg), by = 8)])  # total kg for 3 income group
-    opt_tot_4 <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for 4 income group
-    
-    tot <- data.frame(base_tot, opt_tot, opt_tot_1, opt_tot_2, opt_tot_3,opt_tot_4)
-    names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_2", "opt_3", "opt_4"))
-    # tot <- data.frame(base_tot, opt_tot, opt_tot_low_inc, opt_tot_hi_inc)
-    # names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
-    
-    Tot_kg <- cbind(Tot_kg, tot)
-  }
-  
-  return(cbind(food_wgrp,Tot_kg))
-}
 
 Consumption_kg <- GetTOtalQuantities_kg()  # kg/yr in NSS categories
 Consumption_kg <- Consumption_kg %>% left_join(food_group) %>% select(-food_grp) %>% arrange(code) %>% 

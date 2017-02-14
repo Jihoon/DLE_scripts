@@ -1,5 +1,203 @@
 igdx("C:/GAMS/win64/24.4")
 
+
+
+
+# Returns a list of outputs for all clusters based on one scenario
+RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb" or "reg-urb-inc"
+  
+  setwd(work_path)
+  gms_file <- "DLE_diet_gdx.gms"
+  
+  # Init set names
+  food_items <- list(items_to_optimize$item)
+  food_groups <- list(grp_names)
+  hh_member <- c("male-adult", "female-adult", "male-child", "female-child")
+  pop_groups <- list(hh_member)
+  nut_groups <- list(c("protein", "iron", "zinc", "vita"))
+  
+  # Constants (nutrients, energy intensity)
+  # Re-format for wgdx
+  idx <- 1:dim(items_to_optimize)[1]
+  c <- cbind(idx, nutri$energy)
+  e <- cbind(idx, ef_all$ef_per_kg_eaten)
+  
+  # Define the GAMS entities (lists)
+  f  <- list(name='f',  type='set', uels=food_items, ts='Food items')
+  fg  <- list(name='fg',  type='set', uels=food_groups, ts='Food groups')
+  a  <- list(name='a',  type='parameter', dim=2, form='full', uels=c(food_items, nut_groups), 
+             val= as.matrix(nutri %>% ungroup() %>% select(protein, iron, zinc, vita)), 
+             ts="nutritive value of foods (mg/g per kg)", domains=c("f", "n"))
+  c  <- list(name='c',  type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= c, 
+             ts="calorie content of food f (kcal per kg)", domains="f")
+  e  <- list(name='e',  type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= e, 
+             ts="non-CO2e emission factor of food f (kgCO2e per kg)", domains="f")
+  
+  # For "te_min_nogrp" we combine meat/fish and other protein groups
+  if (scenario=="te_min_nogrp") {
+    grp_map <- group_map_pt
+  } else if (scenario=="te_min_khes") {
+    grp_map <- group_map_kh
+  } else {
+    grp_map <- group_map
+  }
+  
+  grp <- list(name='grp',  type='parameter', dim=2, form='full', uels=c(food_items, food_groups), 
+              val= as.matrix(grp_map %>% select(-item)), 
+              ts="Mapping of food items to major groups", domains=c("f", "fg"))
+  
+  result_cluster <- list()
+  
+  if (cluster=="reg-urb") {
+    clsnames <- unique(food_by_cluster$cluster)
+  }  else if (cluster=="reg-urb-inc") {
+    clsnames <- unique(food_by_cls_inc$cls_inc)
+  }
+  
+  # Optimize by cluster
+  for (i in clsnames) {
+    
+    hh_sz <- t(hh_size_cls%>%filter(clsname==i)%>%select(-clsname))
+    
+    nn <- cbind(1:length(pop_groups[[1]]), hh_sz)  # Assume one person per pop-group
+    nn <- list(name='nn', type='parameter', dim=1, form='sparse', uels=pop_groups, 
+               val= nn, 
+               ts="number of people of type p (num)", domains="p")
+    
+    # Reformat for wgdx
+    pr <- cbind(idx, eval(parse(text=paste0("price_by_cls$price_", i))))
+    r <-  cbind(idx, eval(parse(text=paste0("kg_by_cls$kg_", i))))
+    ig <-  cbind(idx, eval(parse(text=paste0("ignore$ign_", i))))
+    
+    # consumption per person
+    r <- r[,c(2,2,2,2)] %*% diag(CU$cu_eq)  
+    
+    # Define the GAMS entities (lists)
+    pr <- list(name='pr', type='parameter', dim=1, form='sparse', uels=food_items, 
+               val= pr, # ordered alphabetically
+               ts="price of food f ($ per kg)", domains="f")
+    r  <- list(name='r',  type='parameter', dim=2, form='full', uels=c(food_items, pop_groups), 
+               val= r, 
+               ts="current level of food f intake by person of type p (kg per person)", domains=c("f", "p"))
+    ig  <- list(name='ig', type='parameter', dim=1, form='sparse', uels=food_items, 
+                val= ig, # ordered alphabetically
+                ts="items to be ignored from the optimization because of too little consumption", domains="f")
+    
+    wgdx(paste0(work_path, "DLE_data.gdx"), f, fg, a, pr, c, e, r, grp, nn, ig)  # Not sure how I can use gdx with diff names in the .gms file
+    # Sys.sleep(0.2)
+    params <- paste0('DNLP=COUENNE LP=CPLEX Gdx=DLE_output_', i, ' //scenario=', scenario) #--INPUT DLE_data.gdx
+    flag <- gams(paste(gms_file, params))
+    
+    if(flag) {
+      print(paste0("Cluster ",i, ": Flag=", flag))
+      next()
+    }
+    
+    result <- list()
+    Sys.sleep(0.2)
+    
+    result$x <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="x"))
+    result$base_tc <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_cost"))
+    result$result_tc <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_cost"))
+    result$base_tem <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_emission"))
+    result$result_tem <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_emission"))
+    result$base_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_nutri"))
+    result$result_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_nutri"))
+    result$base_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_kg"))
+    result$result_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_kg"))
+    
+    result_cluster[[i]] <- result
+  }
+  
+  return(result_cluster)
+  # Sys.sleep(2)
+}
+
+# Write GDX for one case (mainly for debugging)
+WriteOptGDX <- function(scenario="tc_min", cluster="reg-urb-inc", zone="E0_1", nutri) { #"reg-urb" or "reg-urb-inc"
+  
+  setwd(work_path)
+  gms_file <- "DLE_diet_gdx.gms"
+  
+  # Init set names
+  food_items <- list(items_to_optimize$item)
+  food_groups <- list(grp_names)
+  hh_member <- c("male-adult", "female-adult", "male-child", "female-child")
+  pop_groups <- list(hh_member)
+  nut_groups <- list(c("protein", "iron", "zinc", "vita"))
+  
+  # Constants (nutrients, energy intensity)
+  # Re-format for wgdx
+  idx <- 1:dim(items_to_optimize)[1]
+  c <- cbind(idx, nutri$energy)
+  e <- cbind(idx, ef_all$ef_per_kg_eaten)
+  
+  # Define the GAMS entities (lists)
+  f  <- list(name='f',  type='set', uels=food_items, ts='Food items')
+  fg  <- list(name='fg',  type='set', uels=food_groups, ts='Food groups')
+  a  <- list(name='a',  type='parameter', dim=2, form='full', uels=c(food_items, nut_groups), 
+             val= as.matrix(nutri %>% ungroup() %>% select(protein, iron, zinc, vita)), 
+             ts="nutritive value of foods (mg/g per kg)", domains=c("f", "n"))
+  c  <- list(name='c',  type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= c, 
+             ts="calorie content of food f (kcal per kg)", domains="f")
+  e  <- list(name='e',  type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= e, 
+             ts="non-CO2e emission factor of food f (kgCO2e per kg)", domains="f")
+  
+  # For "te_min_nogrp" we combine meat/fish and other protein groups
+  if (scenario=="te_min_nogrp") {
+    grp_map <- group_map_pt
+  } else if (scenario=="te_min_khes") {
+    grp_map <- group_map_kh
+  } else {
+    grp_map <- group_map
+  }
+  
+  grp <- list(name='grp',  type='parameter', dim=2, form='full', uels=c(food_items, food_groups), 
+              val= as.matrix(grp_map %>% select(-item)), 
+              ts="Mapping of food items to major groups", domains=c("f", "fg"))
+  
+  result_cluster <- list()
+  
+  if (cluster=="reg-urb") {
+    clsnames <- unique(food_by_cluster$cluster)
+  }  else if (cluster=="reg-urb-inc") {
+    clsnames <- unique(food_by_cls_inc$cls_inc)
+  }
+  
+  hh_sz <- t(hh_size_cls%>%filter(clsname==zone)%>%select(-clsname))
+  
+  nn <- cbind(1:length(pop_groups[[1]]), hh_sz)  # Assume one person per pop-group
+  nn <- list(name='nn', type='parameter', dim=1, form='sparse', uels=pop_groups, 
+             val= nn, 
+             ts="number of people of type p (num)", domains="p")
+  
+  # Reformat for wgdx
+  pr <- cbind(idx, eval(parse(text=paste0("price_by_cls$price_", zone))))
+  r <-  cbind(idx, eval(parse(text=paste0("kg_by_cls$kg_", zone))))
+  ig <-  cbind(idx, eval(parse(text=paste0("ignore$ign_", zone))))
+  
+  # consumption per person
+  r <- r[,c(2,2,2,2)] %*% diag(CU$cu_eq)  
+  
+  # Define the GAMS entities (lists)
+  pr <- list(name='pr', type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= pr, # ordered alphabetically
+             ts="price of food f ($ per kg)", domains="f")
+  r  <- list(name='r',  type='parameter', dim=2, form='full', uels=c(food_items, pop_groups), 
+             val= r, 
+             ts="current level of food f intake by person of type p (kg per person)", domains=c("f", "p"))
+  ig <- list(name='ig', type='parameter', dim=1, form='sparse', uels=food_items, 
+             val= ig, # ordered alphabetically
+             ts="items to be ignored from the optimization because of too little consumption", domains="f")
+  
+  wgdx(paste0(work_path, "DLE_data.gdx"), f, fg, a, pr, c, e, r, grp, nn, ig)  # Not sure how I can use gdx with diff names in the .gms file
+}
+
+
 OrganizeOptOutputs <- function(scenariosOpt) {
   
   l <- length(scenariosOpt)
@@ -165,8 +363,8 @@ OptimizationResultSummary <- function(result_opt) {
     kg_opt <- cbind(kg_opt, kg_summary)
   }
   
-  consumption <- data.frame(item=nutrients$item, consumption)
-  kg_opt <- data.frame(item=nutrients$item, kg_opt)
+  consumption <- data.frame(item=food_summary$item, consumption)
+  kg_opt <- data.frame(item=food_summary$item, kg_opt)
   row.names(params_opt) <- c("Baseline TC", "Result TC", "Baseline TE", "Result TE")
   row.names(nutri) <- c("MA", "FA", "MM", "FM")
   
@@ -176,4 +374,95 @@ OptimizationResultSummary <- function(result_opt) {
 
 rep.col<-function(x,n){
   matrix(rep(x,each=n), ncol=n, byrow=TRUE)
+}
+
+
+
+
+### Get total cost and emission (default output from GAMS run)
+GetTOtalQuantities <- function() {
+  
+  n_cls <- length((scenarios)[[1]])
+  n_scene <- length(scenarios)
+  
+  TotC <- matrix(, nrow = n_cls, ncol = 0)
+  TotE <- matrix(, nrow = n_cls, ncol = 0)
+  
+  for (j in 1:n_scene) {
+    params_opt = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Parameter_outputs_inc.xlsx', 
+                            sheet=names(scenarios)[j])
+    if (j==1) {
+      TotC <- cbind(TotC, t(params_opt[c(1,2),-1]))
+      TotE <- cbind(TotE, t(params_opt[c(3,4),-1]))
+    }  else  {
+      TotC <- cbind(TotC, t(params_opt[2,-1]))
+      TotE <- cbind(TotE, t(params_opt[4,-1]))
+    }
+  }
+  
+  TotC <- data.frame(TotC, hh_dem_cts %>% ungroup() %>% select(n_hh))
+  TotE <- data.frame(TotE, hh_dem_cts %>% ungroup() %>% select(n_hh))
+  
+  names(TotC) <- c("base", names(scenarios), "n_hh")
+  names(TotE) <- c("base", names(scenarios), "n_hh")
+  
+  TotC <- TotC %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # M.USD/yr
+  TotE <- TotE %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # kTon CO2e/yr
+  
+  row.names(TotC) <- names((scenarios)[[1]])
+  row.names(TotE) <- names((scenarios)[[1]])
+  
+  return(list(TotC, TotE))
+}
+
+
+### Get total food kg consumptions
+GetTOtalQuantities_kg <- function() {
+  
+  # n_fooditem <- dim(items_to_optimize)[1]
+  n_scene <- length(scenarios)
+  
+  Tot_kg <- matrix(, nrow = n_fooditem, ncol = 0)
+  hh_count <- rep(as.matrix(hh_dem_cts %>% ungroup() %>% select(n_hh)), each=2)
+  
+  for (j in 1:n_scene) {
+    consum_opt = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
+                            sheet=names(scenarios)[j])   # kg total per food item of a household
+    
+    if (j == 5) {  # To deal with those infeasible groups (<- replace them with the counterparts from "te_min_cost" scenario)
+      replace_inf <- read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
+                                sheet="te_min_cost")   # kg total per food item of a household
+      
+      vars <- paste0(inf2, "kg_opt")
+      consum_opt[,vars] <- replace_inf[,vars]
+    }
+    
+    kg <- consum_opt[,-1]
+    sum_kg <- sweep(kg, 2, hh_count, '*')
+    base_tot <- rowSums(sum_kg[,seq(1, ncol(sum_kg), by = 2)])        # national total kg at the baseline (survey)
+    opt_tot <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 2)])         # national total kg optimized 
+    # opt_tot_low_inc <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for lowest income group
+    # opt_tot_hi_inc <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for highest income group
+    opt_tot_1 <- rowSums(sum_kg[,seq(2, ncol(sum_kg), by = 8)])  # total kg for 1 income group
+    opt_tot_2 <- rowSums(sum_kg[,seq(4, ncol(sum_kg), by = 8)])   # total kg for 2 income group
+    opt_tot_3 <- rowSums(sum_kg[,seq(6, ncol(sum_kg), by = 8)])  # total kg for 3 income group
+    opt_tot_4 <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for 4 income group
+    
+    tot <- data.frame(base_tot, opt_tot, opt_tot_1, opt_tot_2, opt_tot_3,opt_tot_4)
+    names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_2", "opt_3", "opt_4"))
+    # tot <- data.frame(base_tot, opt_tot, opt_tot_low_inc, opt_tot_hi_inc)
+    # names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
+    
+    Tot_kg <- cbind(Tot_kg, tot)
+  }
+  
+  return(cbind(food_wgrp,Tot_kg))
+}
+
+
+getcu= function(group) {
+  x = cu_eqs %>%
+    filter(group==Group) %>%
+    select(cu_eq)
+  return(as.numeric(x))
 }
