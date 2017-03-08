@@ -1,164 +1,269 @@
+library(rlist)
 
-cu_eqs=read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/cu_eq.csv")
-states=read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/states.csv")
-# valid_column_names <- make.names(names=names(food_nutrients), unique=TRUE, allow_ = TRUE)
+scenarios <- scenarios_main_devmin
+# scenarios <- scenarios_main_frt
+# scenarios <- scenarios_main_devmin100
 
-hh_sum=selectDBdata(SURVEY, ID, HH_SIZE, REGION, AGE, SOCIAL_GROUP, RELIGION, MALE, MALE_ADULT, MALE_MINOR, EDUC_YEARS, MINOR, DWELL_STATUS, WORKER_TYPE, OCCUPATION, EXPENDITURE, WEIGHT, URBAN, tables='IND1_HH')
-hh_sum=hh_sum%>%
-  mutate(exp_percap = expenditure/hh_size)
+### Automating the infeasibility detection
+for (i in 1:length(scenarios)) {
+  print(names(subset(scenarios[[i]], infeasible>0)))
+  print(names(scenarios)[i])
+}
 
-#create income groups, which is used to join cluster assignments to items
-urb_grp=hh_sum %>%
-  filter(urban==1) %>%
-  filter(is.finite(exp_percap)) %>%
-  arrange(exp_percap) %>%
-  mutate(inc_grp=cut(exp_percap,breaks=c(0,1.4*365,2.8*365,5.6*365,max(exp_percap)*365),labels=F))
+# Script to show elements of the list
+unlist(list.select(scenarios[[9]], obj$val))
+list.select(scenarios[[9]], base_cal$val)
 
-rur_grp=hh_sum %>%
-  filter(urban==0) %>%
-  filter(is.finite(exp_percap)) %>%
-  arrange(exp_percap) %>%
-  mutate(inc_grp=cut(exp_percap,breaks=c(0,0.95*365,1.9*365,3.8*365,max(exp_percap)*365),labels=F))
+paramfile <- paste0('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Results/Parameter_outputs-', runname, '.xlsx')
+list[Cost, Emission] <- GetTOtalQuantities(paramfile, scenarios)  # M.USD/yr   &   kTon CO2e/yr
 
-hh_sum<-rbind(urb_grp,rur_grp) 
+# Automatically detect infeasible zones and deal with them (replace them w/ a feasible scenario)
+info_infsbl <- lapply(scenarios, function(x) names(subset(x, infeasible>0)))
+zone_infsbl <- info_infsbl[lapply(info_infsbl, length) > 0]
 
-hh_sum=hh_sum%>%
-  mutate(female_adult=hh_size-minor-male_adult,female_minor=minor-male_minor)%>%
-  mutate(cu_eq_MA=getcu("male_adult")*male_adult, cu_eq_FA=female_adult*getcu("female_adult"), 
-         cu_eq_MM=male_minor*getcu("male_minor"), cu_eq_FM=female_minor*getcu("female_minor"))%>%
-  left_join(states)%>%
-  mutate(cluster=paste0(zone,as.character(urban)))
-
-hh_dem_cts=hh_sum %>%
-  # select(cluster,cu_eq_MA,cu_eq_FA,cu_eq_MM,cu_eq_FM, weight)%>%
-  group_by(cluster, inc_grp) %>%
-  summarise(cu_eq_MA_avg=weighted.mean(cu_eq_MA, weight, na.rm=TRUE),
-            cu_eq_FA_avg=weighted.mean(cu_eq_FA, weight, na.rm=TRUE),
-            cu_eq_MM_avg=weighted.mean(cu_eq_MM, weight, na.rm=TRUE),
-            cu_eq_FM_avg=weighted.mean(cu_eq_FM, weight, na.rm=TRUE),
-            MA_avg=weighted.mean(male_adult, weight, na.rm=TRUE),
-            FA_avg=weighted.mean(female_adult, weight, na.rm=TRUE),
-            MM_avg=weighted.mean(male_minor, weight, na.rm=TRUE),
-            FM_avg=weighted.mean(female_minor, weight, na.rm=TRUE),
-            MA_tot=sum(male_adult*weight, na.rm=TRUE),
-            FA_tot=sum(female_adult*weight, na.rm=TRUE),
-            MM_tot=sum(male_minor*weight, na.rm=TRUE),
-            FM_tot=sum(female_minor*weight, na.rm=TRUE),
-            n_hh = sum(weight)) %>%
-  filter(inc_grp %in% inc_grps)%>%
-  mutate(clsname=paste0(cluster,"_",as.character(inc_grp))) 
-
-hh_size_cls <- hh_dem_cts %>% ungroup(cluster) %>% select(clsname, MA_avg, FA_avg, MM_avg, FM_avg)  # Num persons
-
-
-#calculate avg prices and get energy intensity by cluster
-food_items = selectDBdata(SURVEY, ID, ITEM, CODE, UNIT, QTY_TOT, VAL_TOT_ORG, tables='IND1_FOOD')
-hh_map=selectDBdata(CODE, ICP_CODE, tables='IND1_MAP')
-
-#For food items that are entered by number, alter quantity to kg based on IND_FOOD_AVG_WT look up table
-food_items = food_items %>%
-  left_join(avg_wt) %>%
-  transform(qty_tot=ifelse(is.na(avg_wt), qty_tot, qty_tot*avg_wt))
-
-# food_nutrients = food_nutrients %>%
-#   select(item, food_grp, energy,protein, vita, iron, zinc)
-
-food_items = food_items %>%
-  left_join(hh_map)
-
-food_avgs_national=food_items%>%
-  filter(is.finite(qty_tot)) %>%
-  mutate(avg_price=val_tot_org/qty_tot)%>%
-  inner_join(hh_sum%>% select(survey, id, hh_size, cluster, weight, urban, inc_grp, region)) %>%
-  group_by(item, code) %>%
-  summarise(avg_price=weighted.mean(avg_price, qty_tot, na.rm=T), qty_tot=sum(weight * qty_tot, na.rm=T) / sum(hh_sum$weight)) %>%
-  left_join(food_nutrients_org)
-
-food_avgs_grp=food_items%>%
-  filter(is.finite(qty_tot)) %>%
-  mutate(avg_price=val_tot_org/qty_tot)%>%
-  inner_join(hh_sum%>% select(survey, id, hh_size, cluster, weight, urban, inc_grp, region)) %>%
-  left_join(food_group%>%select(-code)) %>%
-  group_by(urban, cluster, inc_grp, food_grp, item) %>%
-  summarise_each(.,funs(weighted.mean(., weight=qty_tot, na.rm=T)),avg_price) %>% filter(!is.na(food_grp))
-
-food_price_indiv <- food_items%>%
-  filter(is.finite(qty_tot)) %>%
-  mutate(avg_price=val_tot_org/qty_tot)%>%
-  inner_join(hh_sum%>% select(survey, id, hh_size, cluster, weight, urban, inc_grp, region)) 
-
-
-# National total cost and emission
-list[Cost, Emission] <- GetTOtalQuantities()  # M.USD/yr   &   kTon CO2e/yr
-
-
-# Infeasible (manually put together..) - previous data
-# inf1 <- c("N1_1", "S1_1", "W0_1", "W1_1")             # "te_min" 
-# inf2 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")    # "te_min_cap"
-# inf3 <- c("S1_1", "W0_1", "W1_1")    # "te_min_nogrp" & "te_min_khes"
-
-# Infeasible (manually put together..) - new data (IFCT 2017 + FAO EF)
-inf1 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")             # "te_min", "te_min_cap", "te_min_nogrp" & "te_min_khes"
-inf2 <- "S1_1"  # "min_pds
-
-# Gap total
-tc_gap <- Cost %>% mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>% 
-  mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
-  # mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
-  # mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
-  mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
-  mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
-  mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
-  rbind(colSums(.)) 
+tc_gap <- Cost
+te_gap <- Emission
+for (i in 1:length(zone_infsbl)) {
+  col_infsbl <- match(names(zone_infsbl)[i], names(Cost)) 
+  
+  tc_gap[row.names(Cost) %in% zone_infsbl[[i]], col_infsbl] <- NA
+  row_infsbl <- is.na(tc_gap[, col_infsbl])
+  tc_gap[row_infsbl, col_infsbl]  <- tc_gap$tc_min_cap[row_infsbl]
+  # tc_gap[row_infsbl, col_infsbl]  <- tc_gap$te_min_cost[row_infsbl]
+  
+  te_gap[row.names(Cost) %in% zone_infsbl[[i]], col_infsbl] <- NA
+  te_gap[row_infsbl, col_infsbl]  <- te_gap$tc_min_cap[row_infsbl]
+  # te_gap[row_infsbl, col_infsbl]  <- te_gap$te_min_cost[row_infsbl]
+}
+tc_gap <- tc_gap %>% mutate_at(vars(contains("_min")), funs(.-base)) 
+# tc_gap <- tc_gap %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"),starts_with("dev"))), funs(.-base)) 
 tc_gap[abs(tc_gap) < 1] <- 0
-row.names(tc_gap) <- c(row.names(Cost), "tot")
 
-# in kTon CO2e/yr
-te_gap <- Emission %>% mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>% 
-  mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
-  # mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>% 
-  # mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>% 
-  mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
-  mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
-  mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
-  mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
-  rbind(colSums(.))
+te_gap <- te_gap %>% mutate_at(vars(contains("_min")), funs(.-base)) 
+# te_gap <- te_gap %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"),starts_with("dev"))), funs(.-base)) 
 te_gap[abs(te_gap) < 1] <- 0
-row.names(te_gap) <- c(row.names(Cost), "tot")
 
 # data frame for plotting
-Cost_pl <- Cost %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+Cost_pl <- tc_gap %>% mutate_at(vars(contains("_min")), funs(./base)) %>% 
   mutate(zone = row.names(Cost)) %>%
-  mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
-  mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
-  # mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
-  # mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
   gather("scenario", "expenditure", 2:10) %>% arrange(zone) %>% mutate_cond(abs(expenditure) < 1e-10, expenditure=0) # USD/year
 Cost_pl <- cbind(do.call("rbind", lapply(strsplit(Cost_pl$zone, ""), '[', -3)), Cost_pl) 
 names(Cost_pl)[1:3] <- c("state", "urban", "inc")
 
-Emission_pl <- Emission %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+Emission_pl <- te_gap %>% mutate_at(vars(contains("_min")), funs(./base)) %>% 
   mutate(zone = row.names(Emission)) %>%
-  mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
-  mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
-  # mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
-  # mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>% 
   gather("scenario", "kgCO2e", 2:10) %>% arrange(zone) %>% mutate_cond(abs(kgCO2e) < 1e-10, kgCO2e=0) # kgCO2e/year
 Emission_pl <- cbind(do.call("rbind", lapply(strsplit(Emission_pl$zone, ""), '[', -3)), Emission_pl) 
 names(Emission_pl)[1:3] <- c("state", "urban", "inc")
 
-Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") %>%
-  mutate_cond(zone %in% inf1 & (scenario=="te_min" | scenario=="te_min_cap" | scenario=="te_min_nogrp" | scenario=="te_min_khes"), 
-              inf="Infeasible") %>%
-  mutate_cond(zone %in% inf2 & scenario=="te_min_pds", inf="Infeasible") 
+tc_gap <- tc_gap %>% rbind(colSums(.)) 
+te_gap <- te_gap %>% rbind(colSums(.))  
+row.names(tc_gap) <- c(row.names(Cost), "tot")
+row.names(te_gap) <- c(row.names(Emission), "tot")
+
+Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") 
+for (i in 1:length(zone_infsbl)) {
+  Infeasibles <- Infeasibles %>% mutate_cond(zone %in% zone_infsbl[[i]] & scenario %in% names(zone_infsbl)[i], inf="Infeasible")
+}
 
 Cost_pl <- Cost_pl %>% left_join(Infeasibles)
 Emission_pl <- Emission_pl %>% left_join(Infeasibles)
+
+
+# National total cost and emission
+# Main scenario
+# paramfile <- 'C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Results/Parameter_outputs_inc.xlsx'
+# list[Cost, Emission] <- GetTOtalQuantities(paramfile, scenarios_main_prc)  # M.USD/yr   &   kTon CO2e/yr
+# 
+# # Infeasible (manually put together..) - new data (IFCT 2017 + FAO EF)
+# inf1 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")             # "te_min", "te_min_cap", "te_min_nogrp" & "te_min_khes"
+# inf2 <- "S1_1"  # "min_pds
+# 
+# 
+# # Gap total
+# tc_gap <- Cost %>% 
+#   mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>%
+#   mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
+#   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
+#   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
+#   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
+#   rbind(colSums(.)) 
+# tc_gap[abs(tc_gap) < 1] <- 0
+# row.names(tc_gap) <- c(row.names(Cost), "tot")
+# 
+# # in kTon CO2e/yr
+# te_gap <- Emission %>% 
+#   mutate_cond(row.names(.) %in% inf1, te_min=NA, te_min_cap=NA, te_min_nogrp=NA, te_min_khes=NA) %>%
+#   mutate_cond(row.names(.) %in% inf2, te_min_pds=NA) %>%
+#   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
+#   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
+#   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
+#   rbind(colSums(.))
+# te_gap[abs(te_gap) < 1] <- 0
+# row.names(te_gap) <- c(row.names(Cost), "tot")
+
+# # data frame for plotting
+# Cost_pl <- Cost %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+#   mutate(zone = row.names(Cost)) %>%
+#   mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+#   mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
+#   gather("scenario", "expenditure", 2:10) %>% arrange(zone) %>% mutate_cond(abs(expenditure) < 1e-10, expenditure=0) # USD/year
+# Cost_pl <- cbind(do.call("rbind", lapply(strsplit(Cost_pl$zone, ""), '[', -3)), Cost_pl) 
+# names(Cost_pl)[1:3] <- c("state", "urban", "inc")
+# 
+# Emission_pl <- Emission %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+#   mutate(zone = row.names(Emission)) %>%
+#   mutate_cond(zone %in% inf1, te_min=te_min_cost, te_min_cap=te_min_cost, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+#   mutate_cond(zone %in% inf2, te_min_pds=te_min_cost) %>%
+#   gather("scenario", "kgCO2e", 2:10) %>% arrange(zone) %>% mutate_cond(abs(kgCO2e) < 1e-10, kgCO2e=0) # kgCO2e/year
+# Emission_pl <- cbind(do.call("rbind", lapply(strsplit(Emission_pl$zone, ""), '[', -3)), Emission_pl) 
+# names(Emission_pl)[1:3] <- c("state", "urban", "inc")
+# 
+# Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") %>%
+#   mutate_cond(zone %in% inf1 & (scenario=="te_min" | scenario=="te_min_cap" | scenario=="te_min_nogrp" | scenario=="te_min_khes"), 
+#               inf="Infeasible") %>%
+#   mutate_cond(zone %in% inf2 & scenario=="te_min_pds", inf="Infeasible") 
+# 
+# 
+# # Sensitivity scenarios
+# paramfile <- 'C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Results/Parameter_outputs_inc.xlsx'
+# list[Cost, Emission] <- GetTOtalQuantities(paramfile, scenarios_rice_sens)  # M.USD/yr   &   kTon CO2e/yr
+# 
+# # Infeasible (manually put together..) - new data (IFCT 2017 + FAO EF) - rice sensitivity
+# inf1 <- c("N0_1", "N1_1", "S1_1", "S1_2", "W0_1", "W1_1")             # "te_min"
+# inf2 <- c("N0_1", "N0_2", "N1_1", "N1_2", "S0_2", "S1_1", "S1_2", "W0_1", "W1_1")             # "te_min_cap"
+# inf3 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")             # "te_min_nogrp" & "te_min_khes"
+# inf4 <- c("S1_1", "W0_1", "W1_1")       # "te_min_pds"
+# 
+# # Infeasible (manually put together..) - previous data
+# # inf1 <- c("N1_1", "S1_1", "W0_1", "W1_1")             # "te_min" 
+# # inf2 <- c("N0_1", "N1_1", "S1_1", "W0_1", "W1_1")    # "te_min_cap"
+# # inf3 <- c("S1_1", "W0_1", "W1_1")    # "te_min_nogrp" & "te_min_khes"
+# 
+# # Gap total
+# tc_gap <- Cost %>% 
+#   mutate_cond(row.names(.) %in% inf1, te_min=NA) %>%
+#   mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>%
+#   mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>%
+#   mutate_cond(row.names(.) %in% inf4, te_min_pds=NA) %>%
+#   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
+#   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
+#   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
+#   rbind(colSums(.)) 
+# tc_gap[abs(tc_gap) < 1] <- 0
+# row.names(tc_gap) <- c(row.names(Cost), "tot")
+# 
+# # in kTon CO2e/yr
+# te_gap <- Emission %>% 
+#   mutate_cond(row.names(.) %in% inf1, te_min=NA) %>%
+#   mutate_cond(row.names(.) %in% inf2, te_min_cap=NA) %>%
+#   mutate_cond(row.names(.) %in% inf3, te_min_nogrp=NA, te_min_khes=NA) %>%
+#   mutate_cond(row.names(.) %in% inf4, te_min_pds=NA) %>%
+#   mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs(.-base)) %>% 
+#   mutate_cond(is.na(te_min), te_min=te_min_cost) %>%
+#   mutate_cond(is.na(te_min_cap), te_min_cap=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_pds), te_min_pds=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_nogrp), te_min_nogrp=te_min_cost) %>% 
+#   mutate_cond(is.na(te_min_khes), te_min_khes=te_min_cost) %>% 
+#   rbind(colSums(.))
+# te_gap[abs(te_gap) < 1] <- 0
+# row.names(te_gap) <- c(row.names(Cost), "tot")
+# 
+# # data frame for plotting
+# Cost_pl <- Cost %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+#   mutate(zone = row.names(Cost)) %>%
+#   mutate_cond(zone %in% inf1, te_min=te_min_cost) %>%
+#   mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
+#   mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+#   mutate_cond(zone %in% inf4, te_min_pds=te_min_cost) %>%
+#   gather("scenario", "expenditure", 2:10) %>% arrange(zone) %>% mutate_cond(abs(expenditure) < 1e-10, expenditure=0) # USD/year
+# Cost_pl <- cbind(do.call("rbind", lapply(strsplit(Cost_pl$zone, ""), '[', -3)), Cost_pl) 
+# names(Cost_pl)[1:3] <- c("state", "urban", "inc")
+# 
+# Emission_pl <- Emission %>% mutate_at(vars(c(starts_with("tc"),starts_with("te"))), funs((.-base)/base)) %>% 
+#   mutate(zone = row.names(Emission)) %>%
+#   mutate_cond(zone %in% inf1, te_min=te_min_cost) %>%
+#   mutate_cond(zone %in% inf2, te_min_cap=te_min_cost) %>%
+#   mutate_cond(zone %in% inf3, te_min_nogrp=te_min_cost, te_min_khes=te_min_cost) %>%
+#   mutate_cond(zone %in% inf4, te_min_pds=te_min_cost) %>%
+#   gather("scenario", "kgCO2e", 2:10) %>% arrange(zone) %>% mutate_cond(abs(kgCO2e) < 1e-10, kgCO2e=0) # kgCO2e/year
+# Emission_pl <- cbind(do.call("rbind", lapply(strsplit(Emission_pl$zone, ""), '[', -3)), Emission_pl) 
+# names(Emission_pl)[1:3] <- c("state", "urban", "inc")
+# 
+# Infeasibles <- Cost_pl %>% select(zone, scenario) %>% mutate(inf="Feasible") %>%
+#   mutate_cond(zone %in% inf1 & scenario=="te_min", inf="Infeasible") %>%
+#   mutate_cond(zone %in% inf2 & scenario=="te_min_cap", inf="Infeasible") %>%
+#   mutate_cond(zone %in% inf3 & (scenario=="te_min_nogrp" | scenario=="te_min_khes"), inf="Infeasible") %>%
+#   mutate_cond(zone %in% inf4 & scenario=="te_min_pds", inf="Infeasible") 
+
+
+
+
+### Total emission/cost summary plot by cluster
+excluded <- c("te_min_khes", "tc_min_nobf", "tc_min", "te_min") # , "tc_min_cap"
+p_tc <- ggplot(Cost_pl %>% filter(!scenario %in% excluded), aes(x = state, y=expenditure*100, shape=scenario)) 
+p_tc <- p_tc + geom_point(size=3) +  #geom_point(size=3, aes(shape=inf)) +
+  # scale_colour_manual(values = rainbow(9)) +
+  scale_shape_manual(values = c(2, 0, 20, 3, 1)) +
+  labs(x="state", y="% change from baseline", title="Expenditures on food") +
+  facet_grid(urban~inc, labeller=label_both) 
+
+
+p_te <- ggplot(Emission_pl%>% filter(!scenario %in% excluded), aes(x = state, y=kgCO2e*100, shape=scenario)) 
+p_te <- p_te + geom_point(size=3) +  #geom_point(size=3, aes(shape=inf)) +
+  # scale_colour_manual(values = rainbow(9)) +
+  scale_shape_manual(values = c(2, 0, 20, 3, 1)) +
+  # ylim(-75, 15) +
+  labs(x="state", y="% change from baseline", title="Non-CO2 emissions from food consumed") +
+  facet_grid(urban~inc, labeller=label_both)
+
+# grid.arrange(p_tc, p_te, nrow=2, ncol=1)
+
+
+pct_pl <- Cost_pl %>% rename(pctval = expenditure) %>% mutate(type="Cost") %>%
+  rbind(Emission_pl %>% rename(pctval = kgCO2e) %>% mutate(type="Emission")) %>% arrange(state, urban, inc) %>%
+  mutate(urb = factor(urban, label=c("Rural", "Urban"))) %>% 
+  mutate(income = factor(inc, label=c("Income Group 1", "Income Group 2", "Income Group 3", "Income Group 4"))) %>% 
+  filter(!scenario %in% excluded) %>%
+  mutate(Scenario = 0) %>%
+  mutate_cond(scenario=="te_min_cap", Scenario=1) %>%
+  mutate_cond(scenario=="te_min_cost", Scenario=2) %>%
+  mutate_cond(scenario=="te_min_pds", Scenario=3) %>%
+  mutate_cond(scenario=="te_min_nogrp", Scenario=4) %>%
+  mutate_cond(scenario=="tc_min_cap", Scenario=5) %>%
+  mutate_cond(scenario=="dev_min", Scenario=6) %>%
+  mutate(Scenario = factor(Scenario, label=c("Reference", "Ref+NoBudget", "Ref+PDS", "Ref+FlexDiet", "MinCost", "DevMin"))) %>%
+  mutate_cond(inf=="Infeasible", pctval=NA)
+
+Baseline <- data.frame(a = c(-Inf, Inf), b = 0, Baseline = factor(0, label="Baseline") )
+ 
+pdf(file =  paste0(workdir, "Figures/Optimization results-newEF and nutr2017-", runname, ".pdf"), width = 9, height = 11)
+ggplot(pct_pl %>% filter(!is.na(pctval))) +
+  geom_point(size=3, aes(x = state, y=pctval*100, shape=Scenario, colour = pctval <=0)) +
+  scale_colour_manual(name="Below 0", values = setNames(c('black','darkgrey'),c(TRUE, FALSE))) +
+  # scale_y_continuous(breaks=seq(-50,250,50)) +
+  # scale_shape_manual(values = c(2, 0, 20, 3, 1)) +
+  scale_shape_manual(values = c(2, 0, 20, 3, 1, 8)) +
+  labs(x="state", y="% change from baseline")+
+  geom_line(aes(a, b, linetype = Baseline), Baseline, color='red') +
+  facet_grid(income~urb+type, labeller=label_value)  
+dev.off()
+
+
+
+
+
+
+
 
 # Total non-CO2 emission per capita for te_min_cap 
 EmissionPerCap <- Emission %>% select(base, te_min_cap, te_min_cost, n_hh) %>%   # kTon CO2e/yr
@@ -172,7 +277,7 @@ EmissionPerCap <- EmissionPerCap %>% select(-te_min_cost, -zone) %>% group_by(in
   mutate(perCap_base=totE_base/pop_inc*1e6, perCap_opt=totE_opt/pop_inc*1e6)  # kgCO2e
 sum(EmissionPerCap$totE_base) / sum(EmissionPerCap$pop_inc)*1e6
 sum(EmissionPerCap$totE_opt) / sum(EmissionPerCap$pop_inc)*1e6
-sum(EmissionPerCap$totE_opt) /  *1e6
+# sum(EmissionPerCap$totE_opt) /  *1e6
 write.table(EmissionPerCap[,6:7], "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 

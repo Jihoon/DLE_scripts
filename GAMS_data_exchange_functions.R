@@ -1,13 +1,16 @@
 igdx("C:/GAMS/win64/24.4")
 
 
-
-
 # Returns a list of outputs for all clusters based on one scenario
 RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb" or "reg-urb-inc"
   
   setwd(work_path)
-  gms_file <- "DLE_diet_gdx.gms"
+  gms_file <- "DLE_diet_gdx_slack.gms"
+  # gms_file <- "DLE_diet_gdx.gms"
+  
+  unlink("DLE_output_*")
+  unlink("DLE_*.log")
+  unlink("*PCB082_1*")
   
   # Init set names
   food_items <- list(items_to_optimize$item)
@@ -86,18 +89,19 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
                 ts="items to be ignored from the optimization because of too little consumption", domains="f")
     
     wgdx(paste0(work_path, "DLE_data.gdx"), f, fg, a, pr, c, e, r, grp, nn, ig)  # Not sure how I can use gdx with diff names in the .gms file
-    # Sys.sleep(0.2)
-    params <- paste0('DNLP=COUENNE LP=CPLEX Gdx=DLE_output_', i, ' //scenario=', scenario) #--INPUT DLE_data.gdx
+    # Sys.sleep(1)
+    params <- paste0('DNLP=COUENNE LP=CPLEX Gdx=DLE_output_', i, ' LogOption=2 Logfile=DLE_log_', i, '.log //scenario=', scenario) #--INPUT=DLE_data.gdx 
     flag <- gams(paste(gms_file, params))
     
     if(flag) {
       print(paste0("Cluster ",i, ": Flag=", flag))
-      next()
+      # next()
     }
     
     result <- list()
-    Sys.sleep(0.2)
+    # Sys.sleep(0.2)
     
+    result$obj <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="dvcon"))
     result$x <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="x"))
     result$base_tc <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_cost"))
     result$result_tc <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_cost"))
@@ -105,12 +109,20 @@ RunFoodOpt <- function(scenario="tc_min", cluster="reg-urb", nutri) { #"reg-urb"
     result$result_tem <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_emission"))
     result$base_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_nutri"))
     result$result_nutri <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_nutri"))
+    result$base_cal <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_cal"))
+    result$result_cal <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_cal"))
     result$base_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_baseline_kg"))
     result$result_kg <- rgdx(paste0("DLE_output_", i, ".gdx"), list(name="report_result_kg"))
+    result$infeasible <- sum(rgdx(paste0("DLE_output_", i, ".gdx"), list(name="s_cost_fix"))$val[,3]) +
+      sum(rgdx(paste0("DLE_output_", i, ".gdx"), list(name="s_cal"))$val[,3]) +
+      sum(rgdx(paste0("DLE_output_", i, ".gdx"), list(name="s_nutri"))$val[,3]) +
+      sum(rgdx(paste0("DLE_output_", i, ".gdx"), list(name="s_maxcap"))$val[,3]) +
+      sum(rgdx(paste0("DLE_output_", i, ".gdx"), list(name="s_mincap"))$val[,3])
     
     result_cluster[[i]] <- result
   }
   
+  unlink("DLE_output_*")
   return(result_cluster)
   # Sys.sleep(2)
 }
@@ -210,19 +222,24 @@ OrganizeOptOutputs <- function(scenariosOpt) {
   for(i in 1:l) {
     list[l_consum[[i]], l_param[[i]], l_nutr[[i]], l_kg[[i]]] <- OptimizationResultSummary(scenariosOpt[[i]])
     # only for MA now
-    xlsx::write.xlsx(ArrConsumption(l_consum[[i]], "MA"), "Consumption_outputs_inc.xlsx", names(scenariosOpt)[i], 
+    xlsx::write.xlsx(ArrConsumption(l_consum[[i]], "MA"), paste0(work_path, "Results/Consumption_outputs-", runname, ".xlsx"), names(scenariosOpt)[i], 
                      row.names = FALSE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
-    xlsx::write.xlsx(l_param[[i]], "Parameter_outputs_inc.xlsx", names(scenariosOpt)[i], 
+    xlsx::write.xlsx(l_param[[i]], paste0(work_path, "Results/Parameter_outputs-", runname, ".xlsx"), names(scenariosOpt)[i], 
                      row.names = TRUE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
-    xlsx::write.xlsx(t(l_nutr[[i]]), "Nutrient_outputs_inc.xlsx", names(scenariosOpt)[i], 
+    xlsx::write.xlsx(t(l_nutr[[i]]), paste0(work_path, "Results/Nutrient_outputs-", runname, ".xlsx"), names(scenariosOpt)[i], 
                      row.names = TRUE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
-    xlsx::write.xlsx(l_kg[[i]], "Kg_outputs_inc.xlsx", names(scenariosOpt)[i], 
+    xlsx::write.xlsx(l_kg[[i]], paste0(work_path, "Results/Kg_outputs-", runname, ".xlsx"), names(scenariosOpt)[i],
                      row.names = FALSE, col.names = TRUE, append = ifelse(i==1, FALSE, TRUE))
     print(paste0("Writing files... ", names(scenariosOpt)[i]))
-    if (sum(l_consum[[i]][,-1] <0)) {
-      name_NF <- names(l_consum[[i]][,-1])[which((l_consum[[i]][,-1] <0), arr.ind = TRUE)[,2]]   
-      print(paste0("Infeasible at ", name_NF))}
-    Sys.sleep(2)
+    
+    slacks <- unlist(list.select(scenariosOpt[[i]], infeasible))>0
+
+    if (sum(slacks)>0) {
+  # if (sum(l_consum[[i]][,-1] <0)) {
+      # name_NF <- names(l_consum[[i]][,-1])[which((l_consum[[i]][,-1] <0), arr.ind = TRUE)[,2]]   
+      # print(paste0("Infeasible at ", name_NF))}
+      print(paste0("Infeasible at ", names(scenariosOpt[[i]])[slacks]))}
+    Sys.sleep(3)
   }
   
   # Only when all entities in scenariosOpt are based on the same clusters.
@@ -232,7 +249,7 @@ OrganizeOptOutputs <- function(scenariosOpt) {
   
   for(j in 1:ll) {
     conbycls <- CombineOutputByCLS(l_consum, clsnames[j], "MA")
-    xlsx::write.xlsx(conbycls, "Consumption_outputs_inc.xlsx", 
+    xlsx::write.xlsx(conbycls, paste0(work_path, "Results/Consumption_outputs-", runname, ".xlsx"), 
                      sheetName=clsnames[j], row.names = FALSE, col.names = TRUE, append=TRUE)
     print(paste0("Writing files... ", clsnames[j]))
     Sys.sleep(3)
@@ -380,17 +397,16 @@ rep.col<-function(x,n){
 
 
 ### Get total cost and emission (default output from GAMS run)
-GetTOtalQuantities <- function() {
+GetTOtalQuantities <- function(filename, scenariosOpt) {
   
-  n_cls <- length((scenarios)[[1]])
-  n_scene <- length(scenarios)
+  n_cls <- length((scenariosOpt)[[1]])
+  n_scene <- length(scenariosOpt)
   
   TotC <- matrix(, nrow = n_cls, ncol = 0)
   TotE <- matrix(, nrow = n_cls, ncol = 0)
   
   for (j in 1:n_scene) {
-    params_opt = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Parameter_outputs_inc.xlsx', 
-                            sheet=names(scenarios)[j])
+    params_opt = read_excel(filename, sheet=names(scenariosOpt)[j])
     if (j==1) {
       TotC <- cbind(TotC, t(params_opt[c(1,2),-1]))
       TotE <- cbind(TotE, t(params_opt[c(3,4),-1]))
@@ -403,35 +419,33 @@ GetTOtalQuantities <- function() {
   TotC <- data.frame(TotC, hh_dem_cts %>% ungroup() %>% select(n_hh))
   TotE <- data.frame(TotE, hh_dem_cts %>% ungroup() %>% select(n_hh))
   
-  names(TotC) <- c("base", names(scenarios), "n_hh")
-  names(TotE) <- c("base", names(scenarios), "n_hh")
+  names(TotC) <- c("base", names(scenariosOpt), "n_hh")
+  names(TotE) <- c("base", names(scenariosOpt), "n_hh")
   
   TotC <- TotC %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # M.USD/yr
   TotE <- TotE %>% mutate_at(1:(n_scene+1), funs(.*n_hh/1e6))  # kTon CO2e/yr
   
-  row.names(TotC) <- names((scenarios)[[1]])
-  row.names(TotE) <- names((scenarios)[[1]])
+  row.names(TotC) <- names((scenariosOpt)[[1]])
+  row.names(TotE) <- names((scenariosOpt)[[1]])
   
   return(list(TotC, TotE))
 }
 
 
 ### Get total food kg consumptions
-GetTOtalQuantities_kg <- function() {
+GetTOtalQuantities_kg <- function(filename, scenariosOpt) {
   
   # n_fooditem <- dim(items_to_optimize)[1]
-  n_scene <- length(scenarios)
+  n_scene <- length(scenariosOpt)
   
   Tot_kg <- matrix(, nrow = n_fooditem, ncol = 0)
   hh_count <- rep(as.matrix(hh_dem_cts %>% ungroup() %>% select(n_hh)), each=2)
   
   for (j in 1:n_scene) {
-    consum_opt = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
-                            sheet=names(scenarios)[j])   # kg total per food item of a household
+    consum_opt = read_excel(filename, sheet=names(scenariosOpt)[j])   # kg total per food item of a household
     
     if (j == 5) {  # To deal with those infeasible groups (<- replace them with the counterparts from "te_min_cost" scenario)
-      replace_inf <- read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Kg_outputs_inc.xlsx', 
-                                sheet="te_min_cost")   # kg total per food item of a household
+      replace_inf <- read_excel(filename, sheet="te_min_cost")   # kg total per food item of a household
       
       vars <- paste0(inf2, "kg_opt")
       consum_opt[,vars] <- replace_inf[,vars]
@@ -449,9 +463,9 @@ GetTOtalQuantities_kg <- function() {
     opt_tot_4 <- rowSums(sum_kg[,seq(8, ncol(sum_kg), by = 8)])   # total kg for 4 income group
     
     tot <- data.frame(base_tot, opt_tot, opt_tot_1, opt_tot_2, opt_tot_3,opt_tot_4)
-    names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_2", "opt_3", "opt_4"))
+    names(tot) <- paste0(names(scenariosOpt)[j], "_", c("base", "opt_tot", "opt_1", "opt_2", "opt_3", "opt_4"))
     # tot <- data.frame(base_tot, opt_tot, opt_tot_low_inc, opt_tot_hi_inc)
-    # names(tot) <- paste0(names(scenarios)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
+    # names(tot) <- paste0(names(scenariosOpt)[j], "_", c("base", "opt_tot", "opt_1", "opt_4"))
     
     Tot_kg <- cbind(Tot_kg, tot)
   }
@@ -465,4 +479,38 @@ getcu= function(group) {
     filter(group==Group) %>%
     select(cu_eq)
   return(as.numeric(x))
+}
+
+
+### Function for grid legend
+
+grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
+  
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position="none"))
+  gl <- c(gl, ncol = ncol, nrow = nrow)
+  
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  grid.newpage()
+  grid.draw(combined)
+  
+}
+
+mutate_cond <- function(.data, condition, ..., envir = parent.frame()) {
+  condition <- eval(substitute(condition), .data, envir)
+  .data[condition, ] <- .data[condition, ] %>% mutate(...)
+  .data
 }

@@ -19,6 +19,17 @@ igdx("C:/GAMS/win64/24.4")
 work_path <- "C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/"
 # work_path <- "C:/Users/min/SharePoint/WS2 - Documents 1/Analysis/Food/diet_gms/"
 
+### Debug note: An issue with the execution of RunFoodOpt in series
+# !!! This still problem remains to be resolved. !!!
+# Potential reasons - I haven't yet figured out the specific reasons. 
+#           It appears that the gdxrrw package is not fully tested 
+#           or the GAMS command line runs are not for consecutive runs
+#           or there is a mismatch in running time in GAMS and R's serial calls.
+# Symptom - This run frequently and inconsistently spits out flag=3 or 6 for certain zones, for which cases I had to run the same line multiple times until it executes without that problem.
+# Remedy - The delay functions before or after the gams() run may help, but not 100% sure.
+#          Another temporary remedy I am using is to set up a break point when those flags are detected, re-run the problematic zones when it stops at the break points, and continue (with the next() commented out temporarily).
+# Note - I've contacted the developer, who said it is just a wrapper and we need to rely on GAMS documentation for any problems.
+
 scenarios <- list()
 nutr <- food_nutrients_new  # food_nutrients_org
 scenarios[[1]] <- RunFoodOpt("tc_min", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc
@@ -30,15 +41,27 @@ scenarios[[5]] <- RunFoodOpt("te_min_cap", cluster="reg-urb-inc", nutr)   # min_
 scenarios[[6]] <- RunFoodOpt("te_min_pds", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (no PDS vs non-PDS fixed r)
 scenarios[[7]] <- RunFoodOpt("te_min_cost", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (no cost capping)
 scenarios[[8]] <- RunFoodOpt("te_min_nogrp", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (trade between meat and prtn)
-scenarios[[9]] <- RunFoodOpt("te_min_khes", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (allow khesari)
-names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_cap", 
-                      "te_min_pds", "te_min_cost", "te_min_nogrp", "te_min_khes")
+scenarios[[9]] <- RunFoodOpt("dev_min", cluster="reg-urb-inc", nutr)   # min consumption (kg) deviation
+names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_cap",
+                      "te_min_pds", "te_min_cost", "te_min_nogrp", "dev_min")
+# scenarios[[9]] <- RunFoodOpt("te_min_khes", cluster="reg-urb-inc", nutr)   # min_totcost w/ nutri by reg-urb-inc (allow khesari)
+# names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_cap", 
+#                       "te_min_pds", "te_min_cost", "te_min_nogrp", "te_min_khes")
 
+scenarios_main_devmin100 <- scenarios
 OrganizeOptOutputs(scenarios)
+OrganizeOptOutputs(scenarios_rice_sens)
+OrganizeOptOutputs(scenarios_main)
+OrganizeOptOutputs(scenarios_main_devmin)
 
+save(scenarios_main, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main.Rda")
+save(scenarios_main_prc, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_prc.Rda")
+save(scenarios_main_frt, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_frt.Rda")
+save(scenarios_rice_sens, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_rice_sens.Rda")
+save(scenarios_main_devmin100, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_devmin100.Rda")
 
 # Test purpose (certain scenario and certain zone)
-WriteOptGDX("tc_min", cluster="reg-urb-inc", zone="E0_4", nutr)
+WriteOptGDX("dev_min", cluster="reg-urb-inc", zone="E0_2", nutr)
 
 
 # Identify contributions to cost/emission decrease
