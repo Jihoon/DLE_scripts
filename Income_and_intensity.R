@@ -13,9 +13,9 @@ svy <- "IND1"
 IND_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) %>% data.table(key="id")
 names(IND_HH_region)[2] <- "hhid"
 
-svy <- "IND2"
-IND2_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) %>% data.table(key="id")
-names(IND2_HH_region)[2] <- "hhid"
+# svy <- "IND2"
+# IND2_HH_region <- selectDBdata(SURVEY, ID, REGION, URBAN, tables=c(paste0(svy, '_HH'))) %>% data.table(key="id")
+# names(IND2_HH_region)[2] <- "hhid"
 # n_col <- dim(eHH_IND)[2]
 
 eHH_IND <- eHH_IND %>% mutate(expense2007MER = colSums(IND_FD_ICP_HH_adj) / scaler_IND) %>%
@@ -129,12 +129,12 @@ IND_p4 <-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nocook %>% filter(u
 grid.arrange(IND_p1, IND_p2, IND_p3, IND_p4, nrow=2, ncol=2)
 
 # Impact of Coal by region(?)
-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nofw %>% filter(region=="Jammu and Kashmir"), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
-      xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD", size=I(0.15)) +
-  stat_smooth()
-qplot(totexpense2007MER, intensity, data=IND_HH_sum_nofw %>% filter(region=="Tamil Nadu"), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
-      xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD w/o fuelwood and coal", size=I(0.15)) +
-  stat_smooth()
+# qplot(totexpense2007MER, intensity, data=IND_HH_sum_nofw %>% filter(region=="Jammu and Kashmir"), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+#       xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD", size=I(0.15)) +
+#   stat_smooth()
+# qplot(totexpense2007MER, intensity, data=IND_HH_sum_nofw %>% filter(region=="Tamil Nadu"), geom="auto", xlim=c(0,max.exp), ylim=c(0,max.int), 
+#       xlab="Annual expenditure [USD 2007MER] (Urban India)", ylab="MJ/USD w/o fuelwood and coal", size=I(0.15)) +
+#   stat_smooth()
 
 
 

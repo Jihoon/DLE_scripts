@@ -60,3 +60,5 @@ Splitting and saving files for dir engy anal.R
 *.tiff
 Plots/Fig1.2 Primary energy-IND.tif
 *.bak
+*.tif
+*.png

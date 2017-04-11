@@ -10,16 +10,16 @@ setwd('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food')
   food_avg_wt = selectDBdata(ITEM, AVG_WT, tables='IND_FOOD_AVG_WT')
   hh_sum = selectDBdata(SURVEY, ID, HH_SIZE, REGION, AGE, SOCIAL_GROUP, RELIGION, MALE, MALE_ADULT, MALE_MINOR, EDUC_YEARS, MINOR, DWELL_STATUS, WORKER_TYPE, OCCUPATION, EXPENDITURE, WEIGHT, URBAN, tables='IND1_HH')
   # food_nutrients = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/NSS_food_items-VitA.xlsx', sheet='NSS_food_items')
-  food_nutrients = xlsx::read.xlsx('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/NSS_food_items-VitA.xlsx',
-                                 sheetName='NSS_food_items_2017', endRow=152)
+  food_nutrients = xlsx::read.xlsx('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/NSS_food_items-VitA.xlsx', 
+                                   sheetName='NSS_food_items_2017', endRow=152)
   dris = read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/DRI-India.csv")
   cu_eqs = read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/cu_eq.csv")
   zones = read.csv("C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/states.csv")
   
   #get emissions factors
-  # ef_crop <- xlsx::read.xlsx("C:/Users/min/SharePoint/T/WS2 - Documents/Data/Food/Emission_factors_ESM.xlsx", 1, startRow=2,
+  # ef_crop_old <- xlsx::read.xlsx("C:/Users/min/SharePoint/T/WS2 - Documents/Data/Food/Emission_factors_ESM.xlsx", 1, startRow=2,
   #                            colIndex = c(2,5), header = FALSE, stringsAsFactors=FALSE) %>% rename(item=X2, ef=X5)
-  # ef_lvstock <- data.frame(xlsx::read.xlsx("C:/Users/min/SharePoint/T/WS2 - Documents/Data/Food/Emission_factors_ESM.xlsx", 2,
+  # ef_lvstock_old <- data.frame(xlsx::read.xlsx("C:/Users/min/SharePoint/T/WS2 - Documents/Data/Food/Emission_factors_ESM.xlsx", 2,
   #                                          colIndex = 8, header = FALSE, rowIndex=c(11:16), stringsAsFactors=FALSE),
   #                          xlsx::read.xlsx("C:/Users/min/SharePoint/T/WS2 - Documents/Data/Food/Emission_factors_ESM.xlsx", 2,
   #                                          colIndex = 5, header = FALSE, rowIndex=c(29:34))) %>% rename(item=X8, ef=X5)
@@ -108,6 +108,12 @@ setwd('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food')
     left_join(ef_all)%>%
     inner_join(hh_sum%>% select(survey, id, hh_size, weight, urban, region, inc_grp,cu_eq)) %>%
     mutate(energy_tot=qty_tot*energy*10/365/cu_eq, protein_tot=qty_tot*protein*10/365/cu_eq,vita_tot=qty_tot*vita*10/365/cu_eq, iron_tot=qty_tot*iron*10/365/cu_eq, zinc_tot=qty_tot*zinc*10/365/cu_eq, em_tot=ef_per_kg_eaten*qty_tot/365/cu_eq)
+  
+  # Compare the iron statistics change before and after the nutrition data change
+  # iron_sum_new <- food_items %>% select(id, item, contains("iron")) %>% filter(iron_tot !=0) %>% group_by(item) %>% summarise(iron_tot=sum(iron_tot)) %>% arrange(desc(iron_tot))
+  # iron_sum <- food_items %>% select(id, item, contains("iron")) %>% filter(iron_tot !=0) %>% group_by(item) %>% summarise(iron_tot=sum(iron_tot)) %>% arrange(desc(iron_tot))
+  # iron_compare <- iron_sum %>% left_join(iron_sum_new %>% rename(iron_tot_new = iron_tot)) %>% mutate(ratio_iron = iron_tot_new/iron_tot, diff_iron=iron_tot-iron_tot_new, share=iron_tot/sum(iron_tot))
+  # sum(iron_compare$iron_tot_new) / sum(iron_compare$iron_tot)
   
   # this gives us total total nutrients by household 
   food_total = food_items %>%
@@ -355,6 +361,7 @@ inc_grp_tots=hh_anal%>%
             vita_ct_tot=sum(vita_def_ct, na.rm=T)/1E6,
             iron_ct_tot=sum(iron_def_ct, na.rm=T)/1E6,
             zinc_ct_tot=sum(zinc_def_ct, na.rm=T)/1E6,
+            cal_ct_tot=sum(cal_def_ct, na.rm=T)/1E6,
             totpop=sum(total_pop_excl_outeaters)/1E6,
             avgcal=weighted.mean(energy_tot_weatout,weight=weight, na.rm=T)
             )
@@ -408,6 +415,8 @@ write.csv(for_shannon,'shannon_indices_newdata.csv')
 
 
 ##############################################
+library(weights)
+
 #do T-tests to see if avg nutrient consumption levels are different in urban and rural, first all-India then by inc_grp
 nat_prot_result<-t.test(protein_tot~urban,data=hh_sum)
 nat_zinc_result<-t.test(zinc_tot~urban,data=hh_sum)
@@ -415,15 +424,22 @@ nat_iron_result<-t.test(iron_tot~urban,data=hh_sum)
 nat_vita_result<-t.test(vita_tot~urban,data=hh_sum)
 nat_energy_result<-t.test(energy_tot~urban,data=hh_sum)
 
-energy_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=t.test(energy_tot~urban,hh_sum[hh_sum$inc_grp==inc,])))
+# weighted t test
+nat_prot_result<-wtd.t.test(hh_sum$protein_tot, hh_sum$urban, weight=hh_sum$weight)
+nat_zinc_result<-wtd.t.test(hh_sum$zinc_tot, hh_sum$urban, weight=hh_sum$weight)
+nat_iron_result<-wtd.t.test(hh_sum$iron_tot, hh_sum$urban, weight=hh_sum$weight)
+nat_vita_result<-wtd.t.test(hh_sum$vita_tot, hh_sum$urban, weight=hh_sum$weight)
+nat_energy_result<-wtd.t.test(hh_sum$energy_tot, hh_sum$urban, weight=hh_sum$weight)
+
+energy_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=wtd.t.test(hh_sum$energy_tot, hh_sum$urban, weight=hh_sum$weight)$coefficients))
 energy_result<-data.frame(energy_result)
-prot_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=t.test(protein_tot~urban,hh_sum[hh_sum$inc_grp==inc,])))
+prot_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=wtd.t.test(hh_sum$protein_tot, hh_sum$urban, weight=hh_sum$weight)$coefficients))
 prot_result<-data.frame(prot_result)
-iron_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=t.test(iron_tot~urban,hh_sum[hh_sum$inc_grp==inc,])))
+iron_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=wtd.t.test(hh_sum$iron_tot, hh_sum$urban, weight=hh_sum$weight)$coefficients))
 iron_result<-data.frame(iron_result)
-zinc_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=t.test(zinc_tot~urban,hh_sum[hh_sum$inc_grp==inc,])))
+zinc_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=wtd.t.test(hh_sum$zinc_tot, hh_sum$urban, weight=hh_sum$weight)$coefficients))
 zinc_result<-data.frame(zinc_result)
-vita_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=t.test(vita_tot~urban,hh_sum[hh_sum$inc_grp==inc,])))
+vita_result<-sapply(unique(hh_sum$inc_grp),function(inc)c(result=wtd.t.test(hh_sum$vita_tot, hh_sum$urban, weight=hh_sum$weight)$coefficients))
 vita_result<-data.frame(vita_result)
 #############################################
 
@@ -435,38 +451,94 @@ vita_result<-data.frame(vita_result)
     arrange(loc_inc)
    
   #Cal
-  pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - Cal.pdf"), width = 10, height = 10)
-  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=energy_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=1813,ymax=2525,fill='pink')+geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U"))+coord_cartesian(ylim=c(500,4500))+theme(text=element_text(size=20))+ylab("Calories/day per CU")+xlab("Income Group/Urban-Rural")  
+  pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - Cal.pdf"), width = 12, height = 10)
+  p_val <- as.matrix(energy_result[row.names(energy_result)=="result.p.value",])
+  p_val <- data.frame(x=1:4, y=c(2500, 2600, 2700, 2900), pval= paste0("p=",format(round(as.numeric(p_val), 3), nsmall=3)), stringsAsFactors=FALSE)
+  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=factor(inc_grp), y=energy_tot, fill=factor(urban)))+
+    geom_rect(xmin=-Inf,xmax=Inf,ymin=1813,ymax=2525, fill='pink')+
+    geom_boxplot(position=position_dodge(width=0.8), aes(weight=weight), outlier.colour=NA, coef = 0)+
+    scale_fill_manual(name="Urban-Rural", labels=c("Rural", "Urban"), values = c("white", "darkgrey")) +
+    ylim(1500,3000) + ylab("Calories/day per CU") + xlab("Income Group") + scale_x_discrete(labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    # geom_text(data=p_val, aes(x=x, y=y, label=pval, fill=NA), size=5)+
+    theme(text=element_text(size=20), legend.title=element_blank())
   dev.off()
   
   #Protein
   pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - Protein.pdf"), width = 10, height = 10)
-  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=protein_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=40,ymax=60,fill='pink')+geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +coord_cartesian(ylim=c(0,150))+theme(text=element_text(size=20))+ylab("Protein g/day per CU")+xlab("Income Group/Urban-Rural")  
+  p_val <- as.matrix(prot_result[row.names(prot_result)=="result.p.value",])
+  p_val <- data.frame(x=1:4, y=c(70, 75, 80, 85), pval= paste0("p=",format(round(as.numeric(p_val), 3), nsmall=3)), stringsAsFactors=FALSE)
+  # ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=protein_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=40,ymax=60,fill='pink')+
+  #   geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +
+  #   coord_cartesian(ylim=c(0,150))+theme(text=element_text(size=20))+ylab("Protein g/day per CU")+xlab("Income Group/Urban-Rural")  
+  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=factor(inc_grp), y=protein_tot, fill=factor(urban)))+
+    geom_rect(xmin=-Inf,xmax=Inf,ymin=40,ymax=60, fill='pink')+
+    geom_boxplot(position=position_dodge(width=0.8), aes(weight=weight), outlier.colour=NA, coef = 0)+
+    scale_fill_manual(guide=FALSE, values = c("white", "darkgrey")) +
+    ylim(30,90) + ylab("Protein g/day per CU") + xlab("Income Group") + scale_x_discrete(labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    # geom_text(data=p_val, aes(x=x, y=y, label=pval, fill=NA), size=5)+
+    theme(text=element_text(size=20))
   dev.off()
   
   #Iron
   pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - Iron.pdf"), width = 10, height = 10)
-  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=iron_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=17,ymax=23,fill='pink')+geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +coord_cartesian(ylim=c(0,50))+theme(text=element_text(size=20))+ylab("Iron mg/day per CU")+xlab("Income Group/Urban-Rural")  
+  p_val <- as.matrix(iron_result[row.names(iron_result)=="result.p.value",])
+  p_val <- data.frame(x=1:4, y=c(20, 21, 22, 24), pval= paste0("p=",format(round(as.numeric(p_val), 3), nsmall=3)), stringsAsFactors=FALSE)
+  # ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=iron_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=17,ymax=23,fill='pink')+
+  #   geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +
+  #   coord_cartesian(ylim=c(0,50))+theme(text=element_text(size=20))+ylab("Iron mg/day per CU")+xlab("Income Group/Urban-Rural")  
+  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=factor(inc_grp), y=iron_tot, fill=factor(urban)))+
+    geom_rect(xmin=-Inf,xmax=Inf,ymin=17,ymax=23, fill='pink')+
+    geom_boxplot(position=position_dodge(width=0.8), aes(weight=weight), outlier.colour=NA, coef = 0)+
+    scale_fill_manual(guide=FALSE, values = c("white", "darkgrey")) +
+    ylim(5,30) + ylab("Iron mg/day per CU") + xlab("Income Group") + scale_x_discrete(labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    # geom_text(data=p_val, aes(x=x, y=y, label=pval, fill=NA), size=5)+
+    theme(text=element_text(size=20))
   dev.off()
   
   #vita
   pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - vita.pdf"), width = 10, height = 10)
-  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=vita_tot))+geom_hline(yintercept=600)+geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +coord_cartesian(ylim=c(0,1500)) +theme(text=element_text(size=20)) +ylab("Vit A mcg/day per CU")+xlab("Income Group/Urban-Rural")
+  p_val <- as.matrix(vita_result[row.names(vita_result)=="result.p.value",])
+  p_val <- data.frame(x=1:4, y=c(750, 750, 800, 900), pval=paste0("p=",format(round(as.numeric(p_val), 3), nsmall=3)), stringsAsFactors=FALSE)
+  # ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=vita_tot))+geom_hline(yintercept=600)+
+  #   geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +
+  #   coord_cartesian(ylim=c(0,1500)) +theme(text=element_text(size=20)) +ylab("Vit A mcg/day per CU")+xlab("Income Group/Urban-Rural")
+  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=factor(inc_grp), y=vita_tot, fill=factor(urban)))+
+    geom_hline(yintercept=600)+
+    geom_boxplot(position=position_dodge(width=0.8), aes(weight=weight), outlier.colour=NA, coef = 0)+
+    scale_fill_manual(guide=FALSE, values = c("white", "darkgrey")) +
+    ylim(0,1000) + ylab("Vit A mcg/day per CU") + xlab("Income Group") + scale_x_discrete(labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    # geom_text(data=p_val, aes(x=x, y=y, label=pval, fill=NA), size=5)+
+    theme(text=element_text(size=20))
   dev.off()
   
   #zinc
   pdf(file = paste0(workdir, "Figures/Average micronutrient consumption - zinc.pdf"), width = 10, height = 10)
-  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=zinc_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=9,ymax=12,fill='pink')+geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +coord_cartesian(ylim=c(0,25))+theme(text=element_text(size=20))+ylab("Zinc mg/day per CU")+xlab("Income Group/Urban-Rural")  
+  p_val <- as.matrix(zinc_result[row.names(zinc_result)=="result.p.value",])
+  p_val <- data.frame(x=1:4, y=c(13, 13, 13, 14), pval= paste0("p=",format(round(as.numeric(p_val), 3), nsmall=3)), stringsAsFactors=FALSE)
+  # ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=loc_inc, y=zinc_tot))+geom_rect(xmin=-Inf,xmax=Inf,ymin=9,ymax=12,fill='pink')+
+  #   geom_boxplot(outlier.colour=NA)+scale_x_discrete(labels=c("Inc1-R","Inc1-U","Inc2-R","Inc2-U","Inc3-R","Inc3-U","Inc4-R","Inc4-U")) +
+  #   coord_cartesian(ylim=c(0,25))+theme(text=element_text(size=20))+ylab("Zinc mg/day per CU")+xlab("Income Group/Urban-Rural")  
+  ggplot(hh_sum[hh_sum$energy_tot<10000,],aes(x=factor(inc_grp), y=zinc_tot, fill=factor(urban)))+
+    geom_rect(xmin=-Inf,xmax=Inf,ymin=9,ymax=12, fill='pink')+
+    geom_boxplot(position=position_dodge(width=0.8), aes(weight=weight), outlier.colour=NA, coef = 0)+
+    scale_fill_manual(guide=FALSE, values = c("white", "darkgrey")) +
+    ylim(5,15) + ylab("Zinc mg/day per CU") + xlab("Income Group") + scale_x_discrete(labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    # geom_text(data=p_val, aes(x=x, y=y, label=pval, fill=NA), size=5)+
+    theme(text=element_text(size=20), plot.background = element_rect(fill = "transparent",colour = NA))
   dev.off()
   
-  #rice share vs iron deficiency plot
+  #rice/wheat share vs iron deficiency plot
   hh_anal$inc_grp <- factor(hh_anal$inc_grp)
-  p<-ggplot(hh_anal,aes(Rice_sh,iron_def_pct))+geom_point(aes(colour=zone, shape=inc_grp))
+  p<-ggplot(hh_anal,aes(Rice_sh,iron_def_pct))+geom_point(aes(colour=zone, shape=inc_grp), size=3) +
+    ylab("%POP in Iron Deficiency")+xlab("Calorie Share of Rice among All Cereals") +
+    scale_shape_discrete(name="Income group", labels=c("1=Lowest", "2", "3", "4=Highest")) +
+    scale_colour_discrete(name="Region", labels=c("East", "North", "South", "West"))
   pdf(file = paste0(workdir, "Figures/Share of population with iron deficiency - Rice.pdf"), width = 7, height = 10)
   p
   dev.off()
   
-  p<-ggplot(hh_anal,aes(wheat_sh,iron_def_pct))+geom_point(aes(colour=zone, shape=inc_grp))
+  p<-ggplot(hh_anal,aes(wheat_sh,iron_def_pct))+geom_point(aes(colour=zone, shape=inc_grp), size=3) +
+    ylab("%POP in iron deficiency")+xlab("Calorie Share of Wheat among All Cereals") + theme(legend.position="none")
   pdf(file = paste0(workdir, "Figures/Share of population with iron deficiency - Wheat.pdf"), width = 7, height = 10)
   p
   dev.off()
@@ -504,3 +576,4 @@ vita_result<-data.frame(vita_result)
   write.csv(food_group_totals,'NSS_cu_foodgrp_diagnostics_newdata.csv')
   write.csv(food_nutrients,'NSS_cu_food_nutrients_newdata.csv')
   write.csv(inc_grp_tots,'inc_grp_cu_tots_newdata.csv')
+  

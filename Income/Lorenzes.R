@@ -36,7 +36,8 @@ out=out %>%
 
     # Calc Lorenz curve for data
 f= function(x) {data.frame(p_inc=Lc(x$INCOME,x$POP)$p, L_inc=Lc(x$INCOME,x$POP)$L)}  
- test = hh %>%
+ 
+test = hh %>%
    group_by(SURVEY, URBAN) %>% 
    do(f(.))
 

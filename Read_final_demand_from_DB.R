@@ -1,6 +1,3 @@
-# The functions below overwrite those above.
-# They are simplified by using Kevin's DB call.
-
 readFinalDemandfromDB = function(svy='IND1') {
   xlcFreeMemory()
   Food <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_FOOD')))

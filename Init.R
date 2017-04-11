@@ -153,6 +153,10 @@ names(DLE_fuelnames_std) <- "item"
 ############################################################
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
+source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/00 Load required packages.R")
+source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
+source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
+source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/Functions for building Oracle DB tables.R")
 
 source("Read_final_demand_from_DB.R")
 source("Read_direct_energy_from_DB.R")

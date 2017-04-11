@@ -1,8 +1,10 @@
 library(rlist)
-
+# 
 scenarios <- scenarios_main_devmin
+runname <- "devmin"
 # scenarios <- scenarios_main_frt
 # scenarios <- scenarios_main_devmin100
+# runname <- "devmin100"
 
 ### Automating the infeasibility detection
 for (i in 1:length(scenarios)) {
@@ -11,9 +13,11 @@ for (i in 1:length(scenarios)) {
 }
 
 # Script to show elements of the list
-unlist(list.select(scenarios[[9]], obj$val))
-list.select(scenarios[[9]], base_cal$val)
+# unlist(list.select(scenarios[[9]], obj$val))
+data.frame(devmin = unlist(list.select(scenarios$dev_min, result_cal$val[,2])),
+  ref = unlist(list.select(scenarios$te_min_cap, result_cal$val[,2]))) %>% mutate(ratio=devmin/ref, name = names(unlist(list.select(scenarios$dev_min, result_cal$val[,2]))))
 
+runname
 paramfile <- paste0('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/Results/Parameter_outputs-', runname, '.xlsx')
 list[Cost, Emission] <- GetTOtalQuantities(paramfile, scenarios)  # M.USD/yr   &   kTon CO2e/yr
 
@@ -249,11 +253,11 @@ Baseline <- data.frame(a = c(-Inf, Inf), b = 0, Baseline = factor(0, label="Base
 pdf(file =  paste0(workdir, "Figures/Optimization results-newEF and nutr2017-", runname, ".pdf"), width = 9, height = 11)
 ggplot(pct_pl %>% filter(!is.na(pctval))) +
   geom_point(size=3, aes(x = state, y=pctval*100, shape=Scenario, colour = pctval <=0)) +
-  scale_colour_manual(name="Below 0", values = setNames(c('black','darkgrey'),c(TRUE, FALSE))) +
-  # scale_y_continuous(breaks=seq(-50,250,50)) +
+  scale_colour_manual(name="Below 0", values = setNames(c('black','darkgrey'), c(TRUE, FALSE)), guide=FALSE) +
+  scale_y_continuous(breaks=seq(-100,250,100), limits=c(-100, 270)) +
   # scale_shape_manual(values = c(2, 0, 20, 3, 1)) +
   scale_shape_manual(values = c(2, 0, 20, 3, 1, 8)) +
-  labs(x="state", y="% change from baseline")+
+  labs(x="Region", y="% Change from Baseline")+
   geom_line(aes(a, b, linetype = Baseline), Baseline, color='red') +
   facet_grid(income~urb+type, labeller=label_value)  
 dev.off()

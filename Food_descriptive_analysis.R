@@ -1,7 +1,7 @@
 sourcedir <- "H:/MyDocuments/IO work/DLE_scripts/"
 source(paste0(sourcedir, "Food_init.R"))
 
-runname <- "devmin100" #  "fert" #
+runname <- "devmin" #"devmin100" #  "fert" # 
 
 ###########################
 ### HH food consumption ###
@@ -300,7 +300,7 @@ p5 <- ggplot(data=nutri_cost %>% arrange(energy) %>% slice((n()-n_slice+1):n()),
   labs(x='$/kcal',y="gCO2e/kcal")+
   geom_text_repel(data=nutri_cost %>% arrange(energy) %>% slice((n()-n_slice+1):n()), aes(label=abbr), size = 3.5)
 
-pdf(file = paste0(workdir, "Figures/Food item effectiveness-nutr content-", runname, ".pdf"), width = 15, height = 10)
+pdf(file = paste0(workdir, "Figures/Food item effectiveness-nutr content-", runname, ".pdf"), width = 18, height = 10)
 grid.arrange(p1, p2, p3, p4, p5, nrow=2, ncol=3)
 # grid.arrange(p1, p2, p4, p3, nrow=2, ncol=2)
 dev.off()
@@ -334,11 +334,12 @@ price_plot$item_fac <- factor(price_plot$grouped,
 
 pr_plot <- ggplot(price_plot, aes(x = item_fac, weight=weight, fill=group))
 pr_plot <- pr_plot + geom_boxplot(aes(y = price), outlier.size=NA) + ylim(0, 12) +
-  labs(x="Major food items", y="$ per kg (PPP)")
+  labs(x="Major food items", y="$ per kg (PPP)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
   # facet_grid(.~urban)
 pr_plot
 ggsave(paste0(workdir, "Figures/Food price compare-", runname, ".pdf"), 
-       pr_plot, width=25, height=15, unit="cm")
+       pr_plot, width=20, height=13, unit="cm")
 
 
 # compare rice/Wheat PDS price

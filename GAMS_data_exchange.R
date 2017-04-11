@@ -48,20 +48,20 @@ names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_c
 # names(scenarios) <- c("tc_min", "tc_min_cap", "tc_min_nobf", "te_min", "te_min_cap", 
 #                       "te_min_pds", "te_min_cost", "te_min_nogrp", "te_min_khes")
 
-scenarios_main_devmin100 <- scenarios
+scenarios_main_devmin <- scenarios
 OrganizeOptOutputs(scenarios)
-OrganizeOptOutputs(scenarios_rice_sens)
-OrganizeOptOutputs(scenarios_main)
-OrganizeOptOutputs(scenarios_main_devmin)
+# OrganizeOptOutputs(scenarios_rice_sens)
+# OrganizeOptOutputs(scenarios_main)
+# OrganizeOptOutputs(scenarios_main_devmin)
 
 save(scenarios_main, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main.Rda")
 save(scenarios_main_prc, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_prc.Rda")
 save(scenarios_main_frt, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_frt.Rda")
 save(scenarios_rice_sens, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_rice_sens.Rda")
-save(scenarios_main_devmin100, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_devmin100.Rda")
+save(scenarios_main_devmin, file="C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Food/diet_gms/scenarios_main_devmin.Rda")
 
 # Test purpose (certain scenario and certain zone)
-WriteOptGDX("dev_min", cluster="reg-urb-inc", zone="E0_2", nutr)
+WriteOptGDX("dev_min", cluster="reg-urb-inc", zone="S0_3", nutr)
 
 
 # Identify contributions to cost/emission decrease
