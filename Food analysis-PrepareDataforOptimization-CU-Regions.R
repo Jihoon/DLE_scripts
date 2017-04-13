@@ -100,7 +100,6 @@ get_gap=function(group,nutrient,amount) {
   x = (dri-consum)/dri
   
   return(x)
-  
 }
 #extract tables from Oracle. 
   # food_nutrients = read_excel('C:/Users/min/SharePoint/T/WS2 - Documents/Analysis/Foo/NSS_food_items-VitA.xlsx', sheet='NSS_food_items')
