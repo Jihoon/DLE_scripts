@@ -8,7 +8,7 @@ n_year <- 10
 GDP = 1e6*(1+r.GDP)^(0:n_year)
 # intensity = rep(1, 100) # rep(1, 100) * 
 energy.base = 1000
-percentiles <- 1000
+percentiles <- 100
 elas.max <- 1  
 elas.base <- elas.max  # Also assume elas.base = elas.max
 elas.min <- 0.7
@@ -28,7 +28,7 @@ income.lag <- income.pdf
 for (i in 1:length(ginis)) {
   income.pdf[i,] <- Lc.lognorm(seq(0, 1, 1/percentiles), parameter=sdlogs[i])
   lines(Lc.lognorm, parameter=sdlogs[i], col="black")
-  income.lag[i,] <- lag(income.pdf[i,])
+  income.lag[i,] <- dplyr::lag(income.pdf[i,])
 }
 # a <- Lc.lognorm(seq(0,1,1e-2), parameter=sdlogs[3])
 
@@ -49,7 +49,7 @@ income.pct.end <- diag(1/income.dist.end[,1]) %*% income.dist.end - 1   #income.
 
 # ene.scaler.hiE <- energy.base / rowSums(income.dist.base^elas.max) 
 # ene.scaler.lowE <-energy.base / rowSums(income.dist.base^elas.min)
-ene.scaler.base <- energy.base / sum(income.dist.base^elas.base)  # At the baseline gini=0.36
+ene.scaler.base <- energy.base / sum(income.dist.base^elas.base)  # Coefficient At the baseline gini=0.36
 
 # energy.dist.base.hiE <- ene.scaler.base * income.dist.base^elas.max
 # energy.dist.base.lowE <- ene.scaler.base * income.dist.base^elas.min
@@ -86,11 +86,22 @@ ggplot(a, aes(inc, int)) + geom_point() + labs(title="Intensity") #+
 
 vecsize <- dim(income.dist.end)[2]
 
-plot(intensity.end.lowE[1,seq(1,vecsize,vecsize/1e3)], ylab="Intensity (J/$)", xlab="Income percentile", main="Intensity 2050: Elasticity=0.8, Gini=0.30")
-points(intensity.end.lowE[3,seq(1,vecsize,vecsize/1e3)], ylab="Intensity (J/$)", xlab="Income percentile", main="Intensity 2050: Elasticity=0.8, Gini=0.55")
+# plot(intensity.end.lowE[1,seq(1,vecsize,vecsize/percentiles)], ylab="Intensity (J/$)", xlab="Income percentile", main="Intensity 2050: Elasticity=0.8, Gini=0.30")
+# points(intensity.end.lowE[3,seq(1,vecsize,vecsize/percentiles)], ylab="Intensity (J/$)", xlab="Income percentile", main="Intensity 2050: Elasticity=0.8, Gini=0.55")
+# 
+# plot(income.dist.end[1,seq(1,vecsize,vecsize/1e3)], ylab="Income ($)", xlab="Income percentile", main="Income 2050")
+# points(income.dist.end[3,seq(1,vecsize,vecsize/1e3)], ylab="Income ($)", xlab="Income percentile", main="Income 2050")
 
-plot(income.dist.end[1,seq(1,vecsize,vecsize/1e3)], ylab="Income ($)", xlab="Income percentile", main="Income 2050")
-points(income.dist.end[3,seq(1,vecsize,vecsize/1e3)], ylab="Income ($)", xlab="Income percentile", main="Income 2050")
+inc2050 <- data.frame(indiv=1:percentiles, inc_gini30=income.dist.end[1,], 
+                inc_gini55=income.dist.end[3,]) %>% mutate(inc_gini30.cum=cumsum(inc_gini30), inc_gini55.cum=cumsum(inc_gini55))
+p1 <- ggplot(inc2050) + geom_line(aes(x=indiv, y=inc_gini30/max(inc_gini30.cum), color="blue"), size=2) + 
+  geom_line(aes(x=indiv, y=inc_gini55/max(inc_gini55.cum), color="red"), size=2) + labs(y="Individual income (normalized)", x="Income percentile", main="Income distribution") + 
+  # ylim(c(0,1)) +
+  scale_color_discrete(guide="none") + theme_bw()
+p1.1 <- ggplot(inc2050) + geom_line(aes(x=indiv, y=inc_gini30.cum/max(inc_gini55.cum), color="blue"), size=2) + 
+  geom_line(aes(x=indiv, y=inc_gini55.cum/max(inc_gini55.cum), color="red"), size=2) + labs(y="Cumulative income (normalized)", x="Income percentile", main="Income distribution") + 
+  # ylim(c(0,1)) +
+  scale_color_discrete(guide="none") + theme_bw()
 
 plot(energy.dist.end.lowE[1,seq(1,vecsize,vecsize/1e3)], ylab="Energy (J)", xlab="Income percentile", main="Energy 2050: Elasticity=0.8, Gini=0.30/0.55")
 points(energy.dist.end.lowE[3,seq(1,vecsize,vecsize/1e3)])
@@ -100,6 +111,18 @@ points(energy.dist.end.hiE[3,seq(1,vecsize,vecsize/1e3)])
 
 plot(energy.dist.base[seq(1,vecsize,vecsize/1e3)], ylab="Energy (J)", xlab="Income percentile", main="Energy 2011: Elasticity=1, Gini=0.36")
 
+ene2050.lowE <- data.frame(indiv=1:percentiles, ene_gini30=energy.dist.end.lowE[1,], 
+                ene_gini55=energy.dist.end.lowE[3,]) %>% mutate(ene_gini30.cum=cumsum(ene_gini30), ene_gini55.cum=cumsum(ene_gini55))
+p2 <- ggplot(ene2050.lowE) + geom_line(aes(x=indiv, y=ene_gini30.cum/max(ene_gini55.cum), color="blue"), size=2) + 
+  geom_line(aes(x=indiv, y=ene_gini55.cum/max(ene_gini55.cum), color="red"), size=2) + labs(y="Cumulative energy (normalized)", x="Income percentile", main="Income distribution") + 
+  # ylim(c(0,1)) +
+  scale_color_discrete(name = "Gini", labels = c("0.30", "0.55")) +
+  scale_y_continuous(breaks=seq(0,1.2,0.2)) + theme_bw()
+library("gridExtra")
+grid.arrange(p1, p1.1, p2, nrow=1)
+# grid_arrange_shared_legend(p1, p1.1, p2, nrow=1, position="right")
+library("cowplot")
+plot_grid(p1, p1.1, p2, nrow=1, labels = c('(a)', '(b)', '(c)'), rel_widths = c(1, 1, 1.15))
 # GetEnergy <- function(income, elas, income.base, ene.base=1) {
 #   ene <- ((income/income.base-1)*elas +1)*ene.base   
 #   return(ene)
@@ -160,8 +183,8 @@ CON.ENE.PCAP <- CON.ENE.PCAP %>% filter(!is.na(gdp.pcap))
 
 ggplot(CON.ENE.PCAP %>% arrange(iso3c, year), aes(x=gdp.pcap, y=inten.gdp, group = iso3c, color=iso3c)) + 
   geom_path(alpha=0.5, arrow = arrow(angle=30, type="closed", length=unit(0.25, "cm"))) + 
-  geom_text_repel(data=CON.ENE.PCAP %>% filter(year==2013), aes(label=iso3c)) + theme(legend.position="none") #+ 
-  # scale_x_log10() + scale_y_log10()
+  geom_text_repel(data=CON.ENE.PCAP %>% filter(year==2013), aes(label=iso3c)) + theme(legend.position="none") + 
+  scale_x_log10() + scale_y_log10()
   
 summary(plm(log(ene)~log(gdp.pcap), data=CON.ENE.PCAP, method="random", effect="time", index=c("iso3c", "year")))
 
@@ -273,7 +296,8 @@ i <- 2013   # Base year
     sum(ENE.yearly.adj$ene.min.SSP2 * ENE.yearly.adj$pop.SSP2)
   
     # Plot - Energy intensity vs gdp/cap (SSP1)
-  m <- ggplot(ENE.yearly.adj %>% filter(gdp.SSP2 > 1000), aes(x=gdp.pcap, y=inten.gdp)) + geom_point() +
+  m <- ggplot(ENE.yearly.adj %>% filter(gdp.SSP2 > 1000), aes(x=gdp.pcap, y=inten.gdp)) + 
+    geom_point() +
     geom_text(aes(label=iso3c), size = 2.5, hjust=1) + 
     geom_point(aes(x=gdp.pcap.SSP1, y=ene.base.SSP1/gdp.pcap.SSP1, color="measured elas=0.89")) + 
     geom_point(aes(x=gdp.pcap.SSP1, y=ene.min.SSP1/gdp.pcap.SSP1, color="min.elas=0.7")) + 
@@ -342,10 +366,10 @@ i <- 2013   # Base year
     geom_point(aes(x=gdp.pcap.SSP4, y=ene.max.SSP4/gdp.pcap.SSP4, color="max.elas = 1.1")) +
     geom_text(aes(x=gdp.pcap.SSP4, y=ene.max.SSP4/gdp.pcap.SSP4, label=iso3c), size = 2.5, hjust=1) +
     labs(title="SSP4", x ="GDP/cap (PPP$ 2005)", y = "Energy intensity (kgoe/$)")
-  m + geom_line(aes(x=gdp.pcap, y=exp(eqn$coefficients[1])*gdp^(eqn$coefficients[2]-1)))
+  m + geom_line(aes(x=gdp.pcap, y=exp(eqn$coefficients[1])*gdp.pcap^(eqn$coefficients[2]-1)))
   
   # Plot cumulative energy-GDP relationsship
-  elas.case <- "max"  # "min" # "base" # 
+  elas.case <- "min" # 
   elas.cty <- formatC(if(elas.case=="base") elas.base.cty else if(elas.case=="max") elas.max.cty else elas.min.cty,
                       digits = 2, format="f")
   cum.tot <- CumulEnergyGDP(elas.case)
@@ -353,17 +377,59 @@ i <- 2013   # Base year
   # show intensity.change 
   print(cum.tot %>% select(starts_with("intensity.")) %>% slice(n()) / 1e9)
   
-  ggplot(cum.tot, aes(x=cum.gdp.SSP1-cum.gdp.now, y=cum.ene.SSP1-cum.ene.now, color="SSP1 (g=0.30)")) + geom_line() + geom_point(color="pink", aes(shape="SSP1")) +
-    geom_line(aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, color="SSP2 (g=0.36)")) +
-    geom_point(aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, shape="SSP2"), color="green") +
-    geom_text_repel(data=cum.tot %>% filter(gdp.SSP2>1200), aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, label=iso3c), size = 2.5, color="red") +
-    geom_line(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, color="SSP4 (g=0.45)")) +
-    geom_point(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, shape="SSP4"), color="blue") +
+  thres <- 2500
+  offs <- 12000
+  cols <- c("SSP1 (g=0.30)"="pink","SSP4 (g=0.45)"="skyblue1")
+  fills <- c("SSP1 (g=0.30)"="pink","SSP4 (g=0.45)"="skyblue1")
+  g1 <- ggplot(cum.tot, aes(x=cum.gdp.SSP1-cum.gdp.now, y=cum.ene.SSP1-cum.ene.now)) + geom_line(aes(color="SSP1 (g=0.30)"), size=1) + 
+    geom_point(aes(color="SSP1 (g=0.30)"), shape=25) +
+    geom_point(data=cum.tot %>% filter(gdp.SSP1-gdp.pcap*pop/1e9>thres), fill="violetred", shape=25, size=3) +
+    geom_text(data=cum.tot %>% filter(gdp.SSP1-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP1-cum.gdp.now+offs, label=iso3c), size = 4.5, color="violetred", 
+              position = position_dodge(width = 10)) +
+    # geom_line(aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, color="SSP2 (g=0.36)")) +
+    # geom_point(aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, shape="SSP2"), color="green") +
+    # geom_text_repel(data=cum.tot %>% filter(gdp.SSP2>1200), aes(x=cum.gdp.SSP2-cum.gdp.now, y=cum.ene.SSP2-cum.ene.now, label=iso3c), size = 2.5, color="red") +
+    geom_line(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, color="SSP4 (g=0.45)"), size=1) +
+    geom_point(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, color="SSP4 (g=0.45)"), shape=24) +
+    geom_point(data=cum.tot %>% filter(gdp.SSP4-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now), fill="blue4", shape=24, size=3) +
+    geom_text(data=cum.tot %>% filter(gdp.SSP4-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP4-cum.gdp.now-offs, y=cum.ene.SSP4-cum.ene.now, label=iso3c), 
+              size = 4.5, color="blue4", position = position_dodge(width = 10)) +
     # geom_line(aes(x=1:dim(a)[1], y=cum.ene.now, color="2013 (g=0.46)")) +
     # geom_point(aes(x=1:dim(a)[1], y=cum.ene.now, shape="5")) +
-    geom_text_repel(data=cum.tot %>% filter(gdp.SSP2>1200), aes(label=iso3c), size = 2.5, color="black") +
-    labs(x="Total GDP difference from 2013 (b$)", y="Cumulative total energy difference from 2013 (kgoe)", title=paste0("Between-country elasticity=", elas.cty)) +
-    geom_line(aes(x=cum.gdp.SSP1-cum.gdp.now, y=sum(tot.ene.SSP1-tot.ene.now)/sum(gdp.SSP1-gdp.pcap*pop/1e9)*(cum.gdp.SSP1-cum.gdp.now)), color="yellow")
+    labs(x="Total GDP difference between 2013 and 2050 (b$)", y=element_blank(), 
+         title=expression(paste(alpha, "=", 0.7))) +
+    geom_line(aes(x=cum.gdp.SSP1-cum.gdp.now, y=sum(tot.ene.SSP1-tot.ene.now)/sum(gdp.SSP1-gdp.pcap*pop/1e9)*(cum.gdp.SSP1-cum.gdp.now)), 
+              color="green4", linetype = "twodash") +
+    theme_bw() + ylim(c(0, 2.6e13)) +
+    scale_color_manual(name = "Scenario", values=cols) +
+    scale_fill_manual(name = "Scenario", values=cols) 
+  
+  elas.case <- "max"  # "min" # 
+  elas.cty <- formatC(if(elas.case=="base") elas.base.cty else if(elas.case=="max") elas.max.cty else elas.min.cty,
+                      digits = 2, format="f")
+  cum.tot <- CumulEnergyGDP(elas.case)
+  
+  # show intensity.change 
+  print(cum.tot %>% select(starts_with("intensity.")) %>% slice(n()) / 1e9)
+  
+  g2 <- ggplot(cum.tot, aes(x=cum.gdp.SSP1-cum.gdp.now, y=cum.ene.SSP1-cum.ene.now)) + geom_line(aes(color="SSP1 (g=0.30)"), size=1) + 
+    geom_point(aes(color="SSP1 (g=0.30)"), shape=25) +
+    geom_point(data=cum.tot %>% filter(gdp.SSP1-gdp.pcap*pop/1e9>thres), fill="violetred", shape=25, size=3) +
+    geom_text(data=cum.tot %>% filter(gdp.SSP1-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP1-cum.gdp.now+offs, label=iso3c), size = 4.5, color="violetred", 
+              position = position_dodge(width = 10)) +
+    geom_line(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, color="SSP4 (g=0.45)"), size=1) +
+    geom_point(aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now, color="SSP4 (g=0.45)"), shape=24) +
+    geom_point(data=cum.tot %>% filter(gdp.SSP4-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP4-cum.gdp.now, y=cum.ene.SSP4-cum.ene.now), fill="blue4", shape=24, size=3) +
+    geom_text(data=cum.tot %>% filter(gdp.SSP4-gdp.pcap*pop/1e9>thres), aes(x=cum.gdp.SSP4-cum.gdp.now-offs, y=cum.ene.SSP4-cum.ene.now, label=iso3c), 
+              size = 4.5, color="blue4", position = position_dodge(width = 10)) +
+    labs(x="Total GDP difference between 2013 and 2050 (b$)", y="Cumulative total energy difference between 2013 and 2050 (kgoe)", 
+         title=expression(paste(alpha, "=", 1.0))) +
+    geom_line(aes(x=cum.gdp.SSP1-cum.gdp.now, y=sum(tot.ene.SSP1-tot.ene.now)/sum(gdp.SSP1-gdp.pcap*pop/1e9)*(cum.gdp.SSP1-cum.gdp.now)), 
+              color="green4", linetype = "twodash") +
+    theme_bw() + ylim(c(0, 2.6e13)) +
+    scale_color_manual(values=cols, guide="none") +
+    scale_fill_manual(values=cols, guide="none") 
+  plot_grid(g2, g1, nrow=1, labels = c('(a)', '(b)'), rel_widths = c(1, 1.15))
   
   # Plot - Total energy per cap vs gdp/cap
   # ggplot(ENE.yearly.adj %>% arrange(gdp) %>% mutate(num=1:length(gdp)), aes(x=num, y=ene)) + geom_point() +
@@ -429,31 +495,32 @@ PlotIntensityVsGDPpcap <- function(elas="base") {
     ene.SSP1 <- "ene.max.SSP1"
     ene.SSP2 <- "ene.max.SSP2"    
     ene.SSP4 <- "ene.max.SSP4"
-    title.elas <- paste0("Elasticity=", elas.max.cty)
+    title.elas <- paste0("Alpha=", elas.max.cty)
   }else if(elas=="min") {
     ene.SSP1 <- "ene.min.SSP1"
     ene.SSP2 <- "ene.min.SSP2"    
     ene.SSP4 <- "ene.min.SSP4"
-    title.elas <- paste0("Elasticity=", elas.min.cty)
+    title.elas <- paste0("Alpha=", elas.min.cty)
   }else {
     ene.SSP1 <- "ene.base.SSP1"
     ene.SSP2 <- "ene.base.SSP2"    
     ene.SSP4 <- "ene.base.SSP4"
-    title.elas <- paste0("Elasticity=", formatC(elas.base.cty, digits = 1, format="f"))
+    title.elas <- paste0("Alpha=", formatC(elas.base.cty, digits = 1, format="f"))
   }
   
   ggplot(ENE.yearly.adj %>% filter(pop>5e7), aes(x=gdp.pcap, y=inten.gdp)) + 
-    # geom_point(aes(size=pop, alpha=.02, color="Base 2013")) +
-    scale_size(range = c(1,15)) +
-    # geom_text(aes(label=iso3c), size = 2.5, hjust=1) +
+    geom_point(aes(size=pop, alpha=.02, color="Base 2013")) +
+    scale_size(name="Population", range = c(1,15)) +
+    geom_text(data=ENE.yearly.adj %>% filter(pop>1e8), aes(label=iso3c), size = 2.5, hjust=1) +
     geom_point(aes(x=gdp.pcap.SSP1, y=eval(as.symbol(ene.SSP1))/gdp.pcap.SSP1, size=pop.SSP1, alpha=.02, color="SSP1 2050")) +
-    geom_text(aes(x=gdp.pcap.SSP1, y=eval(as.symbol(ene.SSP1))/gdp.pcap.SSP1, label=iso3c), size = 2.5, hjust=1) +
-    geom_point(aes(x=gdp.pcap.SSP2, y=eval(as.symbol(ene.SSP2))/gdp.pcap.SSP2, size=pop.SSP2, alpha=.02, color="SSP2 2050")) +
-    geom_text(aes(x=gdp.pcap.SSP2, y=eval(as.symbol(ene.SSP2))/gdp.pcap.SSP2, label=iso3c), size = 2.5, hjust=1) +
+    geom_text(data=ENE.yearly.adj %>% filter(pop>1e8), aes(x=gdp.pcap.SSP1, y=eval(as.symbol(ene.SSP1))/gdp.pcap.SSP1, label=iso3c), size = 2.5, hjust=1) +
+    # geom_point(aes(x=gdp.pcap.SSP2, y=eval(as.symbol(ene.SSP2))/gdp.pcap.SSP2, size=pop.SSP2, alpha=.02, color="SSP2 2050")) +
+    # geom_text(aes(x=gdp.pcap.SSP2, y=eval(as.symbol(ene.SSP2))/gdp.pcap.SSP2, label=iso3c), size = 2.5, hjust=1) +
     geom_point(aes(x=gdp.pcap.SSP4, y=eval(as.symbol(ene.SSP4))/gdp.pcap.SSP4, size=pop.SSP4, alpha=.02, color="SSP4 2050")) +
-    geom_text(aes(x=gdp.pcap.SSP4, y=eval(as.symbol(ene.SSP4))/gdp.pcap.SSP4, label=iso3c), size = 2.5, hjust=1) +
+    geom_text(data=ENE.yearly.adj %>% filter(pop>1e8), aes(x=gdp.pcap.SSP4, y=eval(as.symbol(ene.SSP4))/gdp.pcap.SSP4, label=iso3c), size = 2.5, hjust=1) +
     geom_line(aes(x=gdp.pcap, y=exp(eqn$coefficients[1])*gdp.pcap^(eqn$coefficients[2]-1))) +
     labs(x="GDP per capita (in log)", y="Energy intensity (kgoe/$) (in log)", title=title.elas)+
     scale_alpha(guide = 'none') +  
-    scale_x_log10() + scale_y_log10()
+    scale_x_log10() + scale_y_log10() +
+    scale_color_discrete(name="Scenario") + theme_bw()
 }
