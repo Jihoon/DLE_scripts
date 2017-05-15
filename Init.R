@@ -52,26 +52,48 @@ IND2_con_grwth <- as.numeric(HH_CON %>% filter(year==2004 & iso2c=='IN') %>% sel
 
 WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
 
-#####################################################
-### Read in (CES-Pseudo COICOP) mappings from WB  ###
-#####################################################
 
-### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
-Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
-# I added 'Sheet2' and fixed some mis-categorizations for my needs.
-icp_seq <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
-icp_cat <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=3, endCol=4, forceConversion=T)
-NTNU <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
-icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
-names(icp_ntnu)[2:3] <- c("COICOP1","COICOP2")
-names(icp_ntnu)[5] <- "ICP_Heading"
 
-source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
+##############################################
+###        Read in EXIO matrices           ###
+##############################################
 
-# Issue: I still need to match with our CES DB and final NTNU 109 classification
-#        How to combine fuel consumption and other (food etc)
-#       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
+# Takes long time to run. 
+# Some .Rda files are already created to save time.
+# source("EXIO_init.R")
+
+
+
+#########################################
+### Get EXIO FD vectors for countries ###
+#########################################
+
+# Get IND final demand from EXIO [M.EUR to M.USD]
+IND_place <- which(exio_ctys=="IN")
+IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
+IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 7 final demand columns per country
+IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
+IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
+IND_fd_exio_imp <- rowSums(IND_fd_ex[,-IND_place]) # Sum all HH FD across countries
+
+# Get BRA final demand from EXIO [M.EUR to M.USD]
+BRA_place <- which(exio_ctys=="BR")
+BRA_idx_fd <- seq(7*(BRA_place-1)+1, 7*BRA_place)   # 7 final demand columns per country
+BRA_idx_ex <- seq(200*(BRA_place-1)+1, 200*BRA_place)   # 7 final demand columns per country
+# Issue: This 'final_demand' for BRA gives too small values for electricity expenditure.
+# Instead I can use the column from 'BR_output.xls' file.
+# BRA_fd_ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200)
+# BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
+# BRA_fd_exio_imp <- rowSums(BRA_fd_ex[,-BRA_place]) # Sum all HH FD across countries
+BRA_fd_ex <- read_excel("H:/MyDocuments/IO work/Valuation/BR_output.xls", sheet="usebptot", skip=14, col_names=FALSE)
+# Issue: Brazil FD has zero education expediture. (reasons unknown)
+# Simply replace the zero with the values found on actual BRA IO 
+BRA_fd_exio <- as.matrix(BRA_fd_ex[1:200,169]) 
+BRA_fd_exio[174] <- 15600  # M Euro
+BRA_fd_exio <- BRA_fd_exio / EXR_EUR$r  # to M.USD 2007
+# The value 15600 is from H:\MyDocuments\IO work\Bridging\CES-COICOP\BRA IO FD comparison.xlsx
+
+
 
 #########################################
 ### Read in COICOP-EXIO Qual mapping  ###
@@ -104,33 +126,6 @@ EX_catnames <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header
 # Issue: This qual mapping may change depending on countries, which we need to tackle then.
 
 
-##############################################
-###        Read in EXIO matrices           ###
-##############################################
-
-# Takes long time to run. 
-# Some .Rda files are already created to save time.
-# source("EXIO_init.R")
-
-
-
-##########################################
-### Read in function 'get_basic_price' ###
-##########################################
-
-source("Valuation.R")
-
-
-
-#################################################
-### Read in function 'Bridging_uncertainty.R' ###
-#################################################
-
-# The uniform random draw routine based on a qual mapping
-
-source("Bridging_uncertainty.R")  
-
-
 
 #####################################################
 ###     Treating CES fuel sectors differently     ###
@@ -150,13 +145,14 @@ row.names(bridge_fuel_EXIO_q) <- DLE_fuelnames_std[,1]
 names(DLE_fuelnames_std) <- "item"
 
 
+
 ############################################################
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
-source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/00 Load required packages.R")
-source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
+# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/00 Load required packages.R")
+# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
 source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
-source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/Functions for building Oracle DB tables.R")
+# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/Functions for building Oracle DB tables.R")
 
 source("Read_final_demand_from_DB.R")
 source("Read_direct_energy_from_DB.R")
@@ -193,6 +189,11 @@ BRA_FD_ALL <- data.table(BRA_FD_ALL)
 BRA_HH <- data.table(BRA_HH, key="hhid")
 setorder(BRA_HH, hhid)
 
+list[BRA2_FD_ALL, BRA2_HH] <- readFinalDemandfromDBAllHH('BRA2')
+BRA2_FD_ALL <- data.table(BRA2_FD_ALL)
+BRA2_HH <- data.table(BRA2_HH, key="hhid")
+setorder(BRA2_HH, hhid)
+
 save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
 # save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump_prcadj.Rda")
 save(IND2_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_AllHHConsump.Rda")
@@ -200,8 +201,6 @@ save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHH
 save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
 save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
 save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
-
-
 
 
 
@@ -231,6 +230,7 @@ n_sector_icp <- 151  # Num of ICP sectors
 n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
 
 
+
 ##############################################
 ###     Read in ICP-EXIO Qual mapping      ###
 ##############################################
@@ -254,6 +254,47 @@ ICP_catnames <- bridge_ICP_EXIO_q[,1]
 
 
 
+#####################################################
+### Read in (CES-Pseudo COICOP) mappings from WB  ###
+#####################################################
+
+### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
+Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
+# I added 'Sheet2' and fixed some mis-categorizations for my needs.
+icp_seq <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
+icp_cat <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=3, endCol=4, forceConversion=T)
+NTNU <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=7, endCol=8, forceConversion=T)
+icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
+names(icp_ntnu)[2:3] <- c("COICOP1","COICOP2")
+names(icp_ntnu)[5] <- "ICP_Heading"
+
+source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
+
+# Issue: I still need to match with our CES DB and final NTNU 109 classification
+#        How to combine fuel consumption and other (food etc)
+#       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
+
+
+
+##########################################
+### Read in function 'get_basic_price' ###
+##########################################
+
+source("Valuation.R")
+
+
+
+#################################################
+### Read in function 'Bridging_uncertainty.R' ###
+#################################################
+
+# The uniform random draw routine based on a qual mapping
+
+source("Bridging_uncertainty.R")  
+
+
+
 ##############################################
 ###    Set up environment for RAS run      ###
 ##############################################
@@ -262,32 +303,4 @@ source("Bridge_RAS.R")
 
 
 
-#########################################
-### Get EXIO FD vectors for countries ###
-#########################################
-
-# Get IND final demand from EXIO [M.EUR to M.USD]
-IND_place <- which(exio_ctys=="IN")
-IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
-IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 7 final demand columns per country
-IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
-IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
-IND_fd_exio_imp <- rowSums(IND_fd_ex[,-IND_place]) # Sum all HH FD across countries
-
-# Get BRA final demand from EXIO [M.EUR to M.USD]
-BRA_place <- which(exio_ctys=="BR")
-BRA_idx_fd <- seq(7*(BRA_place-1)+1, 7*BRA_place)   # 7 final demand columns per country
-BRA_idx_ex <- seq(200*(BRA_place-1)+1, 200*BRA_place)   # 7 final demand columns per country
-# Issue: This 'final_demand' for BRA gives too small values for electricity expenditure.
-# Instead I can use the column from 'BR_output.xls' file.
-# BRA_fd_ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200)
-# BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
-# BRA_fd_exio_imp <- rowSums(BRA_fd_ex[,-BRA_place]) # Sum all HH FD across countries
-BRA_fd_ex <- read_excel("H:/MyDocuments/IO work/Valuation/BR_output.xls", sheet="usebptot", skip=14, col_names=FALSE)
-# Issue: Brazil FD has zero education expediture. (reasons unknown)
-# Simply replace the zero with the values found on actual BRA IO 
-BRA_fd_exio <- as.matrix(BRA_fd_ex[1:200,169]) 
-BRA_fd_exio[174] <- 15600  # M Euro
-BRA_fd_exio <- BRA_fd_exio / EXR_EUR$r  # to M.USD 2007
-# The value 15600 is from H:\MyDocuments\IO work\Bridging\CES-COICOP\BRA IO FD comparison.xlsx
 

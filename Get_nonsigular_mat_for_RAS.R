@@ -3,7 +3,7 @@
 #####################
 
 # Expenditure in cells
-n_draw <- 1000
+n_draw <- 10
 
 # D_val_uncertainty <- 1
 # list[result_IND, NC_IND] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], "IND")
@@ -86,7 +86,7 @@ FRA_inten_RAS_combined_noVal[,no_expense_FRA] <- FRA_inten_nonRAS_noVal[,no_expe
 ####################
 
 # 1. Electricity allocation results
-elec_alloc <- do.call("rbind", lapply(final_alloc_list, '[', 63,))
+elec_alloc <- do.call("rbind", lapply(final_alloc_list_BRA_noVal, '[', 155,))  # was 63 in COICOP
 colnames(elec_alloc) <- EX_catnames
 elec_alloc<-(elec_alloc)[,128:141]
 colnames(elec_alloc) <- gsub('Electricity by ', '', colnames(elec_alloc))
@@ -173,6 +173,8 @@ IND_int_summary_combined <- stat.desc(IND_inten_RAS_combined)
 IND_int_summary_combined <- t(IND_int_summary_combined[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
 FRA_int_summary_combined <- stat.desc(FRA_inten_RAS_combined) 
 FRA_int_summary_combined <- t(FRA_int_summary_combined[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
+BRA_int_summary_combined <- stat.desc(BRA_inten_RAS_combined_noVal) 
+BRA_int_summary_combined <- t(BRA_int_summary_combined[c(4,5,9,13),]) %>% round(digits=2) %>% format(digits = 2, nsmall = 1, scientific=FALSE)
 # int_summary_combined <- round(int_summary_combined, digits = 2)
 # int_summary_combined <- format(int_summary_combined, digits = 2, nsmall = 1, scientific=FALSE)
 
@@ -181,6 +183,7 @@ FRA_int_summary_combined <- t(FRA_int_summary_combined[c(4,5,9,13),]) %>% round(
 
 write.csv(IND_int_summary_combined, "India - Intensity summary without direct E.csv")
 write.csv(FRA_int_summary_combined, "France - Intensity summary without direct E.csv")
+write.csv(BRA_int_summary_combined, "France - Intensity summary without direct E.csv")
 # write.csv(int_summary, "Intensity summary with direct E.csv")
 
 intensities <- cbind(int_summary_combined, int_summary)

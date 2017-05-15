@@ -40,6 +40,7 @@ init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 list[BRA_intensity, BRA_alloc, NC_BRA_val_EXIO, BRA_FD_adj_val_EXIO] <- DeriveIntensities('BRA')
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_EXIO.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_EXIO.Rda")
+save(BRA_FD_adj_val_EXIO, file="./Saved tables/BRA_FD_adj_val_EXIO.Rda")
 
 
 # 1.2. BRA - Brazil-specific valuation (from Guilioto)
@@ -59,6 +60,7 @@ init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA')
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
+save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
 
@@ -481,8 +483,8 @@ View(cbind(eora.name,IND.int.eora,BRA.int.eora))
 # Food only
 load("./Saved tables/BRA_intensities_val_BRA.Rda")
 mean.int.fdbev <- apply(BRA_intensity[,ICP_food_idx], 2, mean)
-exp.food.allHH <- BRA_FD_ICP_HH_adj_BR[1:45,] / scaler_BRA 
-exp.food.allHH <- cbind(BRA_HH[,c(1,2,5,8), with=FALSE], t(exp.food.allHH), colSums(exp.food.allHH))
+exp.food.allHH <- BRA_FD_ICP_HH_adj_BR[ICP_food_idx,] / scaler_BRA 
+exp.food.allHH <- cbind(BRA_HH %>% select(hhid, weight, hh_size, decile), t(exp.food.allHH), colSums(exp.food.allHH))
 names(exp.food.allHH)[dim(exp.food.allHH)[2]] <- "tot.expend.food"
 setkey(exp.food.allHH, tot.expend.food)
 
@@ -500,4 +502,28 @@ int.fdbev.per.usd <- sum(BRA_adj_fdbev.tot * mean.int.fdbev) / sum(BRA_adj_fdbev
 # Apply it to all decile uniformly
 BRA_adj_fdbev.dec <- BRA_adj_fdbev[ICP_food_idx,2:11]  
 BRA_fdbev.ene.dec <- colSums(BRA_adj_fdbev.dec) * int.fdbev.per.usd / 1e3 / BRA.agg$pop
+
+# Energy use per capita
+BRA_pop <- BRA_HH %>% group_by(decile) %>% summarise(pop=sum(weight*hh_size))
+IND_pop <- IND_HH %>% group_by(decile) %>% summarise(pop=sum(weight*hh_size))
+
+BRA_fuel_tot <- readFuelQuantDemandfromDBbyDecile('BRA0') %>% mutate_if(is.numeric, funs(./scaler_BRA))
+BRA_fuel_tot_pcap <- data.frame(BRA_fuel_tot$item, as.matrix(BRA_fuel_tot[,2:11]) %*% diag(1/BRA_pop$pop), 
+                                 as.matrix(BRA_fuel_tot[,12:21]) %*% diag(1/BRA_pop$pop))
+names(BRA_fuel_tot_pcap) <- names(BRA_fuel_tot)[1:length(BRA_fuel_tot_pcap)]
+
+IND_fuel_tot <- readFuelQuantDemandfromDBbyDecile('IND1') %>% mutate_if(is.numeric, funs(./scaler_IND))
+IND_fuel_tot_pcap <- data.frame(IND_fuel_tot$item, as.matrix(IND_fuel_tot[,2:11]) %*% diag(1/IND_pop$pop), 
+                                as.matrix(IND_fuel_tot[,12:21]) %*% diag(1/IND_pop$pop))
+names(IND_fuel_tot_pcap) <- names(IND_fuel_tot)[1:length(IND_fuel_tot_pcap)]
+
+
+
+## Check BRA sectoral expenditure by hh (because of hh with no food expenditures)
+sum_expenditure <- data.frame(BRA_FD_ICP_AllHH) %>% 
+  mutate(sect_exp = ifelse(row_number() <= 37, "Food", ifelse(row_number() >= 152, "Energy", "Other"))) %>% 
+  group_by(sect_exp) %>% summarise_all(funs(sum)) 
+BRA_hh_no_food <- sum_expenditure[,c(TRUE,as.numeric(sum_expenditure[2,-1])==0)]
+exp.food.allHH[tot.expend.food==0] %>% group_by(decile) %>% summarise(pop=sum(weight*hh_size))
+
 

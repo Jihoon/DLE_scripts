@@ -155,6 +155,50 @@ ConstructyFuelTypeSet = function() {
 }
   
 
+readFuelQuantDemandfromDBbyDecile = function(svy='IND1') {
+  xlcFreeMemory()
+  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, QTY_TOT, UNIT, tables=c(paste0(svy, '_FUEL')))
+  xlcFreeMemory()
+  
+  if (grepl("BRA", svy)) {
+    HHold <- selectDBdata(ID, WEIGHT, INCOME, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+  }
+  else {
+    HHold <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    HHold$income <- HHold$consumption
+  }
+  xlcFreeMemory()
+  
+  print(sum(is.na(HHold$income)))
+  HHold <- HHold %>% 
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
+    mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+                        labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
+    filter(!is.na(income))
+  
+  Fuel_summary <- Fuel %>% left_join(HHold) %>% # filter(!is.na(val_tot)) %>% 
+    mutate(fd_tot =val_tot*weight) %>% 
+    mutate(qt_tot =qty_tot*weight) %>% 
+    group_by(decile, fuel) %>%
+    summarise(fd_tot=sum(fd_tot, na.rm = TRUE), qt_tot=sum(qt_tot, na.rm = TRUE)) %>% arrange(fuel) %>% 
+    right_join(DLE_fuel_types) %>% rename(item = fuel) %>%
+    gather(temp, tot, ends_with("_tot")) %>% unite(temp1, temp, decile, sep = ".") %>% spread(temp1, tot) %>% 
+    mutate(fd.total = rowSums(.[2:11], na.rm = TRUE), qt.total = rowSums(.[12:21], na.rm = TRUE)) %>% select(-ends_with('NA')) %>%
+    select(item, fd_tot.decile1, fd_tot.decile2, fd_tot.decile3, fd_tot.decile4, fd_tot.decile5, 
+           fd_tot.decile6, fd_tot.decile7, fd_tot.decile8, fd_tot.decile9, fd_tot.decile10, 
+           qt_tot.decile1, qt_tot.decile2, qt_tot.decile3, qt_tot.decile4, qt_tot.decile5, 
+           qt_tot.decile6, qt_tot.decile7, qt_tot.decile8, qt_tot.decile9, qt_tot.decile10, everything())
+  Fuel_summary[is.na(Fuel_summary)] <- 0
+  
+  print(sum(is.na(HHold$income)))
+  
+  Fuel_summary <- data.frame(item=rownames(bridge_fuel_EXIO_q), 
+                             t(DLE_fuel_sector_Q) %*% as.matrix(Fuel_summary[,-1]))
+  
+  return(Fuel_summary)
+}
+
 
 ### Decile divide test
 

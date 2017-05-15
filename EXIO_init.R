@@ -39,6 +39,16 @@ emissions <- emissions %>% select(-V2, -V3) %>% filter(grepl('CH4|CO2|N2O', V1))
 GHG_item <- emissions$V1
 emissions <- emissions %>% select(-V1)
 
+path_iot_2.3 <- 'C:/Users/min/SharePoint/DLE - Documents/IO/Data - EXIOBASE/extension2.3.0/'
+emissions_2.3 <- read.table(paste(path_iot_2.3, "mrEmissions_pxp_version2.3.0.txt", sep=""), header=FALSE, sep="\t", dec=".", 
+                        skip=2, nrows=204, stringsAsFactors = FALSE)
+emissions_2.3 <- emissions_2.3 %>% select(-V3) %>% filter(V2==" air") %>% filter(grepl('CH4|CO2|N2O', V1)) 
+GHG_item_2.3 <- emissions_2.3$V1
+emissions_2.3 <- emissions_2.3 %>% select(-V1, -V2)
+View(cbind(GHG_item_2.3, emissions_2.3[,IND_idx_ex]))
+View(cbind(GHG_item_2.3, emissions_2.3[,BRA_idx_ex]))
+View(cbind(GHG_item, emissions[,IND_idx_ex]))
+View(cbind(GHG_item, emissions[,BRA_idx_ex]))
 
 # From SUT folder
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
@@ -68,6 +78,7 @@ indirect_em_int <- as.matrix(emissions) %*% as.matrix(L_inverse)   # (intensity 
 
 # To clean up the memory
 save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
+save(indirect_E_int, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
 save(tot_use, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
 save(supplym, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
 rm(L_inverse, tot_use, supplym, materials_reduc)
