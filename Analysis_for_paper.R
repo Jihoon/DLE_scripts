@@ -13,9 +13,13 @@
 # 1. ICP FD adjustment: Original FD from survey VS. Adjusted FD matched to the national total
 
 
-n_draw <- 500
+n_draw <- 10
 D_val_uncertainty <- 0
 
+ICP_food_idx <- 1:45
+ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
+ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
+ICP_fuel_idx <-152:164
 
 ###############################
 # Derive sectoral intensities # 
@@ -59,10 +63,12 @@ init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 
 list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA')
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA.Rda")
+save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA_rev.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
 save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
+load( file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 
 # Temporary run without any Valuation
 inten_BRA_noVal <- SetupSectorIntensities(BRA_alloc, NC_BRA_val_BRA, countrycode("BRA","iso3c", "iso2c"))
@@ -76,42 +82,71 @@ IND_fd_exio_pp <- get_purch_price(IND_fd_exio, "IN")
 scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(IND_fd_exio_pp)
 init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
 
-list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND')
+list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary')  # IND_FD_adj is already scaled up to match EXIO FD
 save(IND_intensity, file="./Saved tables/IND_intensities.Rda")
 save(IND_alloc, file="./Saved tables/IND_alloc.Rda")
-load( file="./Saved tables/IND_intensities.Rda")
-load( file="./Saved tables/IND_alloc.Rda")
+save(IND_FD_adj, file="./Saved tables/IND_FD_adj.Rda")
+load(file="./Saved tables/IND_intensities.Rda")
+load(file="./Saved tables/IND_alloc.Rda")
+
+# Final E intensity
+list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final')
+IND_f.intensity[,ICP_fuel_idx] <- sweep(IND_f.intensity[,ICP_fuel_idx], 2, IND.E.direct.int, `+`)
+view(colMeans(IND_f.intensity))
+IND_intensity - IND_f.intensity
 
 # Temporary run without any Valuation
 inten_IND_noVal <- SetupSectorIntensities(IND_alloc, NC_IND, countrycode("IND","iso3c", "iso2c"))
 save(inten_IND_noVal, file="./Saved tables/IND_intensities_noVal.Rda")
 
 
+no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
+no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
+no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
+no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 
-# Print sectoral intensities
-pdf(file = paste0(figure_path, "BRA non-fuel intensity - Val EXIO.pdf"), width = 16, height = 9)
+
+
+###############################
+# Plot sectoral intensities # 
+###############################
+
+figure_path <- "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Writing/IO uncertainty methodology/Final production/Figures/"
+y_lim1 <- 80 # TJ/usd
+y_lim2 <- 400 # TJ/usd
+
+pdf(file = paste0(figure_path, "BRA sectoral intensity - Val EXIO.pdf"), width = 21, height = 10)
 load("./Saved tables/BRA_intensities_val_EXIO.Rda")
-PlotNonfuelIntensity(BRA_intensity, no_expense_BRA, 80, "Brazil w/ EXIO valuation")
-dev.off()
-pdf(file = paste0(figure_path, "BRA fuel intensity - Val EXIO.pdf"), width = 4, height = 9)
-PlotFuelIntensity(BRA_intensity, no_expense_BRA, 400)
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(BRA_intensity, no_expense_BRA, y_lim1, "Brazil w/ EXIO valuation")
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(BRA_intensity, no_expense_BRA, y_lim2)
 dev.off()
 
-pdf(file = paste0(figure_path, "BRA non-fuel intensity - Val BRA.pdf"), width = 16, height = 9)
+pdf(file = paste0(figure_path, "BRA sectoral intensity - Val BRA.pdf"), width = 21, height = 10)
 load("./Saved tables/BRA_intensities_val_BRA.Rda")
-PlotNonfuelIntensity(BRA_intensity, no_expense_BRA, 80, "Brazil w/ own valuation")
-dev.off()
-pdf(file = paste0(figure_path, "BRA fuel intensity - Val BRA.pdf"), width = 4, height = 9)
-PlotFuelIntensity(BRA_intensity, no_expense_BRA, 400)
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(BRA_intensity, no_expense_BRA, y_lim1, "Brazil w/ own valuation")
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(BRA_intensity, no_expense_BRA, y_lim2)
 dev.off()
 
-pdf(file = paste0(figure_path, "IND non-fuel intensity - Val EXIO.pdf"), width = 16, height = 9)
+pdf(file = paste0(figure_path, "IND sectoral intensity - Val EXIO.pdf"), width = 21, height = 10)
 load("./Saved tables/IND_intensities.Rda")
-PlotNonfuelIntensity(IND_intensity, no_expense_IND, 80, "India")
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(IND_intensity, no_expense_IND, y_lim1, "India")
+# text(x = -0, y = 95, labels = "(c)", xpd = NA)
+# mtext("(c)", 3, adj=0, line=2)
+# PlotNonfuelIntensity(IND_f.intensity, no_expense_IND, 50, "India - Final")
+# dev.off()
+# pdf(file = paste0(figure_path, "IND fuel intensity - Val EXIO.pdf"), width = 4, height = 9)
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(IND_intensity, no_expense_IND, 600)
+# PlotFuelIntensity(IND_f.intensity, no_expense_IND, 600)
 dev.off()
-pdf(file = paste0(figure_path, "IND fuel intensity - Val EXIO.pdf"), width = 4, height = 9)
-PlotFuelIntensity(IND_intensity, no_expense_IND, 600)
-dev.off()
+
+view(data.frame(icp=ICP_catnames, pri.avg=colMeans(IND_intensity), final.avg=colMeans(IND_f.intensity) ))
+view(data.frame(exio=t(EX_catnames), pri.avg=colSums(indirect_E_int[, IND_idx_ex]), final.avg=colSums(indirect_fE_int[, IND_idx_ex])))
 
 #####################
 # ICP FD adjustment #
@@ -132,14 +167,14 @@ BRA_FD_ICP_HH_adj_BR <- BRA_FD_ICP_AllHH * (chng_pct_val_BRA + 1)
 BRA_FD_ICP_HH_adj_EX <- BRA_FD_ICP_AllHH * (chng_pct_val_EXIO + 1)
 
 # And two vectors for India
-# init_FD_IND: Initial vector from the survey (scaled to M.USD 2007 MER)
+# init_FD_IND: Initial vector from the survey (scaled to M.USD 2007 MER). Also scaled up by scaler_IND to match EXIO FD sum
 # IND_FD_adj: Adjusted by rIPFP based on EXIO default valuation mtx
 
 # India
 chng_pct_IND <- (IND_FD_adj - init_FD_IND) / init_FD_IND
 chng_pct_IND[is.nan(chng_pct_IND)] <- 0
 
-IND_FD_ICP_HH_adj <- IND_FD_ICP_AllHH * (chng_pct_IND + 1)
+IND_FD_ICP_HH_adj <- IND_FD_ICP_AllHH * (chng_pct_IND + 1) # IND_FD_ICP_AllHH and IND_FD_ICP_HH_adj are not scaled up yet by scaler_IND
 # When there is an adjustment frmo 0 to non-zero values, we need to assign the non-zero values to all HH.
 # I do it proportionately to match the weighted sum.
 idx_inf <- which(is.infinite(chng_pct_IND))  # Identify rows with Inf adjustments
@@ -150,6 +185,12 @@ rm(r_HH)
 gc()
 # scaler_IND needed since IND_FD_ICP_HH_adj is not scaled to match fd_exio
 
+IND_FD_ICP_adj <- IND_FD_ICP_usd2007 * (chng_pct_IND + 1)
+r_dec <- colSums(IND_FD_ICP_usd2007[,-1])/sum(IND_FD_ICP_usd2007[,1])  # ratio of decile total to (unweighted) total
+IND_FD_ICP_adj[idx_inf,-1] <- t(sapply(IND_FD_adj[idx_inf], # M.USD
+                                        function(x) x * r_dec)) * scaler_IND   
+IND_FD_ICP_adj[idx_inf,1] <- IND_FD_adj[idx_inf]
+temp <- IND_f.intensity %*% IND_FD_ICP_adj
 
 
   
@@ -214,7 +255,6 @@ eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
 # save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 
-
 # No valuation case BRA
 load("./Saved tables/IND_intensities_noVal.Rda")
 list[eHH_IND_noVal, eHH_sd_noVal] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, inten_IND_noVal)
@@ -223,6 +263,27 @@ a <- SummarizeGJPerCapByDecile(eHH_IND_noVal)
 PlotIntensityHist(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
 # save(eHH_IND_noVal, file="./Saved tables/IND_ENEperCap_noVal_orgFD.Rda")
 
+### India Final energy intensities# Final energy trial
+list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
+a <- SummarizeGJPerCapByDecile(eHH_f.IND)
+PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+
+list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_AllHH, IND_f.intensity)
+a <- SummarizeGJPerCapByDecile(eHH_f.IND)
+PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+
+# Sectoral
+list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_food_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
+a <- SummarizeGJPerCapByDecile(eHH_f.IND)
+PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+
+list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_fuel_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
+a <- SummarizeGJPerCapByDecile(eHH_f.IND)
+PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+
+list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_hhold_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
+a <- SummarizeGJPerCapByDecile(eHH_f.IND)
+PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 
 # Main decile plot for BRA and IND
@@ -248,11 +309,6 @@ dev.off()
 # Sectoral energy per capita
 
 load("./Saved tables/BRA_intensities_val_BRA.Rda")
-
-ICP_food_idx <- 1:45
-ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
-ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
-ICP_fuel_idx <-152:164
 
 sect_summary_BR <- data.frame(dec = paste0('dec',1:10))
 
@@ -313,7 +369,7 @@ load("./Saved tables/IND_ENEperCap_food.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_f_IN)
 names(a) <- c("u_Food", "sd_Food")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_f_IN, "V", xmax=10, .02, drawline=FALSE, ticksize=1)
+PlotIntensityHist(all_HH_f_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
 title('Food: India', line = 2.5)
 rm(all_HH_f_IN)
 gc()
@@ -324,7 +380,7 @@ load("./Saved tables/IND_ENEperCap_hhold.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_hs_IN)
 names(a) <- c("u_Hhold", "sd_Hhold")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_hs_IN, "V", xmax=10, .02, drawline=FALSE, ticksize=1)
+PlotIntensityHist(all_HH_hs_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
 title('Household goods and services: India', line = 2.5)
 rm(all_HH_hs_IN)
 gc()
@@ -341,12 +397,14 @@ rm(all_HH_svc_IN)
 gc()
 
 list[all_HH_fl_IN, sd_hs] <-GetHHSectoralEnergyPerCap(ICP_fuel_idx,'IND', IND_FD_ICP_HH_adj, IND_intensity)
+list[all_HH_fl_IN, sd_hs] <-GetHHSectoralEnergyPerCap(155,'IND', IND_FD_ICP_HH_adj, IND_intensity)
+list[all_HH_fl_IN, sd_hs] <-GetHHSectoralEnergyPerCap(155,'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
 save(all_HH_fl_IN, file="./Saved tables/IND_ENEperCap_fuel.Rda")
 load("./Saved tables/IND_ENEperCap_fuel.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_fl_IN)
 names(a) <- c("u_Fuel", "sd_Fuel")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_fl_IN, "V", xmax=10, .02, drawline=FALSE, ticksize=1)
+PlotIntensityHist(all_HH_fl_IN, "V", xmax=30, .1, drawline=FALSE, ticksize=1)
 title('Fuel: India', line = 2.5)
 rm(all_HH_fl_IN)
 gc()

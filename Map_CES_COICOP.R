@@ -11,7 +11,7 @@ code_item_IDN$UNIT <- NULL
 # code_item_IDN <- code_item_IDN[match(unique(code_item_IDN$ITEM_DLE), code_item_IDN$ITEM_DLE),]    # There are duplicate ITEM_DLEs because they are input in two units (e.g. weight & expenditure) -> Not necessary because merge will anyhow remove these.
 
 # WB removed all ceremonial spendings from the consumption. I put those back at '151: other services' under ICP.
-IDN_WB$ICP_SEQ[c(338, 340, 342, 343)] <- 151
+# IDN_WB$ICP_SEQ[c(338, 340, 342, 343)] <- 151
 
 # Read code-item name in DB mapping for IND
 # Theoretically ITEM_DLE could be identical to Surv_Heading, but ITEM_DLE is somehow modified.

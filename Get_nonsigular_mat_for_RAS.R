@@ -68,7 +68,7 @@ IND_inten_RAS_combined_noVal <- IND_inten_RAS_noVal
 IND_inten_RAS_combined_noVal[,no_expense_IND] <- IND_inten_nonRAS_noVal[,no_expense_IND]
 
 no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
-no_expense_BRA <- no_expense_BRA[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
+no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 BRA_inten_RAS_combined_noVal <- BRA_inten_RAS_noVal
 BRA_inten_RAS_combined_noVal[,no_expense_BRA] <- BRA_inten_nonRAS_noVal[,no_expense_BRA]
 

@@ -27,7 +27,7 @@ PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PR
 
 # Inflation
 # Deflate currency in 2010 to 2007 (EXIO)
-CPI <- WDI(country = c("IN", "BR", "FR"), indicator = "FP.CPI.TOTL", start = 2007, end = 2010, extra = FALSE, cache = NULL)
+CPI <- WDI(country = c("IN", "BR", "FR"), indicator = "FP.CPI.TOTL", start = 2007, end = 2015, extra = FALSE, cache = NULL)
 
 CPI_ratio_IND <- as.numeric(CPI %>% filter(year==2010 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
 CPI_ratio_BRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='BR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='BR') %>% select(FP.CPI.TOTL))
@@ -60,7 +60,7 @@ WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), 
 
 # Takes long time to run. 
 # Some .Rda files are already created to save time.
-# source("EXIO_init.R")
+source("EXIO_init.R")
 
 
 
@@ -71,7 +71,8 @@ WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), 
 # Get IND final demand from EXIO [M.EUR to M.USD]
 IND_place <- which(exio_ctys=="IN")
 IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
-IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 7 final demand columns per country
+IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 200 EXIO comodities
+IND_idx_ex.i <- seq(163*(IND_place-1)+1, 163*IND_place)   # 163 EXIO industries
 IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
 IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
 IND_fd_exio_imp <- rowSums(IND_fd_ex[,-IND_place]) # Sum all HH FD across countries
@@ -166,8 +167,10 @@ DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 # India
 IND_HH_Alldata <-selectDBdata(tables='IND1_HH')
 IND_FOOD_Alldata <-selectDBdata(tables='IND1_FOOD')
+IND_FUEL_Alldata <-selectDBdata(tables='IND1_FUEL')
 save(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
 save(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
+save(IND_FUEL_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
 
 IND_FD <- readFinalDemandfromDBbyDecile('IND1')
 IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
@@ -201,6 +204,10 @@ save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHH
 save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
 save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
 save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
 
 
 
@@ -274,6 +281,10 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 # Issue: I still need to match with our CES DB and final NTNU 109 classification
 #        How to combine fuel consumption and other (food etc)
 #       -> We decided to follow ICP headings from the WB and bridge this ICP classification to EXIO.
+
+
+
+
 
 
 

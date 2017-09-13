@@ -200,21 +200,52 @@ readFuelQuantDemandfromDBbyDecile = function(svy='IND1') {
 }
 
 
-### Decile divide test
-
-# a <- IND_HH %>% 
-#   filter(!is.na(expenditure)) 
-# aa <- a %>%
-#   arrange(expenditure) %>%
-#   mutate(cumpop = cumsum(hh_size*weight)/sum(a$weight*a$hh_size)) %>%
-#   mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
-#                       labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  
-# aa %>% group_by(decile) %>% summarise(sum(hh_size*weight))
-# 
-# 
-# ab <- a %>%
-#   arrange(expenditure/hh_size) %>%
-#   mutate(cumpop = cumsum(hh_size*weight)/sum(a$weight*a$hh_size)) %>%
-#   mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
-#                       labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  
-# ab %>% group_by(decile) %>% summarise(sum(hh_size*weight))
+readFinalEnergyfromDBAllHH = function(svy='IND1') {
+  xlcFreeMemory()
+  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, QTY_TOT, UNIT, tables=c(paste0(svy, '_FUEL')))
+  xlcFreeMemory()
+  
+  if (grepl("BRA", svy)) {
+    HHold <- selectDBdata(ID, WEIGHT, INCOME, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    # income_proxy <- income
+  }
+  else {
+    HHold <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    HHold$income <- HHold$consumption
+  }
+  xlcFreeMemory()
+  
+  # Fuel <- Fuel %>% rename(item = fuel)
+  print(sum(is.na(HHold$income)))
+  HHold <- HHold %>% rename(hhid = id) %>% 
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
+    mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+                        labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
+    filter(!is.na(income))
+  
+  print(sum(is.na(HHold$income)))
+  
+  Fuel_summary <- Fuel %>% left_join(IND_MJ_hh %>% select(id, fuel, MJ)) %>% rename(hhid = id) %>% 
+    right_join(HHold) %>%    # Using right_join to keep all the IDs and matching columns with a_dec
+    # mutate(fd_tot =val_tot*weight) %>% 
+    group_by(hhid, fuel) %>%
+    summarise(MJ_tot=sum(MJ, na.rm = TRUE), weight=first(weight)) %>% arrange(fuel) 
+  
+  Fuel_summary <- Fuel_summary %>% 
+    rbind.fill(data.frame(fuel = DLE_fuel_types, MJ_tot=0)) %>% 
+    rename(item = fuel) %>% 
+    spread(item, MJ_tot) %>% 
+    filter(!is.na(hhid)) %>% 
+    select(-which(names(.)=="<NA>")) %>% arrange(hhid)
+  # Fuel_summary[is.na(Fuel_summary)] <- 0
+  Fuel_summary[,-1] <- NAer(Fuel_summary[,-1])
+  
+  # Fuel_std <- data.frame(item=rownames(bridge_fuel_EXIO_q), 
+  #                        t(DLE_fuel_sector_Q) %*% as.matrix(Fuel_summary[,-1]))
+  Fuel_std <- data.frame(hhid=Fuel_summary$hhid, weight=Fuel_summary$weight, 
+                         as.matrix(Fuel_summary[,-c(1,2)]) %*% as.matrix(DLE_fuel_sector_Q))
+  # names(Fuel_std) <- names(Fuel_summary)
+  
+  return(Fuel_std)
+}

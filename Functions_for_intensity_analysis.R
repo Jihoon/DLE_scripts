@@ -3,15 +3,15 @@
 
 # Intensity under ICP classification
 # In the end, I will replace the codes above with this function.
-DeriveIntensities <- function(country='IND') {
+DeriveIntensities <- function(country='IND', type='final') {
   icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))
   
   list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
   final_alloc_list_all <- lapply(result_all, func1)
   
   alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
-  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"))
-  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"))
+  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"), type)
+  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"), type)
   
   no_expense <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (icp_fd_cty_usd[,1]==0))
   no_expense <- no_expense[!(no_expense %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
@@ -22,7 +22,12 @@ DeriveIntensities <- function(country='IND') {
 }
 
 
-
+# Allocation ratio in cells - summing up to 1 each row
+func1 <- function (x) {
+  a <- diag(1/rowSums(x))
+  a[is.infinite(a)] <- 0
+  x <- a %*% x
+}
 
 GetHHSectoralEnergyPerCap <- function(idx, country='IND', fd_HH, int_sect) {
   xlcFreeMemory()
@@ -281,13 +286,17 @@ PlotNonfuelIntensity <- function(intensity_mtx, noexp, ymax, titlename) {
   text(1:n_sector_nonfuel+0.5, y=apply(nonFuelIntensity, 2, max), 1:n_sector_nonfuel, pos=3, offset=1, cex = 0.7, srt = 90)
   text(noexp_nonfuel+0.9, y=apply(nonFuelIntensity[,noexp_nonfuel], 2, max), '+', pos=3, offset=2, cex = 1.2, srt = 90)
   title(titlename)
+  
+  pp <- recordPlot()
+  
+  return(pp)
 }
 
 PlotFuelIntensity <- function(intensity_mtx, noexp, ymax) {
   # Fuel
   opar <- par()
   
-  par(mar=c(10,3,1,2))
+  par(mar=c(10,4,1,1))
   FuelIntensity <- intensity_mtx[,152:164]
   noexp_fuel <- noexp[noexp>151]-151
   
@@ -296,11 +305,16 @@ PlotFuelIntensity <- function(intensity_mtx, noexp, ymax) {
   FuelLabel[6] <- "Fuelwood"
   FuelLabel[8] <- "Fuel oil"
   
-  boxplot(FuelIntensity, axes = FALSE, ylim=c(0, ymax), add=FALSE, cex.lab=1.3, range=0)
+  boxplot(FuelIntensity, axes = FALSE, ylim=c(0, ymax), add=FALSE, cex.lab=1.3, range=0, ylab ="Primary energy intensity [MJ/2007USD]")
   
   axis(side = 2, at = seq(0,ymax,50), cex.axis=1.1)
   text(noexp_fuel, y=apply(FuelIntensity[,noexp_fuel], 2, max), '+', pos=3, offset=1, cex = 1.2, srt = 90)
-  axis(side = 1, at = 1:dim(DLE_fuelnames_std)[1], labels=FuelLabel, las=2)
+  axis(side = 1, at = 1:dim(DLE_fuelnames_std)[1], labels=FuelLabel, las=2, srt = 45)
+  # axis(side = 1, at = 1:dim(DLE_fuelnames_std)[1], labels=FALSE)
+  # text(x=1:dim(DLE_fuelnames_std)[1], y=par()$usr[3]-0.05*(par()$usr[4]-par()$usr[3]), cex = 0.8, labels=FuelLabel, srt = 45, xpd=TRUE, adj=1)
   
   par(opar)
+  pp <- recordPlot()
+  
+  return(pp)
 }

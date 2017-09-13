@@ -132,6 +132,8 @@ BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 
 save(IND_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
 save(BRA_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_harmonized.Rda")
+save(IND_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
+save(BRA_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
 
 
 # Set Scalers
