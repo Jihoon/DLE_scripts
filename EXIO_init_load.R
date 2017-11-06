@@ -1,0 +1,187 @@
+### Created to 
+# 1. avoid running EXIO_init when starting
+# 2. incorporate energy intensity initiation
+
+path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrIOT_PxP_ita_coefficient_version2.2.2/"
+path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2.2.2/"
+
+TJ_per_MTOE <- 41870
+TWh_per_MTOE <- 11.63
+
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
+# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/final_demand.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_demand.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/materials.Rda")
+
+
+
+### Indexing energy carriers
+nature_input_idx <- 1:19   # number of rows for E-carrier use after removing the row headers
+emission_energy_carrier_idx <- 20:70   # number of rows for E-carrier use after removing the row headers
+energy_carrier_supply_idx <- 71:139   # number of rows for E-carrier use after removing the row headers
+energy_carrier_use_idx <- 140:208   # number of rows for E-carrier use after removing the row headers
+elec_use_idx <- 184:195   # number of rows for E-carrier use after removing the row headers
+elec_supply_idx <- 115:126   # number of rows for E-carrier use after removing the row headers
+
+captive_input_idx <- c(4, 5, 26, 27, 12, 2)  # Coal, diesel, natural gas, biomass (bagass) index in energy_carrier_use block
+
+# energy_pri_carrier_use_idx <- c(140:154, 187:188, 191:194)   # number of rows for E-carrier use after removing the row headers
+# energy_sec_carrier_use_idx <- energy_carrier_use_idx[!(energy_carrier_use_idx %in% energy_pri_carrier_use_idx)]
+
+
+##############################
+### Intensity calculations ###
+##############################
+
+
+####### Temporary solution : Ignore all energy sector columns (make their use all zero)
+### Note: This loses all own use and non-energy use from energy sectors (around 10% of world average).
+
+materials.header <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", nrows=2)
+energy_sector_idx_ex <- c(64:85, 91:95, 128:146, 148, 176:182)    # Column index for energy sectors (excluding pulp and extraction sectors)
+fossil.elec.idx.ex <- c(128, 129, 133)    # Column index for energy sectors (excluding pulp and extraction sectors)
+energy.carrier.idx.ex <- c(20:32, 64:85, 91:95, 128:146, 148, 176:182)    # Column index for energy sectors (excluding pulp and extraction sectors)
+captive_sector_idx_ex <- c(108, 36, 104, 90, 28, 62, 101, 50, 88, 89, 55)    # Column index for major captive generation sectors (Just for India for now)
+captive_sector_names <- EX_catnames[captive_sector_idx_ex]
+# Aluminum1/2, steel, chemicals, petroleum(crude oil), paper, cement, sugar, fertilizer1/2, textiles
+
+
+
+### Dealing with captive generation (India only now)
+# Crude estimates based on literature
+captive_pri <- read.xlsx("H:/MyDocuments/Analysis/Final energy/Captive power India/generation estimates by sector.xlsx", 
+                         sheet=2, rowNames=TRUE, cols=1:7, rows=15:26)
+
+# Names of energy carriers
+carrier.name.fin <- gsub("Energy Carrier Use ", "", as.character(material.name[energy_carrier_use_idx]))
+carrier.name.pr <- material.name[nature_input_idx]
+
+# Different sections of energy extension
+tot.priE.sect <- materials[nature_input_idx,]  # The energy extension has not intensities but total consumptions.
+tot.useE.sect <- materials[energy_carrier_use_idx,]
+tot.supplE.sect <- materials[energy_carrier_supply_idx,]
+tot.fdE.sect <- fd_materials[energy_carrier_use_idx, -seq(7, 336, 7)] # Excluding exports
+tot.useE.elec <- materials[elec_use_idx,]
+tot.supplE.elec <- materials[elec_supply_idx,]
+
+# Interim check
+# compare global total supply and use
+# ene.sum <- data.frame(carrier=carrier.name.fin, sup=rowSums(tot.supplE.sect), use=rowSums(tot.useE.sect), fd.use=rowSums(tot.fdE.sect[, -seq(7, 336, 7)]), 
+#            tot.use=rowSums(tot.useE.sect)+rowSums(tot.fdE.sect[, -seq(7, 336, 7)])) %>% 
+#        mutate(diff=sup-tot.use, error=diff/sup)
+# sum(ene.sum$sup)
+# sum(ene.sum$tot.use)
+# sum(tot.priE.sect)
+
+# Organize the energy carrier use block to remove primary values
+energy_sector_idx_all <- as.vector(sapply(seq(0,9400,200), function(x) x+energy_sector_idx_ex, simplify = "array"))
+a <- tot.useE.sect
+a[setdiff(1:dim(a)[1], (elec_use_idx - first(energy_carrier_use_idx) + 1)), energy_sector_idx_all] <- 0  # Energy sector assumed to have only electricty as final energy
+
+
+################ THIS NOT USED in the end ################
+# # Attempt to subtract captive generation from the 'energy carrier use' block (using IPFP)
+# # with sectors sum = captive generation total, carrier sum following EXIO total ratio (with matched total)
+# # Why IPFP? 
+# # 1. Captive gen GWh > total energy use (for some sectors)
+# # (Aluminum captive generation is so high in the data, but the sector's total energy use in EXIO extension is even lower than that.)
+# library(mipfp)
+# IND_ene_cap <- a[captive_input_idx, 200*(IND_place-1) + captive_sector_idx_ex]   # Total energy for captive generation sectors/carrier
+# # Finding: IPFP cannot give proper solution in this case. 
+# names(IND_ene_cap) <- EX_catnames[captive_sector_idx_ex]
+# rownames(IND_ene_cap) <- names(captive_pri)
+# sc <- sum(captive_pri)/sum(IND_ene_cap)
+# IND_total_capgen <- Ipfp(captive_pri, list(1,2), list(rowSums(captive_pri), rowSums(IND_ene_cap)*sc))$x.hat #* sum(captive_pri)
+# IND_total_capgen <- Ipfp(captive_pri, list(1,2), list(colSums(IND_ene_cap)*sc, colSums(captive_pri)))$x.hat #* sum(captive_pri)
+# IND_total_capgen[IND_total_capgen<1e-3] <- 0
+# t(IND_ene_cap) - IND_total_capgen
+#####################################################
+
+# Try just erasing those sectors/carriers (only for India for now)
+a[captive_input_idx, 200*(IND_place-1) + captive_sector_idx_ex] <- 0
+
+# Numerical matrix - final energy use total
+tot.finE.sect <- a   
+row.names(tot.finE.sect) <- carrier.name.fin
+
+# Total primary energy carved out of energy carrier use block
+tot.prim.use <- tot.useE.sect - a  # Another way to get primary energy intensity. 
+
+# Header and name column added as a data.frame (mainly for visualization/interim check)
+# tot.finE.sect.df <- rbindlist(list(materials.header[,-1], data.frame(carrier.name.fin, tot.finE.sect)), use.names=FALSE, fill=FALSE, idcol=NULL) # In TJ
+# tot.priE.sect.df <- rbindlist(list(materials.header[,-1], data.frame(carrier.name.pr, tot.priE.sect)), use.names=FALSE, fill=FALSE, idcol=NULL) # In TJ
+
+
+
+####### Derive energy intensities #######
+
+# 1.1 embodied primary energy intensity (nature input)
+y <- 1/tot_demand
+y[is.infinite(y)] <- 0 
+energy_int <- as.matrix(tot.priE.sect) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+# indirect_E_int <- energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_E_int <- eigenMapMatMult(energy_int, as.matrix(L_inverse)) # faster
+
+energy_int.nobio <- energy_int[-18:-19,]   # Try removing biomass
+# indirect_E_int.nobio <- energy_int.nobio %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_E_int.nobio <- eigenMapMatMult(energy_int.nobio, as.matrix(L_inverse)) # faster
+
+# 1.2 embodied primary energy intensity (tot.prim.use)
+# Test - Derive primary intensity from total primary carrier use (tot.prim.use)
+p_energy_int <- as.matrix(tot.prim.use) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+# indirect_pE_int <- p_energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_pE_int <- eigenMapMatMult(p_energy_int, as.matrix(L_inverse)) # faster
+
+# 2. final energy (embodied)
+f_energy_int <- as.matrix(tot.finE.sect) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+indirect_fE_int <- f_energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_fE_int <- eigenMapMatMult(f_energy_int, as.matrix(L_inverse)) # faster
+
+# 3. electricity (embodied)
+elec_int <- as.matrix(tot.useE.elec) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_El_int <- eigenMapMatMult(elec_int, as.matrix(L_inverse)) # faster
+
+# 4. total use block (embodied)
+totuse_int <- as.matrix(tot.useE.sect) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_use_int <- eigenMapMatMult(totuse_int, as.matrix(L_inverse)) # faster
+
+
+# AUX. indirect emission intensity (I don't use it now)
+# em_int <- as.matrix(emissions_2.3) %*% diag(y) / 1e6  # Derive energy intensities by dividing by total demand per sector kg/M.EUR = mg/EUR to kg/EUR
+# indirect_em_int <- as.matrix(em_int) %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1   g/EUR
+
+
+# Energy use vs. Demand
+view(cbind(c(carrier.name.fin, "td"), rbind(tot.finE.sect[,IND_idx_ex], tot_demand[IND_idx_ex])))
+view(cbind(carrier.name.fin, f_energy_int[,IND_idx_ex]))
+
+
+# Check energy total
+sum(tot.finE.sect) + sum(tot.fdE.sect)  # All final energy use (global) = 407e3 PJ (without non-energy use of energy sector), IEA 2007 has 384e3 PJ (including own use).
+sum(tot.priE.sect)  # All primary energy use (global) = 483e3 PJ, IEA has 500e3 PJ (after excluding import = 706 - 200).
+sum(tot.prim.use)   # All primary energy use from use side (global) = 398e3 PJ
+
+
+# rm(L_inverse, tot_use, supplym, materials_reduc)
+# rm(val_AT_rand, val_FR_rand, val_IN_rand)
+# rm(final_alloc_list_FRA, final_alloc_list_FRA_all, result_FRA, result_FRA_all)
+# rm(eHH, all_HH_f, all_HH_fl, eHH_cap)
+# gc()
+
+# Return EXIO indirect intensity in MJ/USD2007
+GetSpecificEXIOSectorIntensity <- function(cty, exio_sect) {
+  cty_place <- which(exio_ctys==cty)
+  # cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
+  cty_idx_ex <- seq(200*(cty_place-1)+1, 200*cty_place)   # 7 final demand columns per country
+  ex_idx <- which(EX_catnames==exio_sect)
+  
+  int <- colSums(indirect_E_int[,cty_idx_ex])[ex_idx] * EXR_EUR$r   # MJ/EUR to MJ/USD2007
+  
+  return(int)
+}
+

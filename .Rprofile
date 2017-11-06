@@ -64,6 +64,12 @@ setwd("H:/MyDocuments/IO work/DLE_scripts")
 xlcFreeMemory()
 source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 
+# Faster matrix multiplication
+# example : eigenMapMatMult(X, Y)
+library(Rcpp)
+sourceCpp("matmult_test.cpp")
+
+
 .ls.objects <- function (pos = 1, pattern, order.by,
                          decreasing=FALSE, head=FALSE, n=5) {
   napply <- function(names, fn) sapply(names, function(x)
@@ -113,6 +119,12 @@ mutate_cond <- function(.data, condition, ..., envir = parent.frame()) {
   condition <- eval(substitute(condition), .data, envir)
   .data[condition, ] <- .data[condition, ] %>% mutate(...)
   .data
+}
+
+unit.vector <- function(idx, len) {
+  a <- as.vector(matrix(0, len, ncol=1))
+  a[idx] <- 1
+  return(a)
 }
 
 .First <- function(){

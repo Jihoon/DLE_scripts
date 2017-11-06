@@ -110,6 +110,20 @@ SummarizeGJPerCapByDecile <- function(eHH) {
   return(eHH_sum[,-1])
 }
 
+SummarizeGJPerCap <- function(eHH) {
+  nColTot <- dim(eHH)[2]
+  nColAdd <- dim(BRA_HH)[2]-1   # we do this because # of drawn columns are not equal to n_draw because of no convergences in rIPFP
+  
+  eHH_sum <- data.table(hhid = eHH[,1, with=FALSE],
+                        avg = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, mean), # , with=FALSE all removed (data.table issue)
+                        sd = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, sd),
+                        eHH[,(nColTot-nColAdd+1):nColTot, with=FALSE])
+  
+  # eHH_sum <- eHH_sum %>% group_by(decile) %>% summarise(u=weighted.mean(avg, weight), sd=weighted.mean(sd, weight))
+  eHH_sum <- eHH_sum %>% mutate(tothhE = avg*hh_size*weight, sdE = sd*hh_size*weight) %>%
+    summarise(u = sum(tothhE)/sum(weight*hh_size), sd=sum(sdE)/sum(weight*hh_size)) #, pop=sum(weight*hh_size)
+  return(eHH_sum)
+}
 
 cbind.dt.simple = function(...) {
   x = c(...)

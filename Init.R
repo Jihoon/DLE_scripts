@@ -60,7 +60,8 @@ WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), 
 
 # Takes long time to run. 
 # Some .Rda files are already created to save time.
-source("EXIO_init.R")
+# source("EXIO_init.R")
+source("EXIO_init_load.R")
 
 
 
@@ -164,64 +165,17 @@ source("Read_direct_energy_from_DB.R")
 # Comprehensive fuel sectors (union of all DBs)
 DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 
-# India
-IND_HH_Alldata <-selectDBdata(tables='IND1_HH')
-IND_FOOD_Alldata <-selectDBdata(tables='IND1_FOOD')
-IND_FUEL_Alldata <-selectDBdata(tables='IND1_FUEL')
-save(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
-save(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
-save(IND_FUEL_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
+# Reading and constructing matrices
+# source("Read_DLE_DB.R") 
 
-IND_FD <- readFinalDemandfromDBbyDecile('IND1')
-IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
-BRA_FD <- readFinalDemandfromDBbyDecile('BRA0')
-BRA1_FD <- readFinalDemandfromDBbyDecile('BRA1')
-
-list[IND_FD_ALL, IND_HH] <- readFinalDemandfromDBAllHH('IND1')
-IND_FD_ALL <- data.table(IND_FD_ALL)
-IND_HH <- data.table(IND_HH, key="hhid")
-setorder(IND_HH, hhid)
-
-list[IND2_FD_ALL, IND2_HH] <- readFinalDemandfromDBAllHH('IND2')
-IND2_FD_ALL <- data.table(IND2_FD_ALL)
-IND2_HH <- data.table(IND2_HH, key="hhid")
-setorder(IND2_HH, hhid)
-
-list[BRA_FD_ALL, BRA_HH] <- readFinalDemandfromDBAllHH('BRA0')
-BRA_FD_ALL <- data.table(BRA_FD_ALL)
-BRA_HH <- data.table(BRA_HH, key="hhid")
-setorder(BRA_HH, hhid)
-
-list[BRA2_FD_ALL, BRA2_HH] <- readFinalDemandfromDBAllHH('BRA2')
-BRA2_FD_ALL <- data.table(BRA2_FD_ALL)
-BRA2_HH <- data.table(BRA2_HH, key="hhid")
-setorder(BRA2_HH, hhid)
-
-save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
-# save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump_prcadj.Rda")
-save(IND2_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_AllHHConsump.Rda")
-save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
-save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
-save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
-save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+# IND_FUEL_Alldata
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+# IND_FD_ICP_AllHH
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
 
-
-
-##############################################
-###       Generate CES-ICP mapping         ###
-##############################################
-
-# Read in CES code tables, fix some mis-mappings from WB, and create CES_ICP_IDN, CES_ICP_IND, etc.
-# Then I can do 
-# IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
-# to get FD in ICP classification.
-
-source("Map_CES_COICOP.R")
-source("Init_consumption_vectors.R")
 
 
 
@@ -232,9 +186,9 @@ source("Init_consumption_vectors.R")
 # This is already excuted and saved in a file.
 # Don't need to run everytime.
 
-source("Generate_base_ICP-EXIO_mapping.R")
-n_sector_icp <- 151  # Num of ICP sectors
-n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
+# source("Generate_base_ICP-EXIO_mapping.R")
+# n_sector_icp <- 151  # Num of ICP sectors
+# n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
 
 
 
@@ -284,6 +238,19 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 
 
 
+##############################################
+###       Generate CES-ICP mapping         ###
+##############################################
+
+# Read in CES code tables, fix some mis-mappings from WB, and create CES_ICP_IDN, CES_ICP_IND, etc.
+# Then I can do 
+# IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
+# to get FD in ICP classification.
+
+source("Map_CES_COICOP.R")
+source("Init_consumption_vectors.R")
+
+
 
 
 
@@ -306,11 +273,20 @@ source("Bridging_uncertainty.R")
 
 
 
+#################################################
+### Read in function 'Bridging_uncertainty.R' ###
+#################################################
+
+source("Functions_for_intensity_analysis.R")  
+
+
+
 ##############################################
 ###    Set up environment for RAS run      ###
 ##############################################
 
 source("Bridge_RAS.R")
+
 
 
 

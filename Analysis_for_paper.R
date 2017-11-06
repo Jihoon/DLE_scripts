@@ -13,7 +13,7 @@
 # 1. ICP FD adjustment: Original FD from survey VS. Adjusted FD matched to the national total
 
 
-n_draw <- 10
+n_draw <- 20
 D_val_uncertainty <- 0
 
 ICP_food_idx <- 1:45
@@ -61,7 +61,8 @@ BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
 scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_BR)
 init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 
-list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA')
+list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
+list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA.Rda")
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA_rev.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
@@ -69,6 +70,10 @@ save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
 load( file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
+view(data.frame(ICP_catnames, primary.int.emb= as.numeric(format(colMeans(BRA_intensity), digits=2, nsmall=2)), 
+                final.int.emb=as.numeric(format(colMeans(BRA_f.intensity), digits=2, nsmall=2)),
+                ratio=colMeans(BRA_f.intensity)/colMeans(BRA_intensity) ) %>% 
+       mutate(ratio=as.numeric(format(ratio, digits=2, nsmall=2))))
 
 # Temporary run without any Valuation
 inten_BRA_noVal <- SetupSectorIntensities(BRA_alloc, NC_BRA_val_BRA, countrycode("BRA","iso3c", "iso2c"))
@@ -88,12 +93,17 @@ save(IND_alloc, file="./Saved tables/IND_alloc.Rda")
 save(IND_FD_adj, file="./Saved tables/IND_FD_adj.Rda")
 load(file="./Saved tables/IND_intensities.Rda")
 load(file="./Saved tables/IND_alloc.Rda")
+load(file="./Saved tables/IND_FD_adj.Rda")
 
 # Final E intensity
 list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final')
-IND_f.intensity[,ICP_fuel_idx] <- sweep(IND_f.intensity[,ICP_fuel_idx], 2, IND.E.direct.int, `+`)
-view(colMeans(IND_f.intensity))
-IND_intensity - IND_f.intensity
+# We don't need this below for "int.e <- indir.fin.eng.int.derived" in SetupSectorIntensities, but we do for "int.e <- indirect_fE_int"
+IND_f.intensity[,ICP_fuel_idx] <- sweep(IND_f.intensity[,ICP_fuel_idx], 2, IND.E.direct.int, `+`) 
+# colMeans(IND_f.intensity)
+view(data.frame(ICP_catnames, primary.int.emb= as.numeric(format(colMeans(IND_intensity), digits=2, nsmall=2)), 
+                final.int.emb=as.numeric(format(colMeans(IND_f.intensity), digits=2, nsmall=2)),
+                ratio=colMeans(IND_f.intensity)/colMeans(IND_intensity) ) %>% 
+       mutate(ratio=as.numeric(format(ratio, digits=2, nsmall=2))))
 
 # Temporary run without any Valuation
 inten_IND_noVal <- SetupSectorIntensities(IND_alloc, NC_IND, countrycode("IND","iso3c", "iso2c"))
@@ -404,7 +414,7 @@ load("./Saved tables/IND_ENEperCap_fuel.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_fl_IN)
 names(a) <- c("u_Fuel", "sd_Fuel")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_fl_IN, "V", xmax=30, .1, drawline=FALSE, ticksize=1)
+PlotIntensityHist(all_HH_fl_IN, "V", xmax=30, .1, drawline=TRUE, linedata=a, ticksize=1)
 title('Fuel: India', line = 2.5)
 rm(all_HH_fl_IN)
 gc()

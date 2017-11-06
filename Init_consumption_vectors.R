@@ -80,6 +80,7 @@ IND_FD_ICP <- as.matrix(IND_FD_ICP)
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHH_w_CODE.Rda")
 IND_FD_ICP_AllHH <- crossprod(CES_ICP_IND, as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
   rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
+# replace with eigenMapMatMult() later
 
 # In the end, all we need is this ICP matrices
 rm(IND_FD, IND_FD_code, IND_FD_ALL, IND_FD_ALL_ICP)
@@ -134,6 +135,10 @@ save(IND_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND
 save(BRA_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_harmonized.Rda")
 save(IND_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
 save(BRA_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
+
 
 
 # Set Scalers

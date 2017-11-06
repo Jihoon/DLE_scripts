@@ -336,7 +336,8 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN",
       # a <- matrix(0, nrow=9600, ncol=164)
       # a[cty_idx,] <- fd_bp_cty
       # energy_int <- (indirect_fE_int %*% fd_bp + int.hh %*% a) * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007) 69x164
-      int.e <- indirect_fE_int  # We still need to add direct final energy intensity after this.
+      # int.e <- indirect_fE_int  # We still need to add direct final energy intensity after this.
+      int.e <- indir.fin.eng.int.derived  # We still need to add direct final energy intensity after this.
     }
     else if(type=='primary') {
       int.e <- indirect_E_int
@@ -570,7 +571,7 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
   # length(consumption_vec) = n_sector_icp_fuel (row matrix)
   industry_trp_energy <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel) # n_sector_icp_fuel=164
-  idx_trnsprt_EXIO <- 152:163
+  idx_trnsprt_EXIO <- 157:163
   
   null_demand_int <- matrix(0, 9600, n_sector)
   SectoralE_per_hh <- vector()
@@ -599,14 +600,18 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
     fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
     
     if(type=='final') {
-      int.e <- indirect_fE_int  # We still need to add direct final energy intensity after this.
+      int.e <- indir.fin.eng.int.derived  # We still need to add direct final energy intensity after this.
     }
     else if(type=='primary') {
       int.e <- indirect_E_int
     }
     
-    energy <- int.e %*% diag(as.numeric(fd_bp)) * EXR_EUR$r  # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
-    trp_energy <- sum(energy[, as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
+    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp))) * EXR_EUR$r  # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
+    # trp_energy <- sum(energy[, as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
+    energy.i <- function(i) {
+      return(sum(energy[, i+seq(0, 9400, 200)]))
+    }
+    trp_energy <- sapply(idx_trnsprt_EXIO, energy.i)
     ind_energy <- sum(energy[, -as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
     industry_trp_energy <- rbind(industry_trp_energy, c(ind_energy, trp_energy)) # Total indirect energy/cap by decile
   }
@@ -614,7 +619,7 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
   # not_conv_idx has 1 where the RAS did not converge.
   industry_trp_energy <- industry_trp_energy[not_conv_idx!=1,]
   
-  return(industry_trp_energy)
+  return(colMeans(industry_trp_energy))
 }
 
 list[result_IND_noVal, NC_IND_noVal] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], "IND")
@@ -623,11 +628,17 @@ final_alloc_list_IND_noVal <- lapply(result_IND_noVal, func1)
 IND.ICP.exenditure <- IND_FD_ICP[,1]
 IND.ICP.exenditure[-ICP_svc_idx] <- 0
 
-# ICP_food_idx <- 1:45
-# ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
-# ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
-# ICP_fuel_idx <-152:164
+ICP_food_idx <- 1:45
+ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
+ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
+ICP_fuel_idx <-152:164
 # For the breakdowns for health or education, which is easier with EXIO classification, I need
 
 
-a <- DeriveConsumptionEnergy(final_alloc_list_IND_noVal, IND.ICP.exenditure, NC_IND_noVal, "IN")
+a <- DeriveConsumptionEnergyShares(final_alloc_list_IND_noVal, IND.ICP.exenditure, NC_IND_noVal, "IN")
+# Food items
+a <- sapply(c(4:8, 10:14), function(x) {
+  DeriveConsumptionEnergyShares(final_alloc_list_IND_noVal, unit.vector(x,length(ICP_catnames)), NC_IND_noVal, "IN")})
+af <- sapply(c(4:8, 10:14), function(x) {
+  DeriveConsumptionEnergyShares(final_alloc_list_IND_noVal, unit.vector(x,length(ICP_catnames)), NC_IND_noVal, "IN", "final")})
+view(af)       
