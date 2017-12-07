@@ -3,17 +3,12 @@
 #            - There are non-food items in food DB (e.g. Coal).
 #        ZAF - Need to consolidate survey 'code' 
 
-# Read code-item mapping for IDN
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IDN NSES July 2008 CE Codes.xlsx")
-code_item_IDN  <- XLConnect::readWorksheet(wb, "Codes", header=TRUE, forceConversion=T)
-names(code_item_IDN) <- c("CODE", "ITEM_DLE", "UNIT")
-code_item_IDN$UNIT <- NULL
-# code_item_IDN <- code_item_IDN[match(unique(code_item_IDN$ITEM_DLE), code_item_IDN$ITEM_DLE),]    # There are duplicate ITEM_DLEs because they are input in two units (e.g. weight & expenditure) -> Not necessary because merge will anyhow remove these.
 
-# WB removed all ceremonial spendings from the consumption. I put those back at '151: other services' under ICP.
-# IDN_WB$ICP_SEQ[c(338, 340, 342, 343)] <- 151
+#############
+### India ###
+#############
 
-# Read code-item name in DB mapping for IND
+### Read code-item name in DB mapping for IND
 # Theoretically ITEM_DLE could be identical to Surv_Heading, but ITEM_DLE is somehow modified.
 wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND NSS 68 2011-2012 CE Codes.xlsx")
 code_item_IND  <- XLConnect::readWorksheet(wb, "NSS68", header=TRUE, forceConversion=T)
@@ -21,8 +16,8 @@ names(code_item_IND) <- c("CODE", "ITEM_DLE", "UNIT")
 code_item_IND$UNIT <- NULL
 # code_item_IND <- code_item_IND[match(unique(code_item_IND$ITEM_DLE), code_item_IND$ITEM_DLE),]    # There are duplicate ITEM_DLEs because they are input in two units (e.g. weight & expenditure)
 
-## Fix WB mis-mappings
 
+### Fix WB mis-mappings
 # WB assigned "CES 291: Biscuits, chocolates, etc" to "ICP 2: UNBR Food".
 # Sending it to "ICP 36:Confectionery, chocolate and ice cream"
 IND_WB$ICP_SEQ[IND_WB$CODE==291] <- 36
@@ -54,8 +49,8 @@ IND_WB$ICP_SEQ[IND_WB$CODE %in% 334:335] <- 65
 IND_WB$ICP_SEQ[IND_WB$CODE %in% 435:437] <- 119
 
 
-# Linking NTNU COICOP with WB ICP
-# XXX_WB has original survey code, ICP seq number, and ICP heading (except for BRA where 'heading' is missing).
+### Linking NTNU COICOP with WB ICP
+# XXX_WB has original survey code, ICP seq number, and survey heading (except for BRA where 'heading' is missing).
 # icp_ntnu is for ICP seq number, NTNU-COICOP seq number, and ICP heading.
 IND_map <- merge(IND_WB, icp_ntnu, by="ICP_SEQ")
 IND_map <- IND_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "ICP_Heading", "NTNU_109")]
@@ -63,31 +58,115 @@ IND_map <- IND_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "I
 IND_map <- merge(IND_map, code_item_IND, by="CODE")
 IND_map <- IND_map[order(IND_map$CODE),]
 
+
+### Need to remove fuel items for direct link CES-EXIO
+IND_map <- IND_map %>% 
+  filter(!((COICOP1 == "04" & COICOP2 > "50") | 
+             (COICOP1 == "07" & COICOP2 == "22" & 
+                !grepl("Lubri", Surv_Heading, ignore.case = TRUE))))
+
+
+### Create CES to ICP bridge matrices
+CES_ICP_IND <- matrix(0, length(IND_map$CODE), max(IND_map$ICP_SEQ))
+CES_ICP_IND[cbind(1:length(IND_map$CODE), IND_map$ICP_SEQ)] <- 1
+row.names(CES_ICP_IND) <- IND_map$CODE
+
+
+
+#################
+### Indonesia ###
+#################
+
+### Read code-item mapping for IDN
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IDN NSES July 2008 CE Codes.xlsx")
+code_item_IDN  <- XLConnect::readWorksheet(wb, "Codes", header=TRUE, forceConversion=T)
+names(code_item_IDN) <- c("CODE", "ITEM_DLE", "UNIT")
+code_item_IDN$UNIT <- NULL
+# code_item_IDN <- code_item_IDN[match(unique(code_item_IDN$ITEM_DLE), code_item_IDN$ITEM_DLE),]    # There are duplicate ITEM_DLEs because they are input in two units (e.g. weight & expenditure) -> Not necessary because merge will anyhow remove these.
+
+# WB removed all ceremonial spendings from the consumption. I put those back at '151: other services' under ICP.
+# IDN_WB$ICP_SEQ[c(338, 340, 342, 343)] <- 151
+
+
+### Linking NTNU COICOP with WB ICP
+# XXX_WB has original survey code, ICP seq number, and survey heading (except for BRA where 'heading' is missing).
+# icp_ntnu is for ICP seq number, NTNU-COICOP seq number, and ICP heading.
+
 IDN_map <- merge(IDN_WB, icp_ntnu, by="ICP_SEQ")
 IDN_map <- IDN_map[c("CODE", "Surv_Heading", "ICP_SEQ", "COICOP1", "COICOP2", "ICP_Heading", "NTNU_109")]
 # IDN_map$ORD <- 1:dim(IDN_map)[1]
 IDN_map <- merge(IDN_map, code_item_IDN, by="CODE")
 IDN_map <- IDN_map[order(IDN_map$CODE),]
 
-# Need to remove fuel items for direct link CES-EXIO
-IND_map <- IND_map %>% 
-  filter(!((COICOP1 == "04" & COICOP2 > "50") | 
-             (COICOP1 == "07" & COICOP2 == "22" & 
-                !grepl("Lubri", Surv_Heading, ignore.case = TRUE))))
+
+### Need to remove fuel items for direct link CES-EXIO
 IDN_map <- IDN_map %>% 
   filter(!((COICOP1 == "04" & COICOP2 > "50") | 
              (COICOP1 == "07" & COICOP2 == "22" & 
                 !grepl("Lubri", Surv_Heading, ignore.case = TRUE))))
 
-# Create CES to ICP bridge matrices
+
+### Create CES to ICP bridge matrices
 CES_ICP_IDN <- matrix(0, length(IDN_map$CODE), max(IDN_map$ICP_SEQ))
 CES_ICP_IDN[cbind(1:length(IDN_map$CODE), IDN_map$ICP_SEQ)] <- 1
 row.names(CES_ICP_IDN) <- IDN_map$CODE
 
-CES_ICP_IND <- matrix(0, length(IND_map$CODE), max(IND_map$ICP_SEQ))
-CES_ICP_IND[cbind(1:length(IND_map$CODE), IND_map$ICP_SEQ)] <- 1
-row.names(CES_ICP_IND) <- IND_map$CODE
 
-# Detect which CES items are classifed to UNBR.
+
+
+####################
+### South Africa ###
+####################
+
+# Load ZAF_FOOD.raw and ZAF_OTH.raw
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FOOD_All.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_OTH_All.Rda")
+
+### Read code-item mapping for ZAF
+wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ZAF IES 2010-2011 CE Codes.xlsx")
+code_item_ZAF  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T) %>% mutate(code=as.numeric(code))
+code_item_ZAF <- rbind(ZAF_FOOD.raw %>% select(code, item) %>% distinct(),
+                       ZAF_OTH.raw %>% select(code, item) %>% distinct()) %>% arrange(code) %>% mutate(code=as.numeric(code))
+names(code_item_ZAF) <- c("CODE", "ITEM_DLE")
+
+### Linking NTNU COICOP with WB ICP
+# XXX_WB has original survey code, ICP seq number, and survey heading (except for BRA where 'heading' is missing).
+# icp_ntnu is for ICP seq number, NTNU-COICOP seq number, and ICP heading.
+
+# WB uses 66111100 instead of 66111101 (used in the survey) for 'own production' goods. (Unknown reason)
+ZAF_WB0 <- ZAF_WB %>% mutate_cond(CODE > 66000000, CODE=CODE+1) %>% 
+  mutate_cond(CODE==12711301, ICP_SEQ=151) %>% # Funeral expense
+  mutate_cond(CODE==12711400, ICP_SEQ=151) %>% # Gravestone
+  mutate_cond(CODE==7231100, ICP_SEQ=104) %>% # Maintenance and lubrication services
+  mutate_cond(CODE==4541301, ICP_SEQ=81) %>% # Candles = "Non-durable household goods" (think it is right to have this in fuel category as WB did, but for the ease for now.)
+  mutate_cond(CODE==4541710, ICP_SEQ=81) %>% # Other household fuel as "Non-durable household goods" under coicop
+  mutate(Surv_Heading=as.character(Surv_Heading)) %>%
+  rbind(list(66311801, 127, "Purchases of herding dogs")) %>% 
+  rbind(list(88888888, 81, "Unclassified Diary Items except food"))
+
+ZAF_map <- ZAF_WB0 %>% left_join(icp_ntnu %>% select(-NTNU_109), by="ICP_SEQ")  # Do not need COICOP values any more from icp_ntnu
+ZAF_map <- ZAF_map %>% select(CODE, Surv_Heading, ICP_SEQ, ICP_Heading, COICOP1, COICOP2) %>%
+  mutate_cond(CODE==4541301, COICOP1=5, COICOP2=61) %>% # Candles = "Non-durable household goods" (think it is right to have this in fuel category as WB did, but for the ease for now.)
+  mutate_cond(CODE==4541710, COICOP1=5, COICOP2=61)     # Other household fuel as "Non-durable household goods" under coicop
+ZAF_map <- ZAF_map %>% left_join(code_item_ZAF, by="CODE")
+ZAF_map <- ZAF_map %>% arrange(CODE) %>% filter(!is.na(ICP_SEQ) & !is.na(ITEM_DLE))
+
+ZAF_map$ITEM_DLE <- sub(";", ",", ZAF_map$ITEM_DLE)
+
+### Need to remove fuel items for direct link CES-EXIO
+ZAF_map <- ZAF_map %>% 
+  filter(!((COICOP1 == "04" & COICOP2 > "50") | 
+             (COICOP1 == "07" & COICOP2 == "22" &   # Motor fuel
+                !grepl("Lubri|grease", Surv_Heading, ignore.case = TRUE)))) # Lubricant and grease will stay out of fuel.
+
+
+### Create CES to ICP bridge matrices
+CES_ICP_ZAF <- matrix(0, length(ZAF_map$CODE), max(ZAF_map$ICP_SEQ))
+CES_ICP_ZAF[cbind(1:length(ZAF_map$CODE), ZAF_map$ICP_SEQ)] <- 1
+row.names(CES_ICP_ZAF) <- ZAF_map$CODE
+
+
+### TEST: Detect which CES items are classifed to UNBR.
 a <- IDN_map[grep("UNBR", IDN_map$ICP_Heading),]
 a <- IND_map[grep("UNBR", IND_map$ICP_Heading),]
+a <- ZAF_map[grep("UNBR", ZAF_map$ICP_Heading),]

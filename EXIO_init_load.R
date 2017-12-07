@@ -18,12 +18,13 @@ load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/materials.Rda")
 
 
 
-### Indexing energy carriers
+### Indexing energy carriers (from "materials" matrix)
 nature_input_idx <- 1:19   # number of rows for E-carrier use after removing the row headers
 emission_energy_carrier_idx <- 20:70   # number of rows for E-carrier use after removing the row headers
 energy_carrier_supply_idx <- 71:139   # number of rows for E-carrier use after removing the row headers
 energy_carrier_use_idx <- 140:208   # number of rows for E-carrier use after removing the row headers
 elec_use_idx <- 184:195   # number of rows for E-carrier use after removing the row headers
+gasol_use_idx <- c(160, 161, 181)   # number of rows for E-carrier use after removing the row headers
 elec_supply_idx <- 115:126   # number of rows for E-carrier use after removing the row headers
 
 captive_input_idx <- c(4, 5, 26, 27, 12, 2)  # Coal, diesel, natural gas, biomass (bagass) index in energy_carrier_use block
@@ -64,6 +65,7 @@ tot.priE.sect <- materials[nature_input_idx,]  # The energy extension has not in
 tot.useE.sect <- materials[energy_carrier_use_idx,]
 tot.supplE.sect <- materials[energy_carrier_supply_idx,]
 tot.fdE.sect <- fd_materials[energy_carrier_use_idx, -seq(7, 336, 7)] # Excluding exports
+tot.useE.gasol <- materials[gasol_use_idx,]
 tot.useE.elec <- materials[elec_use_idx,]
 tot.supplE.elec <- materials[elec_supply_idx,]
 
@@ -150,6 +152,11 @@ totuse_int <- as.matrix(tot.useE.sect) %*% diag(y)   # Derive energy intensities
 # indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 indirect_use_int <- eigenMapMatMult(totuse_int, as.matrix(L_inverse)) # faster
 
+# 5. gasoline (embodied)
+gasol_int <- as.matrix(tot.useE.gasol) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
+# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
+indirect_gasol_int <- eigenMapMatMult(gasol_int, as.matrix(L_inverse)) # faster
+
 
 # AUX. indirect emission intensity (I don't use it now)
 # em_int <- as.matrix(emissions_2.3) %*% diag(y) / 1e6  # Derive energy intensities by dividing by total demand per sector kg/M.EUR = mg/EUR to kg/EUR
@@ -159,6 +166,12 @@ indirect_use_int <- eigenMapMatMult(totuse_int, as.matrix(L_inverse)) # faster
 # Energy use vs. Demand
 view(cbind(c(carrier.name.fin, "td"), rbind(tot.finE.sect[,IND_idx_ex], tot_demand[IND_idx_ex])))
 view(cbind(carrier.name.fin, f_energy_int[,IND_idx_ex]))
+
+# Compare elec share (direct vs. indirect intensities) - relying on use block...
+# This shows that we cannot simply assume direct electricity share is similar to indirect electricity share.
+view(data.frame(sector=t(EX_catnames),tot.dir=colSums(totuse_int[,IND_idx_ex]), elec.dir=colSums(elec_int[,IND_idx_ex]), 
+                tot.ind=colSums(indirect_use_int[,IND_idx_ex]), elec.ind=colSums(indirect_El_int[,IND_idx_ex])) %>%
+       mutate(share.elec.dir=elec.dir/tot.dir, share.elec.ind=elec.ind/tot.ind)) 
 
 
 # Check energy total

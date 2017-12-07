@@ -21,34 +21,40 @@ options(digits=3)
 # EXIO in MER 2007
 # Need this PPP rate to go back to local currency in 2010
 # [LCU/$]
-PPP_cty = WDI(country = c("IN", "BR"), indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = 2010, end = 2010, extra = FALSE, cache = NULL)
-PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP) )
-PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP) )
+PPP_cty = WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = 2010, end = 2010, extra = FALSE, cache = NULL)
+PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP))
+PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP))
+PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PRVT.PP))
 
 # Inflation
 # Deflate currency in 2010 to 2007 (EXIO)
-CPI <- WDI(country = c("IN", "BR", "FR"), indicator = "FP.CPI.TOTL", start = 2007, end = 2015, extra = FALSE, cache = NULL)
+CPI <- WDI(country = c("IN", "BR", "FR", "ZA"), indicator = "FP.CPI.TOTL", start = 2007, end = 2015, extra = FALSE, cache = NULL)
 
 CPI_ratio_IND <- as.numeric(CPI %>% filter(year==2010 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
 CPI_ratio_BRA <- as.numeric(CPI %>% filter(year==2010 & iso2c=='BR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='BR') %>% select(FP.CPI.TOTL))
+CPI_ratio_ZAF <- as.numeric(CPI %>% filter(year==2010 & iso2c=='ZA') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='ZA') %>% select(FP.CPI.TOTL))
 
 
 # Exchange rate (MER) [LCU/$]
 EXR_EUR <- WDI(country = "XC", indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
 EXR_EUR <- EXR_EUR %>% rename(r=PA.NUS.FCRF)
-EXR_cty <- WDI(country = c("IN", "BR"), indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
+EXR_cty <- WDI(country = c("IN", "BR", "ZA"), indicator = "PA.NUS.FCRF", start = 2007, end = 2007, extra = FALSE, cache = NULL)
+
 EXR_IND <- as.numeric(EXR_cty %>% filter(country=="India") %>% select(PA.NUS.FCRF))
 EXR_BRA <- as.numeric(EXR_cty %>% filter(country=="Brazil") %>% select(PA.NUS.FCRF))
+EXR_ZAF <- as.numeric(EXR_cty %>% filter(country=="South Africa") %>% select(PA.NUS.FCRF))
 
 # HH Consumption in India 2007 [US$]
-HH_CON <- WDI(country = c("IN", "BR"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), 
+HH_CON <- WDI(country = c("IN", "BR", "ZA"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), 
               start = 2004, end = 2011, extra = FALSE, cache = NULL)
 BRA_con_grwth <- as.numeric(HH_CON %>% filter(year==2008 & iso2c=='BR') %>% select(NE.CON.PRVT.KD) / 
                               HH_CON %>% filter(year==2007 & iso2c=='BR') %>% select(NE.CON.PRVT.KD))
 IND_con_grwth <- as.numeric(HH_CON %>% filter(year==2011 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
                               HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
-IND2_con_grwth <- as.numeric(HH_CON %>% filter(year==2004 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
-                              HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
+ZAF_con_grwth <- as.numeric(HH_CON %>% filter(year==2010 & iso2c=='ZA') %>% select(NE.CON.PRVT.KD) / 
+                              HH_CON %>% filter(year==2007 & iso2c=='ZA') %>% select(NE.CON.PRVT.KD))
+# IND2_con_grwth <- as.numeric(HH_CON %>% filter(year==2004 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
+#                               HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
 
 WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
 
@@ -95,6 +101,13 @@ BRA_fd_exio[174] <- 15600  # M Euro
 BRA_fd_exio <- BRA_fd_exio / EXR_EUR$r  # to M.USD 2007
 # The value 15600 is from H:\MyDocuments\IO work\Bridging\CES-COICOP\BRA IO FD comparison.xlsx
 
+# Get ZAF final demand from EXIO [M.EUR to M.USD]
+ZAF_place <- which(exio_ctys=="ZA")
+ZAF_idx_fd <- seq(7*(ZAF_place-1)+1, 7*ZAF_place)   # 7 final demand columns per country
+ZAF_idx_ex <- seq(200*(ZAF_place-1)+1, 200*ZAF_place)   # 200 EXIO comodities
+ZAF_idx_ex.i <- seq(163*(ZAF_place-1)+1, 163*ZAF_place)   # 163 EXIO industries
+ZAF_fd_ex <- matrix(final_demand[,ZAF_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
+ZAF_fd_exio <- rowSums(ZAF_fd_ex) # Sum all HH FD across countries
 
 
 #########################################
@@ -176,7 +189,10 @@ load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda
 # IND_FD_ICP_AllHH
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
 
-
+# ZAF
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_HH.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHHConsump.Rda")
 
 
 ##############################################
@@ -248,7 +264,8 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 # to get FD in ICP classification.
 
 source("Map_CES_COICOP.R")
-source("Init_consumption_vectors.R")
+# source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
+source("Load_init_data.R")  
 
 
 

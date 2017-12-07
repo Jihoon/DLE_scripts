@@ -96,7 +96,7 @@ load(file="./Saved tables/IND_alloc.Rda")
 load(file="./Saved tables/IND_FD_adj.Rda")
 
 # Final E intensity
-list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final')
+list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final', colSums(indir.fin.eng.int.derived))
 # We don't need this below for "int.e <- indir.fin.eng.int.derived" in SetupSectorIntensities, but we do for "int.e <- indirect_fE_int"
 IND_f.intensity[,ICP_fuel_idx] <- sweep(IND_f.intensity[,ICP_fuel_idx], 2, IND.E.direct.int, `+`) 
 # colMeans(IND_f.intensity)
@@ -110,11 +110,30 @@ inten_IND_noVal <- SetupSectorIntensities(IND_alloc, NC_IND, countrycode("IND","
 save(inten_IND_noVal, file="./Saved tables/IND_intensities_noVal.Rda")
 
 
+
+# 3. South Africa
+# Valuation mtx fixed
+
+ZAF_fd_exio_pp <- get_purch_price(ZAF_fd_exio, "ZA")
+scaler_ZAF <- sum(ZAF_FD_ICP_usd2007[,1]) / sum(ZAF_fd_exio_pp)
+init_FD_ZAF <- ZAF_FD_ICP_usd2007[,1] / scaler_ZAF
+
+list[ZAF_intensity, ZAF_alloc, NC_ZAF, ZAF_FD_adj] <- DeriveIntensities('ZAF', 'primary')  # ZAF_FD_adj is already scaled up to match EXIO FD
+save(ZAF_intensity, file="./Saved tables/ZAF_intensities.Rda")
+save(ZAF_alloc, file="./Saved tables/ZAF_alloc.Rda")
+save(ZAF_FD_adj, file="./Saved tables/ZAF_FD_adj.Rda")
+load(file="./Saved tables/ZAF_intensities.Rda")
+load(file="./Saved tables/ZAF_alloc.Rda")
+load(file="./Saved tables/ZAF_FD_adj.Rda")
+
+
+
 no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
 no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
+no_expense_ZAF <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (ZAF_FD_ICP_usd2007[,1]==0))
+no_expense_ZAF <- no_expense_ZAF[!(no_expense_ZAF %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
 no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
-
 
 
 ###############################
@@ -145,14 +164,16 @@ pdf(file = paste0(figure_path, "IND sectoral intensity - Val EXIO.pdf"), width =
 load("./Saved tables/IND_intensities.Rda")
 par(fig=c(0,0.8,0,1))
 p1 <- PlotNonfuelIntensity(IND_intensity, no_expense_IND, y_lim1, "India")
-# text(x = -0, y = 95, labels = "(c)", xpd = NA)
-# mtext("(c)", 3, adj=0, line=2)
-# PlotNonfuelIntensity(IND_f.intensity, no_expense_IND, 50, "India - Final")
-# dev.off()
-# pdf(file = paste0(figure_path, "IND fuel intensity - Val EXIO.pdf"), width = 4, height = 9)
 par(fig=c(0.8,1,0,0.95), new=TRUE)
 p2 <- PlotFuelIntensity(IND_intensity, no_expense_IND, 600)
-# PlotFuelIntensity(IND_f.intensity, no_expense_IND, 600)
+dev.off()
+
+pdf(file = paste0(figure_path, "ZAF sectoral intensity - Val EXIO.pdf"), width = 21, height = 10)
+load("./Saved tables/ZAF_intensities.Rda")
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(ZAF_intensity, no_expense_ZAF, y_lim1, "South Africa")
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(ZAF_intensity, no_expense_ZAF, 600)
 dev.off()
 
 view(data.frame(icp=ICP_catnames, pri.avg=colMeans(IND_intensity), final.avg=colMeans(IND_f.intensity) ))
@@ -176,7 +197,8 @@ chng_pct_val_EXIO[is.nan(chng_pct_val_EXIO)] <- 0
 BRA_FD_ICP_HH_adj_BR <- BRA_FD_ICP_AllHH * (chng_pct_val_BRA + 1)
 BRA_FD_ICP_HH_adj_EX <- BRA_FD_ICP_AllHH * (chng_pct_val_EXIO + 1)
 
-# And two vectors for India
+
+# And two FD vectors for India
 # init_FD_IND: Initial vector from the survey (scaled to M.USD 2007 MER). Also scaled up by scaler_IND to match EXIO FD sum
 # IND_FD_adj: Adjusted by rIPFP based on EXIO default valuation mtx
 
@@ -191,6 +213,7 @@ idx_inf <- which(is.infinite(chng_pct_IND))  # Identify rows with Inf adjustment
 r_HH <- colSums(IND_FD_ICP_AllHH)/sum(IND_FD_ICP_AllHH)  # ratio of hh total to (unweighted) total
 IND_FD_ICP_HH_adj[idx_inf,] <- t(sapply(IND_FD_adj[idx_inf] * 1e6, # M.USD to USD
                         function(x) x * r_HH / sum(r_HH * IND_HH$weight))) * scaler_IND   
+
 rm(r_HH)
 gc()
 # scaler_IND needed since IND_FD_ICP_HH_adj is not scaled to match fd_exio
@@ -203,8 +226,42 @@ IND_FD_ICP_adj[idx_inf,1] <- IND_FD_adj[idx_inf]
 temp <- IND_f.intensity %*% IND_FD_ICP_adj
 
 
-  
-# Derive overall energy per capita for all HH for each scenario
+# And two FD vectors for South Africa
+# init_FD_ZAF: Initial vector from the survey (scaled to M.USD 2007 MER). Also scaled up by scaler_ZAF to match EXIO FD sum
+# ZAF_FD_adj: Adjusted by rIPFP based on EXIO default valuation mtx
+
+# South Africa
+chng_pct_ZAF <- (ZAF_FD_adj - init_FD_ZAF) / init_FD_ZAF
+chng_pct_ZAF[is.nan(chng_pct_ZAF)] <- 0
+
+ZAF_FD_ICP_HH_adj <- ZAF_FD_ICP_AllHH * (chng_pct_ZAF + 1) # ZAF_FD_ICP_AllHH and ZAF_FD_ICP_HH_adj are not scaled up yet by scaler_ZAF
+# When there is an adjustment frmo 0 to non-zero values, we need to assign the non-zero values to all HH.
+# I do it proportionately to match the weighted sum.
+idx_inf <- which(is.infinite(chng_pct_ZAF))  # Identify rows with Inf adjustments
+r_HH <- colSums(ZAF_FD_ICP_AllHH)/sum(ZAF_FD_ICP_AllHH)  # ratio of hh total to (unweighted) total
+ZAF_FD_ICP_HH_adj[idx_inf,] <- t(sapply(ZAF_FD_adj[idx_inf] * 1e6, # M.USD to USD
+                                        function(x) x * r_HH / sum(r_HH * ZAF_HH$weight))) * scaler_ZAF   
+
+rm(r_HH)
+gc()
+# scaler_ZAF needed since ZAF_FD_ICP_HH_adj is not scaled to match fd_exio
+
+ZAF_FD_ICP_adj <- ZAF_FD_ICP_usd2007 * (chng_pct_ZAF + 1)
+r_dec <- colSums(ZAF_FD_ICP_usd2007[,-1])/sum(ZAF_FD_ICP_usd2007[,1])  # ratio of decile total to (unweighted) total
+ZAF_FD_ICP_adj[idx_inf,-1] <- t(sapply(ZAF_FD_adj[idx_inf], # M.USD
+                                       function(x) x * r_dec)) * scaler_ZAF   
+ZAF_FD_ICP_adj[idx_inf,1] <- ZAF_FD_adj[idx_inf]
+temp <- ZAF_f.intensity %*% ZAF_FD_ICP_adj
+
+
+
+
+
+
+#####################################################################  
+### Derive overall energy per capita for all HH for each scenario ###
+#####################################################################
+
 ICP_all_idx <- 1:164
 eHH_summary <- data.frame(dec = paste0('dec',1:10))
 
@@ -265,13 +322,26 @@ eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
 # save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 
-# No valuation case BRA
+# No valuation case IND
 load("./Saved tables/IND_intensities_noVal.Rda")
 list[eHH_IND_noVal, eHH_sd_noVal] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, inten_IND_noVal)
 a <- SummarizeGJPerCapByDecile(eHH_IND_noVal)
 # eHH_summary <- cbind(eHH_summary, a)
 PlotIntensityHist(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
 # save(eHH_IND_noVal, file="./Saved tables/IND_ENEperCap_noVal_orgFD.Rda")
+
+
+# South Africa
+
+load("./Saved tables/ZAF_intensities.Rda")
+list[eHH_ZAF, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'ZAF', ZAF_FD_ICP_AllHH, ZAF_intensity)
+a <- SummarizeGJPerCapByDecile(eHH_ZAF)
+eHH_summary <- cbZAF(eHH_summary, a)
+PlotIntensityHist(eHH_ZAF, "V", xmax=100, 0.1, linedata=a)
+
+
+
+
 
 ### India Final energy intensities# Final energy trial
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
@@ -309,7 +379,6 @@ load(file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 PlotMainHistIND(eHH_IND, "V", xmax=100, 0.2, eHH_summary)
 title("Primany energy per capita by decile: India", outer=T)
 dev.off()
-
 
 
 

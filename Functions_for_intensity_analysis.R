@@ -3,15 +3,15 @@
 
 # Intensity under ICP classification
 # In the end, I will replace the codes above with this function.
-DeriveIntensities <- function(country='IND', type='final') {
+DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=indirect_fE_int) {
   icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))
   
   list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
   final_alloc_list_all <- lapply(result_all, func1)
   
   alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
-  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"), type)
-  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"), type)
+  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat)
+  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat)
   
   no_expense <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (icp_fd_cty_usd[,1]==0))
   no_expense <- no_expense[!(no_expense %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items

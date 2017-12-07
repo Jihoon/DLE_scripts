@@ -527,21 +527,34 @@ fuel_price.industry <- read_xlsx("H:/MyDocuments/Analysis/Final energy/Fuel pric
   select(-c(1, 3:6))
 names(fuel_price.industry) <- c("country", "ng", "oil", "coal", "elec", "oilprod")
 fuel_price.industry <- fuel_price.industry %>% filter(country=="IND" | country=="BRA")
-  # Derive fossil elec share for all 9600 exio sectors
-FossilElecExpenShare <- function(L_vec) {
+
+
+# An attempt to derive fossil elec share for all 9600 exio sectors
+# But this is false because the expenditure ratios I am using here is not a good representation of final energy shares. 
+# And allocating energy carriers purely based on those shares is not really trustworthy.
+# So not recommended for use.
+# Then, for now (Nov 16, 2017) better to just carve indirect electricity intensity based on the carrier use block.
+CarrierSharefromIOT <- function(L_vec) {
   indirec.input <- rowSums(matrix(L_vec, ncol=48))
-  share <- (sum(indirec.input[fossil.elec.idx.ex]) / fuel_price.industry$elec[1]) /
-    (sum(indirec.input[exio_coal]) / fuel_price.industry$coal[1] +
-       sum(indirec.input[exio_ng]) / fuel_price.industry$ng[1] +
-       sum(indirec.input[exio_oil]) / fuel_price.industry$oil[1] +
-       sum(indirec.input[exio_elec]) / fuel_price.industry$elec[1] +
-       sum(indirec.input[exio_oilprod]) / fuel_price.industry$oilprod[1])  # Nuclear expenditure is anyway not included in L inv.
+  total <- (sum(indirec.input[exio_coal]) / fuel_price.industry$coal[1] +
+              sum(indirec.input[exio_ng]) / fuel_price.industry$ng[1] +
+              sum(indirec.input[exio_oil]) / fuel_price.industry$oil[1] +
+              sum(indirec.input[exio_elec]) / fuel_price.industry$elec[1] +
+              sum(indirec.input[exio_oilprod]) / fuel_price.industry$oilprod[1])
+  share <- data.frame(fossil.elec=sum(indirec.input[fossil.elec.idx.ex]) / fuel_price.industry$elec[1] / total,
+                      coal=sum(indirec.input[exio_coal]) / fuel_price.industry$coal[1] / total,
+                      ng=sum(indirec.input[exio_ng]) / fuel_price.industry$ng[1] / total,
+                      elec=sum(indirec.input[exio_elec]) / fuel_price.industry$elec[1] / total,
+                      oil=sum(indirec.input[exio_oil]) / fuel_price.industry$oil[1] / total,
+                      oilprod=sum(indirec.input[exio_oilprod]) / fuel_price.industry$oilprod[1] / total)
+  
+      # Nuclear expenditure is anyway not included in L inv.
   # share <- sum(indirec.input[exio_elec]) / sum(indirec.input[exio_energy]) # Monetary share
   
-  return(share)
+  return(share$fossil.elec)
 }
 
-indir.elec.share <- apply(L_inverse, 2, FossilElecExpenShare)  # only fossil electricity
+indir.elec.share <- apply(L_inverse, 2, CarrierSharefromIOT)  # only fossil electricity
 indir.elec.share[is.nan(indir.elec.share)] <- 0
 
 # dir.elec.share[is.nan(dir.elec.share)] <- 0
@@ -575,6 +588,31 @@ view(data.frame(EXIO=t(EX_catnames), #pri.final.ratio.dir=pri.final.ratio.dir[IN
 sum(indir.fin.eng.int.derived[, IND_idx_ex] %*% rowSums(final_demand[IND_idx_ex,-seq(7, 336, 7)]))
 sum(indir.fin.eng.int.derived[, BRA_idx_ex] %*% rowSums(final_demand[BRA_idx_ex,-seq(7, 336, 7)]))
 
+indir.fin.eng.int <- colSums(indir.fin.eng.int.derived)
+indir.elec.int <- colSums(indirect_El_int)
+indir.gasol.int <- colSums(indirect_gasol_int)
+indir.other.int <- indir.fin.eng.int - indir.elec.int - indir.gasol.int
 
+indir.fin.eng.int <- data.frame(indir.fin.eng.int, indir.elec.int, indir.gasol.int, indir.other.int)
+view(indir.fin.eng.int)
 
 test <- DeriveConsumptionEnergyShares(final_alloc_list_IND_all, unit.vector(3, length(ICP_catnames)), NC_IND_all, "IN", "primary")
+list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final', colSums(indir.fin.eng.int.derived))
+list[IND_el.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final', indir.elec.int)
+list[IND_gsol.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final', indir.gasol.int)
+
+test <- data.frame(tot.fin=colMeans(IND_f.intensity), tot.el=colMeans(IND_el.intensity), 
+           tot.gs=colMeans(IND_gsol.intensity), tot.oth=colMeans(IND_f.intensity)-colMeans(IND_el.intensity)-colMeans(IND_gsol.intensity))
+View(test)
+
+### Heuristic 2. Starting with external data ("IEA extended energy balance") only for (direct) final energy
+### Adopt aggregate final consumption total for IEA sectors.(25 or so sectors incl. non-energy use)
+### First we use IEA 2008 data because in 2007 India does not have by-carrier breakdown of industrial final energy.
+### Non-energy use is not considered for now. Only final energy consumption
+### No consideration on residence and territorial difference
+final.IEA.raw <- read.xlsx("H:/MyDocuments/Analysis/Final energy/Energy extension IEA/a.xlsx", sheet="2008", startRow=4) 
+# final.IEA.raw <- read_xls("H:/MyDocuments/Analysis/Final energy/Energy extension IEA/a.xls", sheet="2008") # xls format doesn't work (unknown reason)
+IEA.carriers <- unique(as.character(read.xlsx("H:/MyDocuments/Analysis/Final energy/Energy extension IEA/a.xlsx", sheet="2008", colNames=FALSE, rows=3))[-1])
+IEA.flows <- read.xlsx("H:/MyDocuments/Analysis/Final energy/Energy extension IEA/a.xlsx", sheet="2008", rowNames=FALSE, cols=1)[-c(1:2),]
+
+

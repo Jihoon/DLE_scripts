@@ -22,17 +22,13 @@
 #    fortunes::fortune()
 
 options(java.parameters = "-Xmx16g") 
-library(RJDBC)
-library(data.table)
-library(tidyr)
+
+# For Jihoon's use
 library(openxlsx)
 library(XLConnect)
 library(readxl)
-library(Surrogate)
+# library(Surrogate)
 library(ggplot2)
-library(stringr)
-library(plyr)
-library(dplyr)
 library(pastecs)
 library(countrycode)
 library(scatterplot3d)
@@ -53,6 +49,24 @@ library(gridExtra)
 library("ggrepel")
 library(colorRamps)
 library(devtools)  # This library needed to do multiple returns from functions
+
+# From Kevin's "00 Load required packages.R"
+library(XML)
+library(gtools)
+library(birk)
+library(spatstat)
+library(foreign)
+library(gdata)
+library(readxl)
+library(Hmisc)
+library(stringr)
+library(gbm)
+library(data.table)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(dplyrExtras)
+library(RJDBC)
 
 source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list.R")
 

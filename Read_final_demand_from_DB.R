@@ -31,7 +31,9 @@ readFinalDemandfromDBbyDecile = function(svy='IND1') {
   xlcFreeMemory()
   OthCon <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_OTHCON')))
   xlcFreeMemory()
-  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, QTY_TOT, UNIT, tables=c(paste0(svy, '_FUEL')))
+  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, 
+                       # QTY_TOT, UNIT, 
+                       tables=c(paste0(svy, '_FUEL')))
   xlcFreeMemory()
   
   if (grepl("BRA", svy)) {
@@ -86,7 +88,9 @@ readFinalDemandfromDBAllHH = function(svy='IND1') {
   xlcFreeMemory()
   OthCon <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_OTHCON')))
   xlcFreeMemory()
-  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, QTY_TOT, UNIT, tables=c(paste0(svy, '_FUEL')))
+  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, 
+                       # QTY_TOT, UNIT, 
+                       tables=c(paste0(svy, '_FUEL')))
   xlcFreeMemory()
   
   if (grepl("BRA", svy)) {
@@ -145,7 +149,7 @@ readFinalDemandfromDBAllHH = function(svy='IND1') {
 ConstructyFuelTypeSet = function() {
   xlcFreeMemory()
   DLE_fuel <- data.frame()
-  for (svy in c("IND1", "BRA1", "ZAF1", "IDN1")) {
+  for (svy in c("IND1", "BRA1", "ZAF1", "IDN1")) {   # Need to be updated if additional countries are to be integrated.
     Fuel <- selectDBdata(ID, FUEL, tables=c(paste0(svy, '_FUEL')))
     Fuel <- Fuel %>% distinct(fuel)
     DLE_fuel <- unique(rbind(DLE_fuel, Fuel))
@@ -248,4 +252,42 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
   # names(Fuel_std) <- names(Fuel_summary)
   
   return(Fuel_std)
+}
+
+
+### This was for temporary use to derive expenditure share of individual food items (to tackle reviewrs' comment).
+### "Other fresh fruits" didn't have quantity data, and we show it is really a small part.
+
+readFinalFoodfromDBbyDecile = function(svy='IND1') {
+  xlcFreeMemory()
+  Food <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_FOOD')))
+  xlcFreeMemory()
+  
+  
+  if (grepl("BRA", svy)) {
+    HHold <- selectDBdata(ID, WEIGHT, INCOME, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    # income_proxy <- income
+  }
+  else {
+    HHold <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    HHold$income <- HHold$consumption
+  }
+  xlcFreeMemory()
+  
+  print(sum(is.na(HHold$income)))
+  HHold <- HHold %>% 
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
+    mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+                        labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
+    filter(!is.na(income))
+  
+  a <- Food %>% left_join(HHold) %>% # filter(!is.na(val_tot)) %>% 
+    mutate(fd_tot = val_tot*weight) %>% group_by(decile, item) %>%
+    summarise(fd_tot = sum(fd_tot, na.rm = TRUE)) %>% 
+    spread(decile, fd_tot) %>% mutate(total = rowSums(.[2:11], na.rm = TRUE)) %>%
+    select(item, total, decile1:decile10) 
+  a[is.na(a)] <- 0
+  
+  return(a)
 }

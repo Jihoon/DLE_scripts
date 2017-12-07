@@ -123,21 +123,21 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
   ypp <- ybp + trd + trp + tax 
   
   # F <- diag(ybp[1:200,1])
-  F <- diag(as.numeric(ybp))
-  F[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
-  F[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
+  Fin <- diag(as.numeric(ybp))
+  Fin[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
+  Fin[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
   
   # F[trp_idx, trp_idx] <- diag(ybp[trp_idx]-colSums(trp_margin_disag[-trp_idx,]))
   # F[trd_idx, trd_idx] <- diag(ybp[trd_idx]-colSums(trd_margin_disag[-trd_idx,]))
-  F[trp_idx, trp_idx] <- diag(ypp[trp_idx]-tax[trp_idx])
-  F[trd_idx, trd_idx] <- diag(ypp[trd_idx]-tax[trd_idx])
-  F <- cbind(F,tax)
+  Fin[trp_idx, trp_idx] <- diag(ypp[trp_idx]-tax[trp_idx])
+  Fin[trd_idx, trd_idx] <- diag(ypp[trd_idx]-tax[trd_idx])
+  Fin <- cbind(Fin,tax)
   
-  # cbind(y_pp, rowSums(F))
+  # cbind(y_pp, rowSums(Fin))
   
   y <- 1/ypp[,1]
   y[is.infinite(y)] <- 0 
-  D <- diag(y) %*% as.matrix(F)
+  D <- diag(y) %*% as.matrix(Fin)
   
   return(D)
 }
@@ -155,8 +155,9 @@ val_IN <- get_valuation_mtx('IN', 0)
 val_BR <- get_valuation_mtx('BR', 0)
 val_FR <- get_valuation_mtx('FR', 0)
 val_US <- get_valuation_mtx('US', 0)
-val_mtx <- list(val_FR, val_BR, val_US, val_IN)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN')
+val_ZA <- get_valuation_mtx('ZA', 0)
+val_mtx <- list(val_FR, val_BR, val_US, val_IN, val_ZA)
+names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 
 rownames(trade_margin_breakdown) <- EX_catnames[trd_idx]
