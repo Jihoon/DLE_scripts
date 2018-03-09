@@ -80,11 +80,11 @@ load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHH_w_CODE.Rda"
 # IND_FD_ICP_AllHH <- crossprod(CES_ICP_IND, as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
 #   rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
 # replace with eigenMapMatMult() later
-IND_FD_ICP_AllHH <- eigenMapMatMult(t(CES_ICP_IND), as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
-  rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
+IND_FD_ICP_AllHH <- eigenMapMatMult(t(CES_ICP_IND), as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel), -c("item", "CODE"), with=FALSE])) %>%
+  rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)), -c("item", "CODE"), with=FALSE]))
 
 # In the end, all we need is this ICP matrices
-rm(IND_FD, IND_FD_code, IND_FD_ALL, IND_FD_ALL_ICP)
+rm(IND_FD, IND_FD_code, IND_FD_ALL)
 gc()
 
 
@@ -196,7 +196,7 @@ ZAF_FD_ALL <- ZAF_FD_ALL[-grep("taxes|VAT ", ZAF_FD_ALL$item, ignore.case = TRUE
 
 ZAF_FD_ALL <- merge(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),], ZAF_map %>% select(CODE, item=ITEM_DLE), 
                     by="item", all.x = TRUE) %>% 
-  arrange(CODE) %>%
+  arrange(CODE) %>% select(item, CODE, everything()) %>%
   rbind(ZAF_FD_ALL[-(1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel)),] %>% mutate(CODE=999))
 ZAF_FD_ALL[is.na(ZAF_FD_ALL)] <- 0
 
@@ -213,11 +213,11 @@ ZAF_FD_ICP <- as.matrix(ZAF_FD_ICP)
 
 # Total final demand in ICP cat for all HH (not scaled up to Nat Acc level yet) (USD 2010 PPP as in DLE DB)
 # load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHH_w_CODE.Rda")
-ZAF_FD_ICP_AllHH <- eigenMapMatMult(t(CES_ICP_ZAF), as.matrix(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
-  rbind(as.matrix(ZAF_FD_ALL[-(1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
+ZAF_FD_ICP_AllHH <- eigenMapMatMult(t(CES_ICP_ZAF), as.matrix(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel), -c("item", "CODE"), with=FALSE])) %>%
+  rbind(as.matrix(ZAF_FD_ALL[-(1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel)), -c("item", "CODE"), with=FALSE]))
 
 # In the end, all we need is this ICP matrices
-rm(ZAF_FD, ZAF_FD_code, ZAF_FD_ALL, ZAF_FD_ALL_ICP)
+rm(ZAF_FD, ZAF_FD_code, ZAF_FD_ALL)
 gc()
 
 
@@ -237,4 +237,7 @@ ZAF_FD_ICP_usd2007 <- ZAF_FD_ICP_usd2011 / ZAF_con_grwth
 ZAF_FD_AllHH_2011 <- ZAF_FD_ICP_AllHH * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF    # From USD 2010 PPP to USD 2007 (MER)
 ZAF_FD_ICP_AllHH <- ZAF_FD_AllHH_2011 / ZAF_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
 
-
+save(ZAF_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_harmonized.Rda")
+save(ZAF_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_harmonized.Rda")

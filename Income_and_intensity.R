@@ -101,7 +101,7 @@ sqrt(wtd.var(IND_HH_sum_food$pri_e_avg/IND_HH_sum_food$hh_size, w=IND_HH_sum_foo
 wtd.mean(a$sd_GJ_per_cap, w=a$weight)
 
 # Plotting intensities vs hh expenditure
-# PlotIntensityHist(eHH_IND, "intensity", xmax=150, bin_size=0.1, drawline = F)
+# PlotIntensityHist.decile(eHH_IND, "intensity", xmax=150, bin_size=0.1, drawline = F)
 
 # Urban/Rural intensities
 

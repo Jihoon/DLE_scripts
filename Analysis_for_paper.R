@@ -13,7 +13,7 @@
 # 1. ICP FD adjustment: Original FD from survey VS. Adjusted FD matched to the national total
 
 
-n_draw <- 20
+n_draw <- 100
 D_val_uncertainty <- 0
 
 ICP_food_idx <- 1:45
@@ -33,13 +33,8 @@ ICP_fuel_idx <-152:164
 val_BR_EX <- get_valuation_mtx('BR', 0)
 
 # Re-set val_mtx for further analysis
-val_mtx <- list(val_FR, val_BR_EX, val_US, val_IN)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN')
-
-# All in M.USD 2007
-BRA_fd_exio_pp_EX <- get_purch_price(BRA_fd_exio, "BR")
-scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_EX)
-init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
+val_mtx <- list(val_FR, val_BR_EX, val_US, val_IN, val_ZA)
+names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 list[BRA_intensity, BRA_alloc, NC_BRA_val_EXIO, BRA_FD_adj_val_EXIO] <- DeriveIntensities('BRA')
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_EXIO.Rda")
@@ -54,22 +49,29 @@ val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(Tr
 detach(BRA_val)
 
 # Re-set val_mtx for further analysis
-val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN')
+val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
+names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
 scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_BR)
 init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 
-list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
-list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
+# list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
+# list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
+list[BRA_intensity.use, BRA_alloc.use, NC_BRA_val_BRA.use, BRA_FD_adj_val_BRA.use] <- DeriveIntensities('BRA', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
+
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA.Rda")
 save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA_rev.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
 save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
+
+save(BRA_intensity.use, file="./Saved tables/BRA_intensities_val_BRA.use.Rda")
+save(BRA_FD_adj_val_BRA.use, file="./Saved tables/BRA_FD_adj_val_BRA.use.Rda")
+
 load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
 load( file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
+
 view(data.frame(ICP_catnames, primary.int.emb= as.numeric(format(colMeans(BRA_intensity), digits=2, nsmall=2)), 
                 final.int.emb=as.numeric(format(colMeans(BRA_f.intensity), digits=2, nsmall=2)),
                 ratio=colMeans(BRA_f.intensity)/colMeans(BRA_intensity) ) %>% 
@@ -83,15 +85,17 @@ save(inten_BRA_noVal, file="./Saved tables/BRA_intensities_noVal.Rda")
 # 2. India #
 # Valuation mtx fixed
 
-IND_fd_exio_pp <- get_purch_price(IND_fd_exio, "IN")
-scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(IND_fd_exio_pp)
-init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
+# list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary')  # IND_FD_adj is already scaled up to match EXIO FD
+list[IND_intensity.use, IND_alloc.use, NC_IND.use, IND_FD_adj.use] <- DeriveIntensities('IND', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
 
-list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary')  # IND_FD_adj is already scaled up to match EXIO FD
 save(IND_intensity, file="./Saved tables/IND_intensities.Rda")
 save(IND_alloc, file="./Saved tables/IND_alloc.Rda")
 save(IND_FD_adj, file="./Saved tables/IND_FD_adj.Rda")
+
+save(IND_intensity.use, file="./Saved tables/IND_intensities.use.Rda")
+
 load(file="./Saved tables/IND_intensities.Rda")
+load(file="./Saved tables/IND_intensities.use.Rda")
 load(file="./Saved tables/IND_alloc.Rda")
 load(file="./Saved tables/IND_FD_adj.Rda")
 
@@ -114,10 +118,6 @@ save(inten_IND_noVal, file="./Saved tables/IND_intensities_noVal.Rda")
 # 3. South Africa
 # Valuation mtx fixed
 
-ZAF_fd_exio_pp <- get_purch_price(ZAF_fd_exio, "ZA")
-scaler_ZAF <- sum(ZAF_FD_ICP_usd2007[,1]) / sum(ZAF_fd_exio_pp)
-init_FD_ZAF <- ZAF_FD_ICP_usd2007[,1] / scaler_ZAF
-
 list[ZAF_intensity, ZAF_alloc, NC_ZAF, ZAF_FD_adj] <- DeriveIntensities('ZAF', 'primary')  # ZAF_FD_adj is already scaled up to match EXIO FD
 save(ZAF_intensity, file="./Saved tables/ZAF_intensities.Rda")
 save(ZAF_alloc, file="./Saved tables/ZAF_alloc.Rda")
@@ -126,6 +126,8 @@ load(file="./Saved tables/ZAF_intensities.Rda")
 load(file="./Saved tables/ZAF_alloc.Rda")
 load(file="./Saved tables/ZAF_FD_adj.Rda")
 
+list[ZAF_intensity.use, ZAF_alloc.use, NC_ZAF.use, ZAF_FD_adj.use] <- DeriveIntensities('ZAF', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)  # ZAF_FD_adj is already scaled up to match EXIO FD
+save(ZAF_intensity.use, file="./Saved tables/ZAF_intensities.use.Rda")
 
 
 no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
@@ -176,6 +178,21 @@ par(fig=c(0.8,1,0,0.95), new=TRUE)
 p2 <- PlotFuelIntensity(ZAF_intensity, no_expense_ZAF, 600)
 dev.off()
 
+# A better total Primary energy based on use block
+pdf(file = paste0(figure_path, "BRA sectoral intensity - Val BRA - Use.pdf"), width = 21, height = 10)
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(BRA_intensity.use, no_expense_BRA, y_lim1, "Brazil w/ own valuation based on Use")
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(BRA_intensity.use, no_expense_BRA, y_lim2)
+dev.off()
+
+pdf(file = paste0(figure_path, "ZAF sectoral intensity - Val EXIO - Use.pdf"), width = 21, height = 10)
+par(fig=c(0,0.8,0,1))
+p1 <- PlotNonfuelIntensity(ZAF_intensity.use, no_expense_ZAF, y_lim1, "South Africa based on Use")
+par(fig=c(0.8,1,0,0.95), new=TRUE)
+p2 <- PlotFuelIntensity(ZAF_intensity.use, no_expense_ZAF, 600)
+dev.off()
+
 view(data.frame(icp=ICP_catnames, pri.avg=colMeans(IND_intensity), final.avg=colMeans(IND_f.intensity) ))
 view(data.frame(exio=t(EX_catnames), pri.avg=colSums(indirect_E_int[, IND_idx_ex]), final.avg=colSums(indirect_fE_int[, IND_idx_ex])))
 
@@ -196,6 +213,8 @@ chng_pct_val_EXIO[is.nan(chng_pct_val_EXIO)] <- 0
 
 BRA_FD_ICP_HH_adj_BR <- BRA_FD_ICP_AllHH * (chng_pct_val_BRA + 1)
 BRA_FD_ICP_HH_adj_EX <- BRA_FD_ICP_AllHH * (chng_pct_val_EXIO + 1)
+save(BRA_FD_ICP_HH_adj_BR, file="./Saved tables/BRA_FD_ICP_HH_adj_BR.Rda")
+save(BRA_FD_ICP_HH_adj_EX, file="./Saved tables/BRA_FD_ICP_HH_adj_EX.Rda")
 
 
 # And two FD vectors for India
@@ -213,9 +232,10 @@ idx_inf <- which(is.infinite(chng_pct_IND))  # Identify rows with Inf adjustment
 r_HH <- colSums(IND_FD_ICP_AllHH)/sum(IND_FD_ICP_AllHH)  # ratio of hh total to (unweighted) total
 IND_FD_ICP_HH_adj[idx_inf,] <- t(sapply(IND_FD_adj[idx_inf] * 1e6, # M.USD to USD
                         function(x) x * r_HH / sum(r_HH * IND_HH$weight))) * scaler_IND   
-
 rm(r_HH)
 gc()
+save(IND_FD_ICP_HH_adj, file="./Saved tables/IND_FD_ICP_HH_adj.Rda")
+
 # scaler_IND needed since IND_FD_ICP_HH_adj is not scaled to match fd_exio
 
 IND_FD_ICP_adj <- IND_FD_ICP_usd2007 * (chng_pct_IND + 1)
@@ -223,7 +243,7 @@ r_dec <- colSums(IND_FD_ICP_usd2007[,-1])/sum(IND_FD_ICP_usd2007[,1])  # ratio o
 IND_FD_ICP_adj[idx_inf,-1] <- t(sapply(IND_FD_adj[idx_inf], # M.USD
                                         function(x) x * r_dec)) * scaler_IND   
 IND_FD_ICP_adj[idx_inf,1] <- IND_FD_adj[idx_inf]
-temp <- IND_f.intensity %*% IND_FD_ICP_adj
+# temp <- IND_f.intensity %*% IND_FD_ICP_adj
 
 
 # And two FD vectors for South Africa
@@ -241,9 +261,9 @@ idx_inf <- which(is.infinite(chng_pct_ZAF))  # Identify rows with Inf adjustment
 r_HH <- colSums(ZAF_FD_ICP_AllHH)/sum(ZAF_FD_ICP_AllHH)  # ratio of hh total to (unweighted) total
 ZAF_FD_ICP_HH_adj[idx_inf,] <- t(sapply(ZAF_FD_adj[idx_inf] * 1e6, # M.USD to USD
                                         function(x) x * r_HH / sum(r_HH * ZAF_HH$weight))) * scaler_ZAF   
-
 rm(r_HH)
 gc()
+save(ZAF_FD_ICP_HH_adj, file="./Saved tables/ZAF_FD_ICP_HH_adj.Rda")
 # scaler_ZAF needed since ZAF_FD_ICP_HH_adj is not scaled to match fd_exio
 
 ZAF_FD_ICP_adj <- ZAF_FD_ICP_usd2007 * (chng_pct_ZAF + 1)
@@ -251,7 +271,7 @@ r_dec <- colSums(ZAF_FD_ICP_usd2007[,-1])/sum(ZAF_FD_ICP_usd2007[,1])  # ratio o
 ZAF_FD_ICP_adj[idx_inf,-1] <- t(sapply(ZAF_FD_adj[idx_inf], # M.USD
                                        function(x) x * r_dec)) * scaler_ZAF   
 ZAF_FD_ICP_adj[idx_inf,1] <- ZAF_FD_adj[idx_inf]
-temp <- ZAF_f.intensity %*% ZAF_FD_ICP_adj
+# temp <- ZAF_f.intensity %*% ZAF_FD_ICP_adj
 
 
 
@@ -271,28 +291,28 @@ load("./Saved tables/BRA_intensities_val_EXIO.Rda")
 list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_AllHH, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_BRA, "V", xmax=200, bin_size=0.1, linedata=a)
+PlotIntensityHist.decile(eHH_BRA, "V", xmax=200, bin_size=0.1, linedata=a)
 # save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_orgFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_BRA.Rda")
 list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_AllHH, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
 # save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_orgFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_EXIO.Rda")
 list[eHH_BRA, eHH_sd]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_HH_adj_EX, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
 # save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valEX_adjFD.Rda")
 
 load("./Saved tables/BRA_intensities_val_BRA.Rda")   # Reference case
 list[eHH_BRA, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_BRA)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_BRA, "V", xmax=200, 0.1, linedata=a)
 PlotMainHist(eHH_BRA, "V", xmax=200, 0.1, eHH_summary)
 # save(eHH_BRA, file="./Saved tables/BRA_ENEperCap_valBR_adjFD.Rda")
 
@@ -301,7 +321,7 @@ load("./Saved tables/BRA_intensities_noVal.Rda")
 list[eHH_BRA_noVal, eHH_sd_noVal]   <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'BRA', BRA_FD_ICP_HH_adj_BR, inten_BRA_noVal)
 a <- SummarizeGJPerCapByDecile(eHH_BRA_noVal)
 # eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_BRA_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
+PlotIntensityHist.decile(eHH_BRA_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
 # save(eHH_BRA_noVal, file="./Saved tables/BRA_ENEperCap_noVal_adjFD.Rda")
 
 
@@ -312,14 +332,14 @@ load("./Saved tables/IND_intensities.Rda")
 list[eHH_IND, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_AllHH, IND_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_IND)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_IND, "V", xmax=100, 0.1, linedata=a)
 # save(eHH_IND, file="./Saved tables/IND_ENEperCap_orgFD.Rda")
 
 # load("./Saved tables/IND_intensities.Rda")
 list[eHH_IND, eHH_sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_IND)
 eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_IND, "V", xmax=100, 0.1, linedata=a)
 # save(eHH_IND, file="./Saved tables/IND_ENEperCap_adjFD.Rda")
 
 # No valuation case IND
@@ -327,7 +347,7 @@ load("./Saved tables/IND_intensities_noVal.Rda")
 list[eHH_IND_noVal, eHH_sd_noVal] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, inten_IND_noVal)
 a <- SummarizeGJPerCapByDecile(eHH_IND_noVal)
 # eHH_summary <- cbind(eHH_summary, a)
-PlotIntensityHist(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
+PlotIntensityHist.decile(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
 # save(eHH_IND_noVal, file="./Saved tables/IND_ENEperCap_noVal_orgFD.Rda")
 
 
@@ -336,8 +356,15 @@ PlotIntensityHist(eHH_IND_noVal, "V", xmax=200, bin_size=0.1, linedata=a)
 load("./Saved tables/ZAF_intensities.Rda")
 list[eHH_ZAF, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'ZAF', ZAF_FD_ICP_AllHH, ZAF_intensity)
 a <- SummarizeGJPerCapByDecile(eHH_ZAF)
-eHH_summary <- cbZAF(eHH_summary, a)
-PlotIntensityHist(eHH_ZAF, "V", xmax=100, 0.1, linedata=a)
+SummarizeGJPerCap(eHH_ZAF)
+eHH_summary <- cbind(eHH_summary, a)
+PlotIntensityHist.decile(eHH_ZAF, "V", xmax=100, 0.1, linedata=a)
+
+list[eHH_ZAF, eHH_sd] <- GetHHSectoralEnergyPerCap(ICP_all_idx, 'ZAF', ZAF_FD_ICP_HH_adj, ZAF_intensity.use)
+a <- SummarizeGJPerCapByDecile(eHH_ZAF)
+SummarizeGJPerCap(eHH_ZAF)
+eHH_summary <- cbind(eHH_summary, a)
+PlotIntensityHist.decile(eHH_ZAF, "V", xmax=100, 0.1, linedata=a)
 
 
 
@@ -346,24 +373,24 @@ PlotIntensityHist(eHH_ZAF, "V", xmax=100, 0.1, linedata=a)
 ### India Final energy intensities# Final energy trial
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
 a <- SummarizeGJPerCapByDecile(eHH_f.IND)
-PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_AllHH, IND_f.intensity)
 a <- SummarizeGJPerCapByDecile(eHH_f.IND)
-PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 # Sectoral
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_food_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
 a <- SummarizeGJPerCapByDecile(eHH_f.IND)
-PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_fuel_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
 a <- SummarizeGJPerCapByDecile(eHH_f.IND)
-PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 list[eHH_f.IND, eHH_f.sd] <-  GetHHSectoralEnergyPerCap(ICP_hhold_idx, 'IND', IND_FD_ICP_HH_adj, IND_f.intensity)
 a <- SummarizeGJPerCapByDecile(eHH_f.IND)
-PlotIntensityHist(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
+PlotIntensityHist.decile(eHH_f.IND, "V", xmax=100, 0.1, linedata=a)
 
 
 # Main decile plot for BRA and IND
@@ -398,7 +425,7 @@ load("./Saved tables/BRA_ENEperCap_food.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_f_BR)
 names(a) <- c("u_Food", "sd_Food")
 sect_summary_BR <- cbind(sect_summary_BR, a)
-PlotIntensityHist(all_HH_f_BR, "V", xmax=50, .2, drawline=TRUE, linedata=a, ticksize=1)
+PlotIntensityHist.decile(all_HH_f_BR, "V", xmax=50, .2, drawline=TRUE, linedata=a, ticksize=1)
 title('Food: Brazil', line = 2.5)
 rm(all_HH_f_BR)
 gc()
@@ -409,9 +436,9 @@ load("./Saved tables/BRA_ENEperCap_hhold.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_hs_BR)
 names(a) <- c("u_Hhold", "sd_Hhold")
 sect_summary_BR <- cbind(sect_summary_BR, a)
-PlotIntensityHist(all_HH_hs_BR, "V", xmax=50, .2, drawline=TRUE, linedata=a, ticksize=1)
+PlotIntensityHist.decile(all_HH_hs_BR, "V", xmax=50, .2, drawline=TRUE, linedata=a, ticksize=1)
 # sd_hs <- sd_hs[sd_hs$sd!=0, ] 
-# PlotIntensityHist(sd_hs, "sd", xmax=5, .0002, drawline=FALSE, ticksize=0.2)
+# PlotIntensityHist.decile(sd_hs, "sd", xmax=5, .0002, drawline=FALSE, ticksize=0.2)
 title('Household goods and services: Brazil', line = 2.5)
 rm(all_HH_hs_BR)
 gc()
@@ -422,7 +449,7 @@ load("./Saved tables/BRA_ENEperCap_svc.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_svc_BR)
 names(a) <- c("u_SVC", "sd_SVC")
 sect_summary_BR <- cbind(sect_summary_BR, a)
-PlotIntensityHist(all_HH_svc_BR, "V", xmax=50, 0.2, drawline=TRUE, linedata=a, ticksize=1)
+PlotIntensityHist.decile(all_HH_svc_BR, "V", xmax=50, 0.2, drawline=TRUE, linedata=a, ticksize=1)
 title('Communication, transportation, health, etc. : Brazil', line = 2.5)
 rm(all_HH_svc_BR)
 gc()
@@ -433,7 +460,7 @@ load("./Saved tables/BRA_ENEperCap_fuel.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_fl_BR)
 names(a) <- c("u_Fuel", "sd_Fuel")
 sect_summary_BR <- cbind(sect_summary_BR, a)
-PlotIntensityHist(all_HH_fl_BR, "V", xmax=100, 0.5, drawline=TRUE, linedata=a, ticksize=1)
+PlotIntensityHist.decile(all_HH_fl_BR, "V", xmax=100, 0.5, drawline=TRUE, linedata=a, ticksize=1)
 title('Fuel: Brazil', line = 2.5)
 rm(all_HH_fl_BR)
 gc()
@@ -442,13 +469,14 @@ gc()
 load("./Saved tables/IND_intensities.Rda")
 sect_summary_IN <- data.frame(dec = paste0('dec',1:10))
 
-list[all_HH_f_IN, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'IND', IND_FD_ICP_HH_adj, IND_intensity)
-save(all_HH_f_IN, file="./Saved tables/IND_ENEperCap_food.Rda")
-load("./Saved tables/IND_ENEperCap_food.Rda")
+list[all_HH_f_IN, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'IND', IND_FD_ICP_HH_adj, IND_intensity.use) # more reliable than IND_intensity
+# save(all_HH_f_IN, file="./Saved tables/IND_ENEperCap_food.Rda")
+# load("./Saved tables/IND_ENEperCap_food.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_f_IN)
+SummarizeGJPerCap(all_HH_f_IN)
 names(a) <- c("u_Food", "sd_Food")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_f_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
+PlotIntensityHist.decile(all_HH_f_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
 title('Food: India', line = 2.5)
 rm(all_HH_f_IN)
 gc()
@@ -459,7 +487,7 @@ load("./Saved tables/IND_ENEperCap_hhold.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_hs_IN)
 names(a) <- c("u_Hhold", "sd_Hhold")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_hs_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
+PlotIntensityHist.decile(all_HH_hs_IN, "V", xmax=100, .1, drawline=FALSE, ticksize=1)
 title('Household goods and services: India', line = 2.5)
 rm(all_HH_hs_IN)
 gc()
@@ -470,7 +498,7 @@ load("./Saved tables/IND_ENEperCap_svc.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_svc_IN)
 names(a) <- c("u_SVC", "sd_SVC")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_svc_IN, "V", xmax=10, .02, drawline=FALSE, ticksize=1)
+PlotIntensityHist.decile(all_HH_svc_IN, "V", xmax=10, .02, drawline=FALSE, ticksize=1)
 title('Communication, transportation, health, etc. : India', line = 2.5)
 rm(all_HH_svc_IN)
 gc()
@@ -483,7 +511,7 @@ load("./Saved tables/IND_ENEperCap_fuel.Rda")
 a <- SummarizeGJPerCapByDecile(all_HH_fl_IN)
 names(a) <- c("u_Fuel", "sd_Fuel")
 sect_summary_IN <- cbind(sect_summary_IN, a)
-PlotIntensityHist(all_HH_fl_IN, "V", xmax=30, .1, drawline=TRUE, linedata=a, ticksize=1)
+PlotIntensityHist.decile(all_HH_fl_IN, "V", xmax=30, .1, drawline=TRUE, linedata=a, ticksize=1)
 title('Fuel: India', line = 2.5)
 rm(all_HH_fl_IN)
 gc()

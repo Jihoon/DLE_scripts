@@ -95,7 +95,7 @@ list[eHH_BRA_nocook, eHH_sd_nocook] <-  GetHHSectoralEnergyPerCap(setdiff(ICP_al
 BRA_HH_sum_nocook <- GetSummaryForPlot(eHH_BRA_nocook, BRA_FD_ICP_HH_adj_BR, "BRA", idx_cookingfuel)
 
 
-# PlotIntensityHist(eHH_BRA, "intensity", xmax=150, bin_size=0.1, drawline = F)
+# PlotIntensityHist.decile(eHH_BRA, "intensity", xmax=150, bin_size=0.1, drawline = F)
 
 # Urban/Rural intensities
 

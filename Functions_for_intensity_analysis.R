@@ -3,15 +3,19 @@
 
 # Intensity under ICP classification
 # In the end, I will replace the codes above with this function.
-DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=indirect_fE_int) {
+DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=indirect_fE_int, pri.intensity.mat=indirect_E_int) {
   icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))
   
   list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
   final_alloc_list_all <- lapply(result_all, func1)
   
+  if (class(final.intensity.mat)=="numeric") {
+    final.intensity.mat <- matrix(final.intensity.mat, nrow=1)
+  }
+  
   alloc_nonRAS <- get_bridge_COICOP_EXIO(bridge_ICP_EXIO_q[,-1], n_draw)
-  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat)
-  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat)
+  inten_RAS_all <- SetupSectorIntensities(final_alloc_list_all, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat, pri.intensity.mat)
+  nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_all, countrycode(country,"iso3c", "iso2c"), type, final.intensity.mat, pri.intensity.mat)
   
   no_expense <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (icp_fd_cty_usd[,1]==0))
   no_expense <- no_expense[!(no_expense %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
@@ -99,14 +103,14 @@ SummarizeGJPerCapByDecile <- function(eHH) {
   nColTot <- dim(eHH)[2]
   nColAdd <- dim(BRA_HH)[2]-1   # we do this because # of drawn columns are not equal to n_draw because of no convergences in rIPFP
   
-  eHH_sum <- data.table(hhid = eHH[,1, with=FALSE],
+  eHH_sum <- data.table(eHH[,1, with=FALSE],
                         avg = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, mean), # , with=FALSE all removed (data.table issue)
                         sd = apply(eHH[,2:(nColTot-nColAdd), with=FALSE], 1, sd),
                         eHH[,(nColTot-nColAdd+1):nColTot, with=FALSE])
   
   # eHH_sum <- eHH_sum %>% group_by(decile) %>% summarise(u=weighted.mean(avg, weight), sd=weighted.mean(sd, weight))
   eHH_sum <- eHH_sum %>% mutate(tothhE = avg*hh_size*weight, sdE = sd*hh_size*weight) %>% group_by(decile) %>% 
-    summarise(u = sum(tothhE)/sum(weight*hh_size), sd=sum(sdE)/sum(weight*hh_size)) #, pop=sum(weight*hh_size)
+    summarise(u = sum(tothhE)/sum(weight*hh_size), sd=sum(sdE)/sum(weight*hh_size)) %>% arrange(decile) #, pop=sum(weight*hh_size)
   return(eHH_sum[,-1])
 }
 
@@ -137,7 +141,7 @@ cbind.dt.simple = function(...) {
 ###########################
 ### Plotting functions  ###
 ###########################
-PlotIntensityHist <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline=TRUE, linedata, ticksize=10) {
+PlotIntensityHist.decile <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline=TRUE, linedata, ticksize=10) {
   xlcFreeMemory()
   
   opar <- par() 
@@ -149,7 +153,7 @@ PlotIntensityHist <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline
     w0 <- intens_HH$weight[intens_HH$decile==paste0("decile",i)]
     w1 <- w0[rep(1:length(w0), each=dim(a)[2])]   # dim(a)[2] instead of n_draw because of non-converge runs
     # weighted.hist(a, w1, seq(0, max(a)+bin_size, bin_size), xlim=c(0,xmax), main=NULL, xaxis = FALSE)
-    d<- density(a, weights = w1)
+    d <- density(a, weights = w1)
     plot(d, axes=FALSE, xlim=c(1,xmax), main=' ')
     axis(side = 1, at = seq(0,xmax,ticksize))
     if (drawline) {
@@ -159,6 +163,18 @@ PlotIntensityHist <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline
   par(opar)
 }
 
+PlotIntensityHist.all <- function (intens_HH, name="V", xmax, bin_size=0.1, drawline=TRUE, linedata, ticksize=10) {
+  xlcFreeMemory()
+  
+  a <- as.matrix(intens_HH %>% select(starts_with(name)))
+  w0 <- as.matrix(bind_cols(replicate(dim(a)[2], all_HH_f_IN %>% select(weight), simplify = FALSE)))
+  d <- density(a, weights = w0)
+  plot(d, axes=FALSE, xlim=c(1,xmax), main=' ')
+  axis(side = 1, at = seq(0,xmax,ticksize))
+  if (drawline) {
+    abline(v=linedata[i,1], col="red")    
+  }
+}
 
 PlotIncomeByCountry <- function (f_HH, xmax, bin_size=0.1, tick_size = 1) {  # bin/tick size in kilo USD
   xlcFreeMemory()

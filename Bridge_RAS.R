@@ -297,7 +297,8 @@ CollapseQualMap <- function(qmap, colCon, rowCon) {
 
 
 # Calculate ICP sectoral intensities from given allocation ratio matrix based on random draws (either RASed or non-RASed)
-SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN", type='final', final.intensity.mat=indirect_fE_int) {
+SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN", type='final', 
+                                    final.intensity.mat=indirect_fE_int, pri.intensity.mat=indirect_E_int) {
   ind_intensity <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
   
@@ -341,7 +342,7 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN",
       int.e <- final.intensity.mat # Testing carving out electricity/gasoline. this function will be run separately for these carriers.
     }
     else if(type=='primary') {
-      int.e <- indirect_E_int
+      int.e <- pri.intensity.mat # Need to incorporate different primary energy account (indirect_pE_int.elec.prirow or just indirect_E_int)
     }
     
     energy_int <- int.e %*% fd_bp * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007)
@@ -568,11 +569,22 @@ Run_rIPFP <- function(qual_map_init, country = "IND") {
 
 
 # Deriving energy shares between Industry vs Transportation for certain consumption baskets (in ICP classification).
-DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_conv_idx, country = "IN", type='primary') {
+# 1. Industry
+#  1.1. Electricity
+#  1.2. Thermal
+# 2. Transportation
+#  2.1. Rail
+#  2.2. Road
+#  2.3. Air
+
+# For a basket described by "consumption_vec"
+DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_conv_idx, country = "IN", type='primary', 
+                                           tfei=TFEI.tot, tpei=indirect_pE_int.elec.prirow, elec.share=sc) {
   # length(consumption_vec) = n_sector_icp_fuel (row matrix)
   industry_trp_energy <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel) # n_sector_icp_fuel=164
   idx_trnsprt_EXIO <- 157:163
+  idx_industry_EXIO <- setdiff(1:200, idx_trnsprt_EXIO)
   
   null_demand_int <- matrix(0, 9600, n_sector)
   SectoralE_per_hh <- vector()
@@ -587,6 +599,25 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
   
+  if(type=='final') {
+    int.e <- tfei * EXR_EUR$r  # We still need to add direct final energy intensity after this.
+  }
+  else if(type=='primary') {
+    int.e <- tpei * EXR_EUR$r
+  }
+  
+  energy.i.thermal <- function(i) {
+    energy.t <- eigenMapMatMult(energy,diag(1-sc))
+    return(sum(energy.t[, i+seq(0, 9400, 200)]))
+  }
+  energy.i.elec <- function(i) {
+    energy.e <- eigenMapMatMult(energy,diag(sc))
+    return(sum(energy.e[, i+seq(0, 9400, 200)]))
+  }
+  energy.i <- function(i) {
+    return(sum(energy[, i+seq(0, 9400, 200)]))
+  }
+  
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
     
@@ -600,30 +631,161 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
     a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
     fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
     
-    if(type=='final') {
-      int.e <- indir.fin.eng.int.derived  # We still need to add direct final energy intensity after this.
-    }
-    else if(type=='primary') {
-      int.e <- indirect_E_int
-    }
+    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
     
-    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp))) * EXR_EUR$r  # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
-    # trp_energy <- sum(energy[, as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
-    energy.i <- function(i) {
-      return(sum(energy[, i+seq(0, 9400, 200)]))
-    }
     trp_energy <- sapply(idx_trnsprt_EXIO, energy.i)
-    ind_energy <- sum(energy[, -as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
-    industry_trp_energy <- rbind(industry_trp_energy, c(ind_energy, trp_energy)) # Total indirect energy/cap by decile
+    ind_energy.thermal <- sapply(idx_industry_EXIO, energy.i.thermal)
+    ind_energy.elec <- sapply(idx_industry_EXIO, energy.i.elec)
+    
+    industry_trp_energy <- rbind(industry_trp_energy, c(ind_energy.thermal, ind_energy.elec, trp_energy)) # Total indirect energy/cap by decile
   }
   
   # not_conv_idx has 1 where the RAS did not converge.
   industry_trp_energy <- industry_trp_energy[not_conv_idx!=1,]
+  names(industry_trp_energy) <- c("Industry.themal", "Industry.elec", EX_catnames[idx_trnsprt_EXIO])
   
   return(colMeans(industry_trp_energy))
 }
 
+# Try to make this faster
+# DeriveConsumptionEnergyShares.icp <- function (mapping_list, consumption_vec, not_conv_idx, country = "IN", type='primary', 
+#                                            tfei=TFEI.tot, tpei=indirect_pE_int.elec.prirow, elec.share=sc) {
+#   # length(consumption_vec) = n_sector_icp_fuel (row matrix)
+#   industry_trp_energy <- vector()
+#   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel) # n_sector_icp_fuel=164
+#   idx_trnsprt_EXIO <- 157:163
+#   idx_industry_EXIO <- setdiff(1:200, idx_trnsprt_EXIO)
+#   
+#   cty_place <- which(exio_ctys==country)
+#   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
+#   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
+#   
+#   cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+#   a <- diag(1/rowSums(cty_fd))
+#   a[is.infinite(a)] <- 0
+#   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
+#   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+#   
+#   if(type=='final') {
+#     int.e <- tfei * EXR_EUR$r  # We still need to add direct final energy intensity after this.
+#   }
+#   else if(type=='primary') {
+#     int.e <- tpei * EXR_EUR$r
+#   }
+#   
+#   energy.i.thermal <- function(i) {
+#     energy.t <- eigenMapMatMult(energy,diag(1-sc))
+#     idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+#     return(sum(energy.t[, idx]))
+#   }
+#   energy.i.elec <- function(i) {
+#     energy.e <- eigenMapMatMult(energy,diag(sc))
+#     idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+#     return(sum(energy.e[, idx]))
+#   }
+#   energy.i <- function(i) {
+#     return(sum(energy[, i+seq(0, 9400, 200)]))
+#   }
+#   
+#   mapping.avg <- Reduce('+', mapping_list)/length(mapping_list)
+#   
+#   # Converting the given cvec (ICP) into cvec (EXIO)
+#   cv_exio <- consumption_vec %*% mapping.avg  # 1x200
+# 
+#   # To run without valuation, toggle comment on this line.
+#   fd_bp_cty <- get_basic_price(t(cv_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
+#   # fd_bp <- t(unit_exio)  # Without valuation
+# 
+#   a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
+#   fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
+# 
+#   energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
+# 
+#   trp_energy <- sapply(idx_trnsprt_EXIO, energy.i)
+#   ind_energy.thermal <- energy.i.thermal(idx_industry_EXIO)
+#   ind_energy.elec <- energy.i.elec(idx_industry_EXIO)
+# 
+#   industry_trp_energy <- c(ind_energy.thermal, ind_energy.elec, trp_energy) # Total indirect energy/cap by decile
+# 
+#   # not_conv_idx has 1 where the RAS did not converge.
+#   # industry_trp_energy <- industry_trp_energy[not_conv_idx!=1,]
+#   names(industry_trp_energy) <- c("Industry.themal", "Industry.elec", EX_catnames[idx_trnsprt_EXIO])
+#   
+#   return(industry_trp_energy)
+# }
 
+# Intensity shares for EXIO sectors
+DeriveConsumptionEnergyShares.ex <- function (country = "IN", exio.sect.idx, type='final', 
+                                              tfei=TFEI.tot, tpei=indirect_pE_int.elec.prirow, elec.share=sc) {
+  industry_trp_energy <- vector()
+  idx_trnsprt_EXIO <- 157:163
+  idx_industry_EXIO <- setdiff(1:200, idx_trnsprt_EXIO)
+  
+  print(exio.sect.idx)
+  
+  cty_place <- which(exio_ctys==country)
+  cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
+  
+  # Unit FD vector for the sector i (=exio.sect.idx)
+  y.unit <- matrix(unit.vector(cty_idx[exio.sect.idx], 9600), ncol=1)
+  
+  # if(type=='final') {
+  #   int.e <- totuse_int   # We still need to add direct final energy intensity after this.
+  # }
+  # else if(type=='primary') {
+  #   int.e <- p_energy_int.prirow 
+  # }
+  
+  # Carve out only the transport sectors
+  idx.trp <- as.vector(sapply(seq(0,9400,200), function(x) x+idx_trnsprt_EXIO, simplify = "array"))
+  direct.int.trp <- totuse_int # totuse_int: Globally defined. All rows in use table for trp sectors are direct.
+  direct.int.trp[, -idx.trp] <- 0
+  
+  # Derive total demand: L*y
+  ind.x.sect <- eigenMapMatMult(as.matrix(L_inverse), y.unit)   # 9600x1  the column of L_inv
+  
+  ### Total transport energy
+  e.trp <- eigenMapMatMult(direct.int.trp, diag(as.vector(ind.x.sect)))   # n_carrierx9600 
+  energy.i <- function(i) {
+    return(sum(e.trp[, i+seq(0, 9400, 200)]))
+  }
+  
+  energy.trp <- sapply(idx_trnsprt_EXIO, energy.i) # Need to sum for each mode
+  # Assumption: Total transport energy is 100% transport energy (TFEI.tot=TFEI.transport)
+  # Otherwise, some exceptionally high DFEI transport sector (e.g. inland water in IND) gives (-) intensity for tfei.ind.
+  if (exio.sect.idx %in% idx_trnsprt_EXIO) {
+    energy.trp <- energy.trp / sum(energy.trp) * TFEI.tot[cty_idx[exio.sect.idx]]
+  }
+    
+  ### Total non-transport energy
+  # Approach 1. Get total elec from EXIO and subtract it (& transport E) from TFEI.tot
+  # e.elec <- eigenMapMatMult(elec_int, diag(as.vector(ind.x.sect)))   # elec_int: Globally defined
+  # 
+  # energy.i.elec <- function(i) {
+  #   idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+  #   return(sum(e.elec[, idx]))
+  # }
+  # energy.elec <- energy.i.elec(idx_industry_EXIO)  # Need just the sum of all
+  # energy.therm <- TFEI.tot[cty_idx[exio.sect.idx]] - energy.elec - sum(energy.trp)
+  
+  # Approach 2. Ignore total elec from EXIO and just scale total with sc
+  # With an assumption that sc is same for dfei and tfei
+  energy.nontrp <- TFEI.tot[cty_idx[exio.sect.idx]] - sum(energy.trp) # This gives zero for exio.sect.idx in transport sectors
+  energy.elec <- energy.nontrp * sc[cty_idx[exio.sect.idx]]
+  energy.therm <- energy.nontrp * (1-sc[cty_idx[exio.sect.idx]])
+  
+  industry_trp_energy <- c(energy.therm, energy.elec, energy.trp) # Total indirect energy/cap by decile
+  
+  # not_conv_idx has 1 where the RAS did not converge.
+  # industry_trp_energy <- industry_trp_energy[not_conv_idx!=1,]
+  names(industry_trp_energy) <- c("Industry.themal", "Industry.elec", EX_catnames[idx_trnsprt_EXIO])
+  
+  return(industry_trp_energy)
+}
+  
+  
+  
+  
 # Deriving energy carrier shares for each consumption sector (in ICP classification).
 DeriveEnergyCarrierSharesbySector <- function (mapping_list, consumption_vec, not_conv_idx, country = "IN", type='primary') {
   # length(consumption_vec) = n_sector_icp_fuel (row matrix)

@@ -101,32 +101,32 @@ save(eHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_GJperHH.Rda"
 
 ICP_food_idx <- 1:40
 list[all_HH_f, mean_HH_f] <- GetHHSectoralEnergyPerCap(ICP_food_idx)
-PlotIntensityHist(all_HH_f, "V", xmax=40, .5)
-PlotIntensityHist(mean_HH_f, "sd", xmax=0.5, 0.001)
+PlotIntensityHist.decile(all_HH_f, "V", xmax=40, .5)
+PlotIntensityHist.decile(mean_HH_f, "sd", xmax=0.5, 0.001)
 
 ICP_housing_idx <-56:84
 list[all_HH_hs, mean_HH_hs] <- GetHHSectoralEnergyPerCap(ICP_housing_idx)
-PlotIntensityHist(all_HH_hs, "V", xmax=40, .5)
-PlotIntensityHist(mean_HH_hs, "sd", xmax=0.5, 0.001)
+PlotIntensityHist.decile(all_HH_hs, "V", xmax=40, .5)
+PlotIntensityHist.decile(mean_HH_hs, "sd", xmax=0.5, 0.001)
 
 ICP_svc_idx <-85:151
 list[all_HH_svc, mean_HH_svc] <- GetHHSectoralEnergyPerCap(ICP_svc_idx)
-PlotIntensityHist(all_HH_svc, "V", xmax=40, 0.5)
-PlotIntensityHist(mean_HH_svc, "sd", xmax=0.5, 0.001)
+PlotIntensityHist.decile(all_HH_svc, "V", xmax=40, 0.5)
+PlotIntensityHist.decile(mean_HH_svc, "sd", xmax=0.5, 0.001)
 
 ICP_fuel_idx <-152:164
 list[all_HH_fl, mean_HH_fl] <- GetHHSectoralEnergyPerCap(ICP_fuel_idx)
-PlotIntensityHist(all_HH_fl, "V", xmax=40, 0.5)
-PlotIntensityHist(mean_HH_fl, "sd", xmax=0.5, 0.001)
+PlotIntensityHist.decile(all_HH_fl, "V", xmax=40, 0.5)
+PlotIntensityHist.decile(mean_HH_fl, "sd", xmax=0.5, 0.001)
 
 
 
 pdf(file = paste0(figure_path, "IIOA5.1 - IND energy per capita by decile.pdf"), width = 8, height = 8)
-PlotIntensityHist(eHH_cap, "V", xmax=100, 0.1)
+PlotIntensityHist.decile(eHH_cap, "V", xmax=100, 0.1)
 dev.off()
 
 pdf(file = paste0(figure_path, "IIOA5.2 - IND stdev by decile.pdf"), width = 8, height = 8)
-PlotIntensityHist(eHH_cap_avg, "sd", xmax=3)
+PlotIntensityHist.decile(eHH_cap_avg, "sd", xmax=3)
 dev.off()
 
 

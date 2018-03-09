@@ -107,7 +107,6 @@ par(opar)
 # 2. Check HH energy consumption / Cap / Yr
 # hh consumption [$2007] = 6.898717e+11
 # per-cap energy
-IND_pop_2007 <- 1.159e9
 a <- WDI(country = "IN", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
 a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_IN[,1]) / 1e3 / IND_pop_2007
 
@@ -134,7 +133,6 @@ FRA_pop_2007 <- 64e6
 a <- WDI(country = "FR", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
 a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_FR[,1]) / 1e3 / FRA_pop_2007
 
-BRA_pop_2007 <- 1.9e8
 # https://www.eia.gov/cfapps/ipdbproject/IEDIndex3.cfm?tid=44&pid=44&aid=2
 # TPEC -> 10 QBtu = 252 Mtoe (2007) = 1.06E+19 J
 # TPEC -> 275 Mtoe (2007) from http://www.iea.org/sankey/#?c=Brazil&s=Balance

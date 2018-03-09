@@ -14,6 +14,7 @@ a2 <- data.frame(ICP_CODE=1:164, ICP_NAME = ICP_catnames) # into the DB
 # 3. COICOp Intensity (MJ/USD) table 
 load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/IND_intensities.Rda")
+load( file="./Saved tables/ZAF_intensities.Rda")
 
 library(pastecs)
 colnames(IND_intensity) <- ICP_catnames
@@ -27,6 +28,17 @@ a3 <- data.frame(COUNTRY="IND", YR=2007, ICP_CODE=1:164, IND_int_summary)
 BRA_int_summary <- stat.desc(BRA_intensity) 
 BRA_int_summary <- t(BRA_int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
 a3 <- rbind(a3, data.frame(COUNTRY="BRA", YR=2007, ICP_CODE=1:164, BRA_int_summary))   # into the DB
+
+ZAF_int_summary <- stat.desc(ZAF_intensity) 
+ZAF_int_summary <- t(ZAF_int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
+a3 <- rbind(a3, data.frame(COUNTRY="ZAF", YR=2007, ICP_CODE=1:164, ZAF_int_summary))   # into the DB
+
+# Quick visual comparison of a3
+View(a3 %>% select(-std.dev) %>% spread(key=COUNTRY, value=mean))
+ggplot(a3 %>% filter(ICP_CODE >=152 & ICP_CODE <=164), aes(ICP_CODE, mean)) +   
+  geom_bar(aes(fill = COUNTRY), position = "dodge", stat="identity")
+ggplot(a3 %>% filter(ICP_CODE >=101 & ICP_CODE <=150), aes(ICP_CODE, mean)) +   
+  geom_bar(aes(fill = COUNTRY), position = "dodge", stat="identity")
 
 # 4. Fuel category harmonization to 13 types
 a <- which(DLE_fuel_sector_Q !=0, arr.ind = T)
@@ -69,3 +81,37 @@ sql = "ALTER TABLE IND1_FOOD RENAME COLUMN VAL_TOT TO VAL_TOT_ADJ"
 tryCatch({dbSendUpdate(conn, sql)}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})
 sql = "ALTER TABLE IND1_FOOD RENAME COLUMN VAL_TOT_ORG TO VAL_TOT"
 tryCatch({dbSendUpdate(conn, sql)}, error=function(e){cat("SKIPPED ERROR :",conditionMessage(e), "\n")})
+
+
+
+### Writing another version of total primary energy intensity based on use block
+load( file="./Saved tables/BRA_intensities_val_BRA.use.Rda")
+load( file="./Saved tables/IND_intensities.use.Rda")
+load( file="./Saved tables/ZAF_intensities.use.Rda")
+
+library(pastecs)
+colnames(IND_intensity.use) <- ICP_catnames
+colnames(BRA_intensity.use) <- ICP_catnames
+colnames(ZAF_intensity.use) <- ICP_catnames
+
+# In MJ/USD 2007
+IND_int_summary <- stat.desc(IND_intensity.use) 
+IND_int_summary <- t(IND_int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
+a3 <- data.frame(COUNTRY="IND", YR=2007, ICP_CODE=1:164, IND_int_summary)
+
+BRA_int_summary <- stat.desc(BRA_intensity.use) 
+BRA_int_summary <- t(BRA_int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
+a3 <- rbind(a3, data.frame(COUNTRY="BRA", YR=2007, ICP_CODE=1:164, BRA_int_summary))   # into the DB
+
+ZAF_int_summary <- stat.desc(ZAF_intensity.use) 
+ZAF_int_summary <- t(ZAF_int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
+a3 <- rbind(a3, data.frame(COUNTRY="ZAF", YR=2007, ICP_CODE=1:164, ZAF_int_summary))   # into the DB
+
+# Quick visual comparison of a3
+View(a3 %>% select(-std.dev) %>% spread(key=COUNTRY, value=mean))
+ggplot(a3 %>% filter(ICP_CODE >=152 & ICP_CODE <=164), aes(ICP_CODE, mean)) +   
+  geom_bar(aes(fill = COUNTRY), position = "dodge", stat="identity")
+ggplot(a3 %>% filter(ICP_CODE >=41 & ICP_CODE <=80), aes(ICP_CODE, mean)) +   
+  geom_bar(aes(fill = COUNTRY), position = "dodge", stat="identity")
+
+writeDF2Oracle(a3, "PRI_E_INT_USE", primary.keys=c('COUNTRY', 'YR', 'ICP_CODE'))

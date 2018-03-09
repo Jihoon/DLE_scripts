@@ -56,8 +56,15 @@ ZAF_con_grwth <- as.numeric(HH_CON %>% filter(year==2010 & iso2c=='ZA') %>% sele
 # IND2_con_grwth <- as.numeric(HH_CON %>% filter(year==2004 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / 
 #                               HH_CON %>% filter(year==2007 & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
 
+# Imports/Exports of goods and services (% of GDP)
 WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), start = 2007, end = 2007, extra = FALSE, cache = NULL)
 
+
+Popul <- WDI(country = c("IN", "BR", "FR", "ZA"), indicator = "SP.POP.TOTL", start = 2007, end = 2015, extra = FALSE, cache = NULL)
+
+BRA_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="BR" & year==2007) %>% select(pop)#1.9e8
+IND_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="IN" & year==2007) %>% select(pop)#1.159e9
+ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year==2007) %>% select(pop)#1.159e9
 
 
 ##############################################
@@ -306,5 +313,8 @@ source("Bridge_RAS.R")
 
 
 
+##############################################
+###    Run analysis etc.!     ###
+##############################################
 
-
+# Analysis_for_paper.R is the main file for analysis

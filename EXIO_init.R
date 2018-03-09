@@ -72,3 +72,4 @@ save(final_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/final_d
 save(tot_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_demand.Rda")
 save(materials, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/materials.Rda")
 save(fd_materials, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/fd_materials.Rda")
+save(indirect_pE_int.elec.prirow, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_pE_int.elec.prirow.Rda")
