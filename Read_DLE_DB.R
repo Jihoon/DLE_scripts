@@ -2,6 +2,7 @@
 IND_HH_Alldata <-selectDBdata(tables='IND1_HH')
 IND_FOOD_Alldata <-selectDBdata(tables='IND1_FOOD')
 IND_FUEL_Alldata <-selectDBdata(tables='IND1_FUEL')
+IND_OTH_Alldata <-selectDBdata(tables='IND1_OTHCON')
 
 IND_FD <- readFinalDemandfromDBbyDecile('IND1')
 IND2_FD <- readFinalDemandfromDBbyDecile('IND2')
@@ -28,6 +29,7 @@ save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda"
 save(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
 save(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
 save(IND_FUEL_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
+save(IND_OTH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_OTH_Alldata.Rda")
 
 
 

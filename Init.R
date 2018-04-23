@@ -62,9 +62,9 @@ WDI(country = c("IN", "BR"), indicator = c("NE.IMP.GNFS.ZS", "NE.EXP.GNFS.ZS"), 
 
 Popul <- WDI(country = c("IN", "BR", "FR", "ZA"), indicator = "SP.POP.TOTL", start = 2007, end = 2015, extra = FALSE, cache = NULL)
 
-BRA_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="BR" & year==2007) %>% select(pop)#1.9e8
-IND_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="IN" & year==2007) %>% select(pop)#1.159e9
-ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year==2007) %>% select(pop)#1.159e9
+BRA_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="BR" & year==2007) %>% select(pop) %>% as.numeric()#1.9e8
+IND_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="IN" & year==2007) %>% select(pop) %>% as.numeric()#1.159e9
+ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year==2007) %>% select(pop) %>% as.numeric()#1.159e9
 
 
 ##############################################

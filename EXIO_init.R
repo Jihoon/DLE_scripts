@@ -48,6 +48,9 @@ emissions_2.3 <- read.table(paste(path_iot_2.3, "mrEmissions_pxp_version2.3.0.tx
 emissions_2.3 <- emissions_2.3 %>% select(-V3) %>% filter(V2==" air") %>% filter(grepl('CH4|CO2|N2O', V1)) 
 GHG_item_2.3 <- emissions_2.3$V1
 emissions_2.3 <- emissions_2.3 %>% select(-V1, -V2)
+gwp <- c(CH4=34, N20=298)
+emissions_2.3[c(2,5,8,11),] <- emissions_2.3[c(2,5,8,11),] * gwp["CH4"]
+emissions_2.3[c(3,6,9),] <- emissions_2.3[c(3,6,9),] * gwp["N20"]
 
 # From SUT folder
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)

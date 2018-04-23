@@ -209,28 +209,24 @@ indirect_pE_int.elec.prirow <- eigenMapMatMult(p_energy_int.prirow, as.matrix(L_
 
 # 2. final energy (embodied)
 f_energy_int <- as.matrix(tot.finE.sect) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
-# indirect_fE_int <- f_energy_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 indirect_fE_int <- eigenMapMatMult(f_energy_int, as.matrix(L_inverse)) # faster
 
 # 3. electricity (embodied)
 elec_int <- as.matrix(tot.useE.elec) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
-# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 indirect_El_int <- eigenMapMatMult(elec_int, as.matrix(L_inverse)) # faster
 
 # 4. total use block (embodied)
 totuse_int <- as.matrix(tot.useE.sect) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
-# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 indirect_use_int <- eigenMapMatMult(totuse_int, as.matrix(L_inverse)) # faster
 
 # 5. gasoline (embodied)
 gasol_int <- as.matrix(tot.useE.gasol) %*% diag(y)   # Derive energy intensities by dividing by total demand per sector TJ/M.EUR = MJ/EUR
-# indirect_El_int <- elec_int %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1
 indirect_gasol_int <- eigenMapMatMult(gasol_int, as.matrix(L_inverse)) # faster
 
 
 # AUX. indirect emission intensity (I don't use it now)
-# em_int <- as.matrix(emissions_2.3) %*% diag(y) / 1e6  # Derive energy intensities by dividing by total demand per sector kg/M.EUR = mg/EUR to kg/EUR
-# indirect_em_int <- as.matrix(em_int) %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1   g/EUR
+em_int <- as.matrix(emissions_2.3) %*% diag(y) / 1e6  # Derive energy intensities by dividing by total demand per sector kg/M.EUR = mg/EUR to kg/EUR
+indirect_em_int <- as.matrix(em_int) %*% as.matrix(L_inverse)   # (intensity by sector) * (I-A)^-1   g/EUR
 
 
 # Energy use vs. Demand
