@@ -5,7 +5,7 @@ idx_oilprod <- c(21:38)
 idx_natgas <- 12
 idx_bio <- c(1:2, 16:17, 40, 42:44, 61, 63:69)
 idx_nuclear <- c(15,39)
-idx_elecheat <- c(45:56, 62)
+idx_elec <- c(45:56)
 
 # Indexation (on EXIO sectors) based on IEA balance builder (BalanceBuilderTemplate.xls)
 # energy.carrier.idx.ex <- c(20:32, 64:85, 91:95, 128:146, 148, 176:182)    # Column index for energy sectors (excluding pulp and extraction sectors)
@@ -213,7 +213,7 @@ idx.combine$xxx <- NULL    #Overwrite above
 
 
 # length(ex.name.idx)
-# idx.combine <- sapply(ex.name.idx, function(x) {x+seq(0, 9400, 200)})
+# idx.combine <- sapply(ex.name.idx, function(x) {x+seq(0, exio.len-200, 200)})
 # indirect_E_int[,as.numeric(t(idx.combine))]
 # weight.comb <- tot_demand[as.numeric(t(idx.combine))]
 
@@ -224,14 +224,14 @@ idx.combine$xxx <- NULL    #Overwrite above
 ShrinkExtension <- function(idx, mat = indirect_E_int) {
   mat.shrnk <- mat
   for (j in 1:length(idx)) {
-    for (i in 1:48) {
+    for (i in 1:num.cty) {
       idx.cty <- idx[[j]] + 200*(i-1)
       mat.shrnk[,idx.cty[1]] <- mat.shrnk[,idx.cty] %*% tot_demand[idx.cty] / sum(tot_demand[idx.cty])
       # mat.shrnk <- mat.shrnk[, -idx.cty[-1]]
     }  
   }
   idx.col.remove <- sort(unlist(sapply(idx, function(x) x[-1])))
-  idx.col.remove <- as.numeric(sapply(idx.col.remove, function(x) {x+seq(0, 9400, 200)}))
+  idx.col.remove <- as.numeric(sapply(idx.col.remove, function(x) {x+seq(0, exio.len-200, 200)}))
   # mat.shrnk <- mat.shrnk[,-idx.col.remove]
   mat.shrnk[,idx.col.remove] <- 0
   mat.shrnk[is.nan(mat.shrnk)] <- 0   # There are sectors with tot_demand==0
@@ -314,20 +314,20 @@ exidx.i <- 1
 # tot.demand.IND <- tot_demand[IND_idx_ex]
 # tot.demand.IND[128:140]
 
-direc.input.i <- matrix(tot_use[,country_ex.i[exidx.i]], ncol=48)
+direc.input.i <- matrix(tot_use[,country_ex.i[exidx.i]], ncol=num.cty)
 # sum(direc.input.i[32,])
 # sum(direc.input.i[85,])
 direc.input.i <- data.frame(name=t(EX_catnames), dom=direc.input.i[,country.idx], imp=rowSums(direc.input.i[,-country.idx])) %>% 
   mutate(sum=(dom+imp)/sum(dom+imp), dom=dom/sum(dom), imp=imp/sum(imp))
 
-direc.input <- matrix(iot.mat[,country_ex[exidx]], ncol=48)
+direc.input <- matrix(iot.mat[,country_ex[exidx]], ncol=num.cty)
 # sum(direc.input[32,])
 # sum(direc.input[85,])
 direc.input <- data.frame(name=t(EX_catnames), dom=direc.input[,country.idx], imp=rowSums(direc.input[,-country.idx])) %>% 
   mutate(sum=(dom+imp)/sum(dom+imp), dom=dom/sum(dom), imp=imp/sum(imp))
 colSums(direc.input[,-1])
 
-indirec.input <- matrix(L_inverse[,country_ex[exidx]], ncol=48)  # -diag(9600)
+indirec.input <- matrix(L_inverse[,country_ex[exidx]], ncol=num.cty)  # -diag(exio.len)
 # indirec.input[exidx, country.idx] <- indirec.input[exidx, country.idx] - 1
 indirec.input <- data.frame(name=t(EX_catnames), 
                             dom=indirec.input[,country.idx], # 
@@ -347,8 +347,8 @@ ShowExpenditureShare <- function(countrty="IN", EXIOsectnum) {
   country_ex <- seq(200*(country.idx-1)+1, 200*country.idx)   # 200 EXIO comodities
   # country_ex.i <- seq(163*(country.idx-1)+1, 163*country.idx)   # 163 EXIO industries
   
-  direc.input <- matrix(iot.mat[,country_ex[EXIOsectnum]], ncol=48)
-  indirec.input <- matrix(L_inverse[,country_ex[EXIOsectnum]], ncol=48)  # -diag(9600)
+  direc.input <- matrix(iot.mat[,country_ex[EXIOsectnum]], ncol=num.cty)
+  indirec.input <- matrix(L_inverse[,country_ex[EXIOsectnum]], ncol=num.cty)  # -diag(exio.len)
   
   input.monetary <- data.frame(name=t(EX_catnames), 
                                dir.tot=direc.input[,country.idx] + rowSums(direc.input[,-country.idx]), # domestic + import
@@ -371,10 +371,10 @@ total_Elec_emb_fd <- colSums(indirect_El_int) %*% diag(fd)
 # Total embodied electricity by sector/country. s*L*x. This will sum up to right global total.
 total_Elec <- colSums(elec_int) %*% L_inv %*% diag(rowSums(final_demand))  # Global total electricity. s*L*y (Total direct elec use by sector)
 
-total_Elec <- matrix(, nrow = 0, ncol = 9600)
-# Each i-th row is electricity consumed in each of 9600 sectors to produce final demand of i-th product. (concept of embodied)
-# Sum of Each i-th column is total electricity directly consumed in each of 9600 sectors to meet global demand.
-for (i in 1:9600) {
+total_Elec <- matrix(, nrow = 0, ncol = exio.len)
+# Each i-th row is electricity consumed in each of 9800 sectors to produce final demand of i-th product. (concept of embodied)
+# Sum of Each i-th column is total electricity directly consumed in each of 9800 sectors to meet global demand.
+for (i in 1:exio.len) {
   b <- colSums(elec_int) * L_inv[,i] * fd[i]  # Global total electricity. s*L*y
   total_Elec <- rbind(total_Elec, b)
 }
@@ -463,7 +463,7 @@ view(intensity.sum.BRA)
 # Derive ratio between total elec used and direct elec used
 sum(intensity.sum.IND$tot.el * tot_demand[IND_idx_ex]) / sum(intensity.sum.IND$dir.el * tot_demand[IND_idx_ex]) 
 sum(intensity.sum.IND$tot.el * rowSums(final_demand[,IND_idx_fd])) / sum(intensity.sum.IND$dir.el * rowSums(final_demand[,IND_idx_fd]))
-a <- vector("numeric", 9600)
+a <- vector("numeric", exio.len)
 a[IND_idx_ex[128:139]] <- rowSums(final_demand[IND_idx_ex[128:139],IND_idx_fd])
 sum(intensity.sum.IND$tot.el * a) / sum(intensity.sum.IND$dir.el * a) # sum(fd_materials[elec_use_idx,IND_idx_fd])
 # sum(intensity.sum.IND$tot.el * tot_demand[IND_idx_ex]) / (sum(tot.useE.elec[,IND_idx_ex]) + sum(fd_materials[elec_use_idx,IND_idx_fd]))
@@ -495,11 +495,11 @@ tot_demand[IND_idx_ex[108]]
 
 
 # Share of mobility/shelter/comfort/food (4svc)
-tot_emb_FE_HH <- colSums(indirect_fE_int)*rowSums(final_demand[, -seq(7, 336, 7)])  # Global total indirect FE induced from HH consumption
-tot_emb_PE_HH <- colSums(indirect_E_int)*rowSums(final_demand[, -seq(7, 336, 7)])  # Global total indirect FE induced from HH consumption
-tot_emb_pE_HH <- colSums(indirect_pE_int)*rowSums(final_demand[, -seq(7, 336, 7)])  # Global total indirect FE induced from HH consumption
+tot_emb_FE_HH <- colSums(indirect_fE_int)*rowSums(final_demand[, -seq(7, exio.fd.len, 7)])  # Global total indirect FE induced from HH consumption
+tot_emb_PE_HH <- colSums(indirect_E_int)*rowSums(final_demand[, -seq(7, exio.fd.len, 7)])  # Global total indirect FE induced from HH consumption
+tot_emb_pE_HH <- colSums(indirect_pE_int)*rowSums(final_demand[, -seq(7, exio.fd.len, 7)])  # Global total indirect FE induced from HH consumption
 idx_4svc_exio <- c(1:14, 19:30, 43:57, 64:84, 93:95, 123,124, 128:153, 166, 168, 176:195)  # mobility/shelter/comfort/food
-idx_4svc_exio <- as.vector(sapply(seq(0,9400,200), function(x) x+idx_4svc_exio, simplify = "array"))
+idx_4svc_exio <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+idx_4svc_exio, simplify = "array"))
 (sum(tot_emb_FE_HH[idx_4svc_exio]) + sum(tot.fdE.sect))/(sum(tot_emb_FE_HH) + sum(tot.fdE.sect))
 (sum(tot_emb_FE_HH[idx_4svc_exio]) + sum(tot.fdE.sect))/(sum(tot.finE.sect) + sum(tot.fdE.sect))
 sum(tot_emb_PE_HH[idx_4svc_exio])/sum(tot_emb_PE_HH)
@@ -529,13 +529,13 @@ names(fuel_price.industry) <- c("country", "ng", "oil", "coal", "elec", "oilprod
 fuel_price.industry <- fuel_price.industry %>% filter(country=="IND" | country=="BRA")
 
 
-# An attempt to derive fossil elec share for all 9600 exio sectors
+# An attempt to derive fossil elec share for all 9800 exio sectors
 # But this is false because the expenditure ratios I am using here is not a good representation of final energy shares. 
 # And allocating energy carriers purely based on those shares is not really trustworthy.
 # So not recommended for use.
 # Then, for now (Nov 16, 2017) better to just carve indirect electricity intensity based on the carrier use block.
 CarrierSharefromIOT <- function(L_vec) {
-  indirec.input <- rowSums(matrix(L_vec, ncol=48))
+  indirec.input <- rowSums(matrix(L_vec, ncol=num.cty))
   total <- (sum(indirec.input[exio_coal]) / fuel_price.industry$coal[1] +
               sum(indirec.input[exio_ng]) / fuel_price.industry$ng[1] +
               sum(indirec.input[exio_oil]) / fuel_price.industry$oil[1] +
@@ -565,12 +565,12 @@ IEA.final.BRA.2007 <- 7.86e6 # GJ without own use
 
 # Primary intensity scaled by (1-indir.elec.share), which is a simple scaler without physical meaning
 # I assume a linear relationship between elec share and primary-final ratio.
-# This is still 19x9600
+# This is still 19x9800
 a <- t((1-indir.elec.share) * t(indirect_E_int))   
 
 # Scale a matrix to normalize it to IEA total final energy in 2007
-# It can be 19x9600 which doesn't mean much. 
-# So I can either take colSums to make it a vector (of 9600), or leave it and take colsums after a SetupSectorIntensities run
+# It can be 19x9800 which doesn't mean much. 
+# So I can either take colSums to make it a vector (of 9800), or leave it and take colsums after a SetupSectorIntensities run
 indir.fin.eng.int.derived <- IEA.final.tot.2007 / sum(a %*% rowSums(final_demand)) * a    # ind.fe.int * final.demand = total final energy (global)
 
 view(data.frame(EXIO=t(EX_catnames), #pri.final.ratio.dir=pri.final.ratio.dir[IND_idx_ex], 
@@ -585,8 +585,8 @@ view(data.frame(EXIO=t(EX_catnames), #pri.final.ratio.dir=pri.final.ratio.dir[IN
                 indir.fin.eng.int.derived=colSums(indir.fin.eng.int.derived)[BRA_idx_ex]))
 
 # Compare country total final energy values
-sum(indir.fin.eng.int.derived[, IND_idx_ex] %*% rowSums(final_demand[IND_idx_ex,-seq(7, 336, 7)]))
-sum(indir.fin.eng.int.derived[, BRA_idx_ex] %*% rowSums(final_demand[BRA_idx_ex,-seq(7, 336, 7)]))
+sum(indir.fin.eng.int.derived[, IND_idx_ex] %*% rowSums(final_demand[IND_idx_ex,-seq(7, exio.fd.len, 7)]))
+sum(indir.fin.eng.int.derived[, BRA_idx_ex] %*% rowSums(final_demand[BRA_idx_ex,-seq(7, exio.fd.len, 7)]))
 
 indir.fin.eng.int <- colSums(indir.fin.eng.int.derived)
 indir.elec.int <- colSums(indirect_El_int)
@@ -675,7 +675,7 @@ DPE.tot <- vector()
 TFE.elec <- vector()
 TFE.gasol <- vector()
 TPE.tot <- vector()
-for (i in 1:48) {
+for (i in 1:num.cty) {
   idx.fd <- ((i-1)*7+1):(i*7) 
   idx.ex <- ((i-1)*200+1):(i*200)
   TFE.elec[i] <- sum(eigenMapMatMult(indirect_El_int, diag(rowSums(final_demand[,idx.fd])))) + sum(fd_materials[gasol_use_idx, idx.fd])
@@ -772,17 +772,17 @@ balance$IND %>% filter(row.names(.)=="Total.final.consumption") %>% select(gasol
 balance$ZAF %>% filter(row.names(.)=="Total.final.consumption") %>% select(gasoline) / DPE$ZAF
 
 # Derive TFEI
-# sc <- rep(sum(DFE.Oth)/DPE.Oth, 9600); sc[BRA_idx_ex] <- sum(DFE.BRA)/DPE.BRA; sc[IND_idx_ex] <- sum(DFE.IND)/DPE.IND; sc[ZAF_idx_ex] <- sum(DFE.ZAF)/DPE.ZAF
+# sc <- rep(sum(DFE.Oth)/DPE.Oth, 9800); sc[BRA_idx_ex] <- sum(DFE.BRA)/DPE.BRA; sc[IND_idx_ex] <- sum(DFE.IND)/DPE.IND; sc[ZAF_idx_ex] <- sum(DFE.ZAF)/DPE.ZAF
 # TFEI.tot    <- colSums(indirect_pE_int.elec.prirow) * sc
-# sc <- rep(sum(DFE$Oth$Share %>% select(coal, bio.waste)), 9600); sc[BRA_idx_ex] <- sum(DFE$BRA$Share %>% select(coal, bio.waste)); sc[IND_idx_ex] <- sum(DFE$IND$Share %>% select(coal, bio.waste)); sc[ZAF_idx_ex] <- sum(DFE$ZAF$Share %>% select(coal, bio.waste))
+# sc <- rep(sum(DFE$Oth$Share %>% select(coal, bio.waste)), 9800); sc[BRA_idx_ex] <- sum(DFE$BRA$Share %>% select(coal, bio.waste)); sc[IND_idx_ex] <- sum(DFE$IND$Share %>% select(coal, bio.waste)); sc[ZAF_idx_ex] <- sum(DFE$ZAF$Share %>% select(coal, bio.waste))
 # TFEI.solid  <- TFEI.tot * sc
-# sc <- rep(DFE$Oth$Share$oil.prod, 9600); sc[BRA_idx_ex] <- DFE$BRA$Share$oil.prod ; sc[IND_idx_ex] <- DFE$IND$Share$oil.prod; sc[ZAF_idx_ex] <- DFE$ZAF$Share$oil.prod
+# sc <- rep(DFE$Oth$Share$oil.prod, 9800); sc[BRA_idx_ex] <- DFE$BRA$Share$oil.prod ; sc[IND_idx_ex] <- DFE$IND$Share$oil.prod; sc[ZAF_idx_ex] <- DFE$ZAF$Share$oil.prod
 # TFEI.liquid <- TFEI.tot * sc
-# sc <- rep(DFE$Oth$Share$ng, 9600); sc[BRA_idx_ex] <- DFE$BRA$Share$ng ; sc[IND_idx_ex] <- DFE$IND$Share$ng; sc[ZAF_idx_ex] <- DFE$ZAF$Share$ng
+# sc <- rep(DFE$Oth$Share$ng, 9800); sc[BRA_idx_ex] <- DFE$BRA$Share$ng ; sc[IND_idx_ex] <- DFE$IND$Share$ng; sc[ZAF_idx_ex] <- DFE$ZAF$Share$ng
 # TFEI.gas    <- TFEI.tot * sc
-# sc <- rep(DFE$Oth$Share$elec, 9600); sc[BRA_idx_ex] <- DFE$BRA$Share$elec ; sc[IND_idx_ex] <- DFE$IND$Share$elec; sc[ZAF_idx_ex] <- DFE$ZAF$Share$elec
+# sc <- rep(DFE$Oth$Share$elec, 9800); sc[BRA_idx_ex] <- DFE$BRA$Share$elec ; sc[IND_idx_ex] <- DFE$IND$Share$elec; sc[ZAF_idx_ex] <- DFE$ZAF$Share$elec
 # TFEI.elec   <- TFEI.tot * sc
-# sc <- rep(DFE$Oth$Share$renewable, 9600); sc[BRA_idx_ex] <- DFE$BRA$Share$renewable ; sc[IND_idx_ex] <- DFE$IND$Share$renewable; sc[ZAF_idx_ex] <- DFE$ZAF$Share$renewable
+# sc <- rep(DFE$Oth$Share$renewable, 9800); sc[BRA_idx_ex] <- DFE$BRA$Share$renewable ; sc[IND_idx_ex] <- DFE$IND$Share$renewable; sc[ZAF_idx_ex] <- DFE$ZAF$Share$renewable
 # TFEI.renewable   <- TFEI.tot * sc
 # 
 # all.equal(TFEI.tot, TFEI.solid+TFEI.liquid+TFEI.gas+TFEI.elec+TFEI.renewable)
@@ -841,9 +841,9 @@ scaler.P.F <- lapply(sum.list, function(x) {map.EXIO.IEA %>% left_join(x$p.to.f)
     select(EXIO, pf.ratio, elec.share)
 })
 
-# Construct a TFEI vector of length 9600 for all 9600 EXIO sectors
+# Construct a TFEI vector of length 9800 for all 9800 EXIO sectors
 # Scaling TPEI to get TFEI
-sc <- rep(scaler.P.F$Oth$pf.ratio, 48); sc[BRA_idx_ex] <- scaler.P.F$BRA$pf.ratio; sc[IND_idx_ex] <- scaler.P.F$IND$pf.ratio; sc[ZAF_idx_ex] <- scaler.P.F$ZAF$pf.ratio
+sc <- rep(scaler.P.F$Oth$pf.ratio, num.cty); sc[BRA_idx_ex] <- scaler.P.F$BRA$pf.ratio; sc[IND_idx_ex] <- scaler.P.F$IND$pf.ratio; sc[ZAF_idx_ex] <- scaler.P.F$ZAF$pf.ratio
 TFEI.tot <- colSums(indirect_pE_int.elec.prirow) * sc # MJ/EUR
 # DFEI.tot <- colSums(p_energy_int.prirow) * sc # This scaling is not making much sense. It is so small for non-energy industries.
 
@@ -858,7 +858,7 @@ TFE.IND <- sum(TF[IND_idx_ex]) + sum(fd_materials[energy_carrier_use_idx, IND_id
 TFE.ZAF <- sum(TF[ZAF_idx_ex]) + sum(fd_materials[energy_carrier_use_idx, ZAF_idx_fd[1:3]]) # 2690 PJ (2909 PJ IEA)
 
 # Break down TFEI to get TFEI.elec and TFEI.transport
-sc <- rep(scaler.P.F$Oth$elec.share, 48); sc[BRA_idx_ex] <- scaler.P.F$BRA$elec.share; sc[IND_idx_ex] <- scaler.P.F$IND$elec.share; sc[ZAF_idx_ex] <- scaler.P.F$ZAF$elec.share
+sc <- rep(scaler.P.F$Oth$elec.share, num.cty); sc[BRA_idx_ex] <- scaler.P.F$BRA$elec.share; sc[IND_idx_ex] <- scaler.P.F$IND$elec.share; sc[ZAF_idx_ex] <- scaler.P.F$ZAF$elec.share
 TFEI.breakdown.exio <- sapply(c(1:200), function(x) {
   DeriveConsumptionEnergyShares.ex("IN", x, type='final', elec.share=sc)})
 
@@ -870,7 +870,7 @@ TFEI.breakdown.exio <- sapply(c(1:200), function(x) {
 # intensity.summary2[which(intensity.summary2$TFEI==0), c(2:10)] <- 0
 # view(intensity.summary2)
 
-# For all 48 EXIO regions by EXIO sector
+# For all 49 EXIO regions by EXIO sector
 TFEI.exio <- data.frame(Region=rep(exio_ctys, each=200), EXIO=t(EX_catnames), t(TFEI.breakdown.exio), TFEI=TFEI.tot)
 names(TFEI.exio) <- c("Region", "EXIO", "ind.therm", "ind.elec", "rail", "road", "pipeline", "sea", "inland", "air", "other", "total")
 save(TFEI.exio, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/TFEI.exio.Rda")

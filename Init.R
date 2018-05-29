@@ -8,10 +8,17 @@
 ### EXIO country order ###
 
 exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", 
-               "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", 
+               "FR", "GR", 
+               # "HR", # Added new at EXIO3
+               "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", 
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
                "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
+
+num.cty <- length(exio_ctys)
+exio.len <- length(exio_ctys)*200
+exio.fd.len <- length(exio_ctys)*7
+
 n_draw <- 1000
 D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
 draw_count <- 1
@@ -74,8 +81,16 @@ ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year=
 # Takes long time to run. 
 # Some .Rda files are already created to save time.
 # source("EXIO_init.R")
-source("EXIO_init_load.R")
 
+# EXIO_init_load.R derives energy intensity matrices.
+# But since EXIO3, these matrices are read in 'import_EXIO_FE_extension.R'
+# Now these intensities are based on 2008 IEA balance and fed into dfei.exio and tfei.exio.
+# Using 2008 instead of 2007 because the Indian final electricity consumption breakdown into industries doesn't exist until 2007.
+source("EXIO_init_load.R")
+source("DLE_integration_functions.R")  
+source("import_EXIO_FE_extension.R")  # Incorporate EXIO3
+
+# For EXIO3, L_inverse/final_demand/tot_demand should be updated.
 
 
 #########################################
@@ -188,13 +203,12 @@ DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 # Reading and constructing matrices
 # source("Read_DLE_DB.R") 
 
+# IND
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
-# IND_FUEL_Alldata
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
-# IND_FD_ICP_AllHH
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda") # IND_FUEL_Alldata
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda") # IND_FD_ICP_AllHH
 
 # ZAF
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD.Rda")
@@ -210,8 +224,8 @@ load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHHConsump.Rda"
 # Don't need to run everytime.
 
 # source("Generate_base_ICP-EXIO_mapping.R")
-# n_sector_icp <- 151  # Num of ICP sectors
-# n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
+n_sector_icp <- 151  # Num of ICP sectors
+n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
 
 
 
@@ -284,6 +298,7 @@ source("Load_init_data.R")
 ##########################################
 
 source("Valuation.R")
+# source("Load_init_data.R")  
 
 
 
@@ -310,6 +325,7 @@ source("Functions_for_intensity_analysis.R")
 ##############################################
 
 source("Bridge_RAS.R")
+
 
 
 

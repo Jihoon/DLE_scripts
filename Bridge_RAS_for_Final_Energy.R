@@ -179,18 +179,18 @@ SetupSectorIntensities_FE <- function (mapping_list, not_conv_idx , country = "I
   ind_intensity <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
   
-  null_demand_int <- matrix(0, 9600, n_sector)
+  null_demand_int <- matrix(0, exio.len, n_sector)
   SectoralE_per_hh <- vector()
   
   cty_place <- which(exio_ctys==country)
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   a <- diag(1/rowSums(cty_fd))
   a[is.infinite(a)] <- 0
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
   
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
@@ -202,8 +202,8 @@ SetupSectorIntensities_FE <- function (mapping_list, not_conv_idx , country = "I
     fd_bp_cty <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
     list[q, fd_bp_cty] <- ShrinkQMapping(idx.comb, , fd_bp_cty)
     
-    a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X164
+    a <- do.call(rbind, replicate(num.cty, fd_bp_cty, simplify = FALSE))   # 49 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X164
     
     if(type=='final') {
       int.e <- indirect_fE_int_shrnk  # We still need to add direct final energy intensity after this.

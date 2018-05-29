@@ -13,7 +13,7 @@
 # 1. ICP FD adjustment: Original FD from survey VS. Adjusted FD matched to the national total
 
 
-n_draw <- 100
+n_draw <- 20
 D_val_uncertainty <- 0
 
 ICP_food_idx <- 1:45
@@ -56,12 +56,12 @@ BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
 scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_BR)
 init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
 
-# list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
+list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
 # list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
-list[BRA_intensity.use, BRA_alloc.use, NC_BRA_val_BRA.use, BRA_FD_adj_val_BRA.use] <- DeriveIntensities('BRA', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
+list[BRA_intensity.use, BRA_alloc.use, NC_BRA.use, BRA_FD_adj_val_BRA.use] <- DeriveIntensities('BRA', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
 
-save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA.Rda")
-save(BRA_intensity, file="./Saved tables/BRA_intensities_val_BRA_rev.Rda")
+save(BRA_intensity, file="./Saved tables/BRA_intensity.Rda")
+# save(BRA_f.intensity, file="./Saved tables/BRA_f.intensity.Rda")
 save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
 save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 
@@ -72,10 +72,10 @@ load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
 load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
 load( file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
 
-view(data.frame(ICP_catnames, primary.int.emb= as.numeric(format(colMeans(BRA_intensity), digits=2, nsmall=2)), 
-                final.int.emb=as.numeric(format(colMeans(BRA_f.intensity), digits=2, nsmall=2)),
-                ratio=colMeans(BRA_f.intensity)/colMeans(BRA_intensity) ) %>% 
-       mutate(ratio=as.numeric(format(ratio, digits=2, nsmall=2))))
+# view(data.frame(ICP_catnames, tpei= as.numeric(format(colMeans(BRA.tpei.use.icp), digits=2, nsmall=2)), 
+#                 tfei=as.numeric(format(colMeans(BRA.tfei.icp), digits=2, nsmall=2)),
+#                 ratio=colMeans(BRA.tfei.icp)/colMeans(BRA.tpei.use.icp) ) %>% 
+#        mutate(ratio=as.numeric(format(ratio, digits=2, nsmall=2))))
 
 # Temporary run without any Valuation
 inten_BRA_noVal <- SetupSectorIntensities(BRA_alloc, NC_BRA_val_BRA, countrycode("BRA","iso3c", "iso2c"))
@@ -85,7 +85,7 @@ save(inten_BRA_noVal, file="./Saved tables/BRA_intensities_noVal.Rda")
 # 2. India #
 # Valuation mtx fixed
 
-# list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary')  # IND_FD_adj is already scaled up to match EXIO FD
+list[IND_intensity, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary')  # IND_FD_adj is already scaled up to match EXIO FD
 list[IND_intensity.use, IND_alloc.use, NC_IND.use, IND_FD_adj.use] <- DeriveIntensities('IND', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
 
 save(IND_intensity, file="./Saved tables/IND_intensities.Rda")
@@ -102,16 +102,14 @@ load(file="./Saved tables/IND_FD_adj.Rda")
 # Final E intensity
 list[IND_f.intensity, IND_f.alloc, NC_f.IND, IND_f.FD_adj] <- DeriveIntensities('IND', 'final', colSums(indir.fin.eng.int.derived))
 # We don't need this below for "int.e <- indir.fin.eng.int.derived" in SetupSectorIntensities, but we do for "int.e <- indirect_fE_int"
+# Adding the energy intensity of the final $ spend on energy product
 IND_f.intensity[,ICP_fuel_idx] <- sweep(IND_f.intensity[,ICP_fuel_idx], 2, IND.E.direct.int, `+`) 
-# colMeans(IND_f.intensity)
+
 view(data.frame(ICP_catnames, primary.int.emb= as.numeric(format(colMeans(IND_intensity), digits=2, nsmall=2)), 
                 final.int.emb=as.numeric(format(colMeans(IND_f.intensity), digits=2, nsmall=2)),
                 ratio=colMeans(IND_f.intensity)/colMeans(IND_intensity) ) %>% 
        mutate(ratio=as.numeric(format(ratio, digits=2, nsmall=2))))
 
-# Temporary run without any Valuation
-inten_IND_noVal <- SetupSectorIntensities(IND_alloc, NC_IND, countrycode("IND","iso3c", "iso2c"))
-save(inten_IND_noVal, file="./Saved tables/IND_intensities_noVal.Rda")
 
 
 
@@ -137,6 +135,14 @@ no_expense_ZAF <- no_expense_ZAF[!(no_expense_ZAF %in% grep("UNBR", ICP_catnames
 no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
 no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 
+
+# Visualize/Compare
+view(data.frame(ICP_catnames, 
+                IND=as.numeric(format(colMeans(IND.tfei.icp), digits=2, nsmall=2)), 
+                BRA=as.numeric(format(colMeans(BRA.tfei.icp), digits=2, nsmall=2)),
+                ZAF=as.numeric(format(colMeans(ZAF.tfei.icp), digits=2, nsmall=2))))
+
+ZAF.tfei.icp
 
 ###############################
 # Plot sectoral intensities # 
@@ -623,7 +629,7 @@ eora.name <- read_excel("../Bridging/EORA26-EXIO200.xlsx", sheet=1, skip=1, col_
 map.eora.exio <- matrix(0,nrow=26, ncol = 200)
 map.eora.exio[cbind(eora.exio$EORA26, eora.exio$EXIO200)] <- 1  # 26x200
 
-IND.fd.ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200)   # 200x48
+IND.fd.ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200)   # 200x49
 BRA.fd.ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200) 
 BRA.fd.ex[174,BRA_place] <- 15600  # M Euro
 BRA.fd.ex <- BRA.fd.ex
@@ -632,7 +638,7 @@ BRA.fd.ex <- BRA.fd.ex
 IND.fd.ex[which(rowSums(IND.fd.ex)==0),IND_place] <- 1
 BRA.fd.ex[which(rowSums(BRA.fd.ex)==0),BRA_place] <- 1
 
-tot.int <- matrix(colSums(indirect_E_int), nrow=200, byrow=FALSE) # 200x48
+tot.int <- matrix(colSums(indirect_E_int), nrow=200, byrow=FALSE) # 200x49
 
 IND.tot <- rowSums(map.eora.exio %*% (tot.int*IND.fd.ex))
 BRA.tot <- rowSums(map.eora.exio %*% (tot.int*BRA.fd.ex))

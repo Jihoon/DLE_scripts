@@ -6,13 +6,25 @@
 path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrIOT_PxP_ita_coefficient_version2.2.2/"
 path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2.2.2/"
 
+EXIO3_path = "H:/MyDocuments/Analysis/Final energy/Arkaitz/IOT/"
+
 # From IoT folder
+
+### final_demand
+
+# 1. From EXIO2
 final_demand <- read.table(paste(path_iot, "mrFinalDemand_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
-final_demand.name <- read.table(paste(path_iot, "mrFinalDemand_version2.2.2.txt", sep=""), 
+final_demand.name <- read.table(paste(path_iot, "mrFinalDemand_version2.2.2.txt", sep=""),
                                 header=FALSE, sep="\t", dec=".", skip=1, nrow=1,  stringsAsFactors=FALSE)[4:10]
 final_demand <- final_demand[,c(-1,-2,-3)]
 
+### Leontief inverse: L
+
+# 1. From EXIO2
 L_inverse <- read.table(paste(path_iot, "L_inverse.txt", sep=""), header=FALSE, sep=",", dec=".")
+
+
+### Other EXIO data
 
 factor_input <- read.table(paste(path_iot, "mrFactorInputs_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 factor_input <- factor_input[,c(-1,-2)]
@@ -53,15 +65,16 @@ emissions_2.3[c(2,5,8,11),] <- emissions_2.3[c(2,5,8,11),] * gwp["CH4"]
 emissions_2.3[c(3,6,9),] <- emissions_2.3[c(3,6,9),] * gwp["N20"]
 
 # From SUT folder
+# 1. From EXIO2
 tot_use <- read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2)
 tot_use <- tot_use[,c(-1,-2,-3)]
 
 # Get total use by product 
 tot_demand <- rowSums(final_demand) + rowSums(tot_use)  # X vector (global)
-b <- rowSums(final_demand[,-seq(7, 336, 7)]) # Excluding (export for global demand = 0)
+b <- rowSums(final_demand[,-seq(7, exio.fd.len, 7)]) # Excluding (export for global demand = 0)
 fd.sum <- data.frame(name=t(EX_catnames), ind.use=rowSums(tot_use[IND_idx_ex,]), 
-                     hh.fd=rowSums(final_demand[IND_idx_ex,seq(1, 336, 7)]),
-                     oth.fd=rowSums(final_demand[IND_idx_ex,-seq(1, 336, 7)])) %>% 
+                     hh.fd=rowSums(final_demand[IND_idx_ex,seq(1, exio.fd.len, 7)]),
+                     oth.fd=rowSums(final_demand[IND_idx_ex,-seq(1, exio.fd.len, 7)])) %>% 
   mutate(tot.use = hh.fd + oth.fd + ind.use)
 
 

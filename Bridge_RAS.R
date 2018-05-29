@@ -302,18 +302,18 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN",
   ind_intensity <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
   
-  null_demand_int <- matrix(0, 9600, n_sector)
+  null_demand_int <- matrix(0, exio.len, n_sector)
   SectoralE_per_hh <- vector()
   
   cty_place <- which(exio_ctys==country)
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   a <- diag(1/rowSums(cty_fd))
   a[is.infinite(a)] <- 0
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
   
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
@@ -325,8 +325,8 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN",
     fd_bp_cty <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
     # fd_bp <- t(unit_exio)  # Without valuation
     
-    a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X164
+    a <- do.call(rbind, replicate(num.cty, fd_bp_cty, simplify = FALSE))   # 49 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X164
     
     # fd_exio <- mapping_list[[i]] %*% diag(fd_decile[,2])  # For Ensemble
     
@@ -334,7 +334,7 @@ SetupSectorIntensities <- function (mapping_list, not_conv_idx , country = "IN",
     # cty_fd[cty_idx,] <- get_basic_price(fd_exio, country)
     
     if(type=='final') {
-      # a <- matrix(0, nrow=9600, ncol=164)
+      # a <- matrix(0, nrow=9800, ncol=164)
       # a[cty_idx,] <- fd_bp_cty
       # energy_int <- (indirect_fE_int %*% fd_bp + int.hh %*% a) * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007) 69x164
       # int.e <- indirect_fE_int  # We still need to add direct final energy intensity after this.
@@ -361,18 +361,18 @@ SetupEmissionIntensities <- function (mapping_list, not_conv_idx , country = "IN
   ind_intensity <- vector()
   n_sector <- ifelse(country=="FR", n_sector_coicop, n_sector_icp_fuel)
   
-  null_demand_int <- matrix(0, 9600, n_sector)
+  null_demand_int <- matrix(0, exio.len, n_sector)
   SectoralE_per_hh <- vector()
   
   cty_place <- which(exio_ctys==country)
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   a <- diag(1/rowSums(cty_fd))
   a[is.infinite(a)] <- 0
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
   
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
@@ -384,8 +384,8 @@ SetupEmissionIntensities <- function (mapping_list, not_conv_idx , country = "IN
     # fd_bp <- get_basic_price(t(unit_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
     fd_bp <- t(unit_exio)
     
-    a <- do.call(rbind, replicate(48, fd_bp, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X164
+    a <- do.call(rbind, replicate(num.cty, fd_bp, simplify = FALSE))   # 49 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X164
     
     energy_int <- indirect_em_int %*% fd_bp * EXR_EUR$r  # indirect energy use from the supply chains (MJ/USD2007)
 
@@ -586,18 +586,18 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
   idx_trnsprt_EXIO <- 157:163
   idx_industry_EXIO <- setdiff(1:200, idx_trnsprt_EXIO)
   
-  null_demand_int <- matrix(0, 9600, n_sector)
+  null_demand_int <- matrix(0, exio.len, n_sector)
   SectoralE_per_hh <- vector()
   
   cty_place <- which(exio_ctys==country)
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   a <- diag(1/rowSums(cty_fd))
   a[is.infinite(a)] <- 0
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
   
   if(type=='final') {
     int.e <- tfei * EXR_EUR$r  # We still need to add direct final energy intensity after this.
@@ -608,14 +608,14 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
   
   energy.i.thermal <- function(i) {
     energy.t <- eigenMapMatMult(energy,diag(1-sc))
-    return(sum(energy.t[, i+seq(0, 9400, 200)]))
+    return(sum(energy.t[, i+seq(0, exio.len-200, 200)]))
   }
   energy.i.elec <- function(i) {
     energy.e <- eigenMapMatMult(energy,diag(sc))
-    return(sum(energy.e[, i+seq(0, 9400, 200)]))
+    return(sum(energy.e[, i+seq(0, exio.len-200, 200)]))
   }
   energy.i <- function(i) {
-    return(sum(energy[, i+seq(0, 9400, 200)]))
+    return(sum(energy[, i+seq(0, exio.len-200, 200)]))
   }
   
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
@@ -628,10 +628,10 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
     fd_bp_cty <- get_basic_price(t(cv_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
     # fd_bp <- t(unit_exio)  # Without valuation
     
-    a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
+    a <- do.call(rbind, replicate(num.cty, fd_bp_cty, simplify = FALSE))   # 49 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X1
     
-    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
+    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9800  indirect energy use from the supply chains (MJ/USD2007)
     
     trp_energy <- sapply(idx_trnsprt_EXIO, energy.i)
     ind_energy.thermal <- sapply(idx_industry_EXIO, energy.i.thermal)
@@ -660,11 +660,11 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
 #   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
 #   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
 #   
-#   cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+#   cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
 #   a <- diag(1/rowSums(cty_fd))
 #   a[is.infinite(a)] <- 0
 #   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-#   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+#   cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
 #   
 #   if(type=='final') {
 #     int.e <- tfei * EXR_EUR$r  # We still need to add direct final energy intensity after this.
@@ -675,16 +675,16 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
 #   
 #   energy.i.thermal <- function(i) {
 #     energy.t <- eigenMapMatMult(energy,diag(1-sc))
-#     idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+#     idx <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+i, simplify = "array"))
 #     return(sum(energy.t[, idx]))
 #   }
 #   energy.i.elec <- function(i) {
 #     energy.e <- eigenMapMatMult(energy,diag(sc))
-#     idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+#     idx <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+i, simplify = "array"))
 #     return(sum(energy.e[, idx]))
 #   }
 #   energy.i <- function(i) {
-#     return(sum(energy[, i+seq(0, 9400, 200)]))
+#     return(sum(energy[, i+seq(0, exio.len-200, 200)]))
 #   }
 #   
 #   mapping.avg <- Reduce('+', mapping_list)/length(mapping_list)
@@ -696,10 +696,10 @@ DeriveConsumptionEnergyShares <- function (mapping_list, consumption_vec, not_co
 #   fd_bp_cty <- get_basic_price(t(cv_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
 #   # fd_bp <- t(unit_exio)  # Without valuation
 # 
-#   a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
-#   fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
+#   a <- do.call(rbind, replicate(num.cty, fd_bp_cty, simplify = FALSE))   # 49 regions in EXIO
+#   fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X1
 # 
-#   energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
+#   energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp)))   # n_carrierx9800  indirect energy use from the supply chains (MJ/USD2007)
 # 
 #   trp_energy <- sapply(idx_trnsprt_EXIO, energy.i)
 #   ind_energy.thermal <- energy.i.thermal(idx_industry_EXIO)
@@ -727,7 +727,7 @@ DeriveConsumptionEnergyShares.ex <- function (country = "IN", exio.sect.idx, typ
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   
   # Unit FD vector for the sector i (=exio.sect.idx)
-  y.unit <- matrix(unit.vector(cty_idx[exio.sect.idx], 9600), ncol=1)
+  y.unit <- matrix(unit.vector(cty_idx[exio.sect.idx], exio.len), ncol=1)
   
   # if(type=='final') {
   #   int.e <- totuse_int   # We still need to add direct final energy intensity after this.
@@ -737,17 +737,17 @@ DeriveConsumptionEnergyShares.ex <- function (country = "IN", exio.sect.idx, typ
   # }
   
   # Carve out only the transport sectors
-  idx.trp <- as.vector(sapply(seq(0,9400,200), function(x) x+idx_trnsprt_EXIO, simplify = "array"))
+  idx.trp <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+idx_trnsprt_EXIO, simplify = "array"))
   direct.int.trp <- totuse_int # totuse_int: Globally defined. All rows in use table for trp sectors are direct.
   direct.int.trp[, -idx.trp] <- 0
   
   # Derive total demand: L*y
-  ind.x.sect <- eigenMapMatMult(as.matrix(L_inverse), y.unit)   # 9600x1  the column of L_inv
+  ind.x.sect <- eigenMapMatMult(as.matrix(L_inverse), y.unit)   # 9800x1  the column of L_inv
   
   ### Total transport energy
-  e.trp <- eigenMapMatMult(direct.int.trp, diag(as.vector(ind.x.sect)))   # n_carrierx9600 
+  e.trp <- eigenMapMatMult(direct.int.trp, diag(as.vector(ind.x.sect)))   # n_carrierx9800 
   energy.i <- function(i) {
-    return(sum(e.trp[, i+seq(0, 9400, 200)]))
+    return(sum(e.trp[, i+seq(0, exio.len-200, 200)]))
   }
   
   energy.trp <- sapply(idx_trnsprt_EXIO, energy.i) # Need to sum for each mode
@@ -762,7 +762,7 @@ DeriveConsumptionEnergyShares.ex <- function (country = "IN", exio.sect.idx, typ
   # e.elec <- eigenMapMatMult(elec_int, diag(as.vector(ind.x.sect)))   # elec_int: Globally defined
   # 
   # energy.i.elec <- function(i) {
-  #   idx <- as.vector(sapply(seq(0,9400,200), function(x) x+i, simplify = "array"))
+  #   idx <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+i, simplify = "array"))
   #   return(sum(e.elec[, idx]))
   # }
   # energy.elec <- energy.i.elec(idx_industry_EXIO)  # Need just the sum of all
@@ -798,18 +798,18 @@ DeriveEnergyCarrierSharesbySector <- function (mapping_list, consumption_vec, no
   # exio_elec # already exists
   exio_liquid <- setdiff(c(exio_oil, exio_oilprod, 30:31), c(64:65, 75))
   
-  null_demand_int <- matrix(0, 9600, n_sector)
+  null_demand_int <- matrix(0, exio.len, n_sector)
   SectoralE_per_hh <- vector()
   
   cty_place <- which(exio_ctys==country)
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  cty_fd <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   a <- diag(1/rowSums(cty_fd))
   a[is.infinite(a)] <- 0
   cty_fd_ratio <- a %*% cty_fd  # fd exio-sectoral ratio in bp across countries
-  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9600x1
+  cty_fd_ratio <- matrix(cty_fd_ratio, ncol=1) # 9800x1
   
   for (i in 1:length(mapping_list)) {  # length(mapping_list) instead of n_draws, because of potential no-convergence runs
     draw_count <<- i  # Used in get_basic_price
@@ -821,8 +821,8 @@ DeriveEnergyCarrierSharesbySector <- function (mapping_list, consumption_vec, no
     fd_bp_cty <- get_basic_price(t(cv_exio), country)  # Convert to bp (200x164) - each col represents bp fd in each exio sector (for 1 USD in ICP sector)
     # fd_bp <- t(unit_exio)  # Without valuation
     
-    a <- do.call(rbind, replicate(48, fd_bp_cty, simplify = FALSE))   # 48 regions in EXIO
-    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9600X1
+    a <- do.call(rbind, replicate(num.cty, fd_bp_cty, simplify = FALSE))   # 49 regions in EXIO
+    fd_bp <- apply(a, 2, function(x) {x * cty_fd_ratio})  # 9800X1
     
     if(type=='final') {
       int.e <- indir.fin.eng.int.derived  # We still need to add direct final energy intensity after this.
@@ -831,10 +831,10 @@ DeriveEnergyCarrierSharesbySector <- function (mapping_list, consumption_vec, no
       int.e <- indirect_E_int
     }
     
-    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp))) * EXR_EUR$r  # n_carrierx9600  indirect energy use from the supply chains (MJ/USD2007)
-    # trp_energy <- sum(energy[, as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, 9400, 200)}))])
+    energy <- eigenMapMatMult(int.e, diag(as.numeric(fd_bp))) * EXR_EUR$r  # n_carrierx9800  indirect energy use from the supply chains (MJ/USD2007)
+    # trp_energy <- sum(energy[, as.numeric(sapply(idx_trnsprt_EXIO, function(x) {x+seq(0, exio.len-200, 200)}))])
     energy.i <- function(i) {
-      return(sum(energy[, i+seq(0, 9400, 200)]))
+      return(sum(energy[, i+seq(0, exio.len-200, 200)]))
     }
     energy_solid <- sapply(exio_solid, energy.i)
     energy_liquid <- sapply(exio_liquid, energy.i)

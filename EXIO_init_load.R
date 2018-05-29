@@ -9,7 +9,7 @@ TJ_per_MTOE <- 41870
 TWh_per_MTOE <- 11.63
 
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
+# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
 # load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/final_demand.Rda")
@@ -44,7 +44,8 @@ captive_input_idx           <- c(4, 5, 26, 27, 12, 2)  # Coal, diesel, natural g
 ####### Temporary solution : Ignore all energy sector columns (make their use all zero)
 ### Note: This loses all own use and non-energy use from energy sectors (around 10% of world average).
 
-materials.header <- read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", nrows=2)
+material.name <- (read.table(paste(path_iot, "mrMaterials_version2.2.0.txt", sep=""), header=FALSE, sep="\t", dec=".", skip=2))[,1]
+
 energy_sector_idx_ex  <- c(64:85, 91:95, 128:146, 148, 176:182)    # Column index for energy sectors (excluding pulp and extraction sectors)
 fossil.elec.idx.ex    <- c(128, 129, 133)    # Column index for energy sectors (excluding pulp and extraction sectors)
 elec.idx.ex           <- 128:141    # Column index for electricity sectors 
@@ -73,7 +74,7 @@ carrier.name.fin[primary.in.use]
 tot.priE.sect <- materials[nature_input_idx,]  # The energy extension has not intensities but total consumptions.
 tot.useE.sect <- materials[energy_carrier_use_idx,]
 tot.supplE.sect <- materials[energy_carrier_supply_idx,]
-tot.fdE.sect <- fd_materials[energy_carrier_use_idx, -seq(7, 336, 7)] # Excluding exports
+tot.fdE.sect <- fd_materials[energy_carrier_use_idx, -seq(7, exio.fd.len, 7)] # Excluding exports
 tot.fdE.elec <- fd_materials[elec_use_idx,] 
 tot.useE.gasol <- materials[gasol_use_idx,]
 tot.useE.elec <- materials[elec_use_idx,]
@@ -81,16 +82,16 @@ tot.supplE.elec <- materials[elec_supply_idx,]
 
 # Interim check
 # compare global total supply and use
-# ene.sum <- data.frame(carrier=carrier.name.fin, sup=rowSums(tot.supplE.sect), use=rowSums(tot.useE.sect), fd.use=rowSums(tot.fdE.sect[, -seq(7, 336, 7)]), 
-#            tot.use=rowSums(tot.useE.sect)+rowSums(tot.fdE.sect[, -seq(7, 336, 7)])) %>% 
+# ene.sum <- data.frame(carrier=carrier.name.fin, sup=rowSums(tot.supplE.sect), use=rowSums(tot.useE.sect), fd.use=rowSums(tot.fdE.sect[, -seq(7, exio.fd.len, 7)]), 
+#            tot.use=rowSums(tot.useE.sect)+rowSums(tot.fdE.sect[, -seq(7, exio.fd.len, 7)])) %>% 
 #        mutate(diff=sup-tot.use, error=diff/sup)
 # sum(ene.sum$sup)
 # sum(ene.sum$tot.use)
 # sum(tot.priE.sect)
 
 # Organize the energy carrier use block to remove primary values
-energy_sector_idx_all <- as.vector(sapply(seq(0,9400,200), function(x) x+energy_sector_idx_ex, simplify = "array"))
-captive_sector_idx_all <- as.vector(sapply(seq(0,9400,200), function(x) x+captive_sector_idx_ex, simplify = "array"))
+energy_sector_idx_all <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+energy_sector_idx_ex, simplify = "array"))
+captive_sector_idx_all <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+captive_sector_idx_ex, simplify = "array"))
 a <- tot.useE.sect
 b <- tot.useE.sect
 # a: removing primary energy uses (based on rough assumptions) from use block, leaving final energy
@@ -134,7 +135,7 @@ tot.prim.use <- tot.useE.sect - a  # Another way to get primary energy intensity
 tot.prim.use.renewELrow <- tot.useE.sect - b  # All primary and secondary incl. renewable elec
 
 ### Primary only for electricy sectors (for comparison with tot.prim.use)
-elec.sector.idx.all <- as.vector(sapply(seq(0,9400,200), function(x) x+elec.idx.ex, simplify = "array"))
+elec.sector.idx.all <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+elec.idx.ex, simplify = "array"))
 tot.prim.use.elec <- tot.prim.use
 tot.prim.use.elec[, -elec.sector.idx.all] <- 0  # This will include all secondary
 
@@ -151,9 +152,6 @@ tot.prim.use.renewELrow.Elcol[, -elec.sector.idx.all] <- 0
 tot.prim.use.renewELrow.Elcol.no2nd <- tot.prim.use.renewELrow.Elcol
 tot.prim.use.renewELrow.Elcol.no2nd[-which(primary.in.use), ] <- 0 # making secondary zero
 
-# Header and name column added as a data.frame (mainly for visualization/interim check)
-# tot.finE.sect.df <- rbindlist(list(materials.header[,-1], data.frame(carrier.name.fin, tot.finE.sect)), use.names=FALSE, fill=FALSE, idcol=NULL) # In TJ
-# tot.priE.sect.df <- rbindlist(list(materials.header[,-1], data.frame(carrier.name.pr, tot.priE.sect)), use.names=FALSE, fill=FALSE, idcol=NULL) # In TJ
 
 
 

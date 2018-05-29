@@ -35,7 +35,7 @@ FR_exp_defence <- FR_fd_tot$Gov[idx_defence]
 FR_defence_alloc_prop <- FR_exp_defence * 1e6 * colSums(fd_exio) / sum(colSums(fd_exio)[2:11]) / (N_hh_FR/10)
 FR_defence_alloc_flat <- rep(FR_exp_defence / N_hh_FR, 11) * 1e6
 
-null_demand <- matrix(0, 9600, 11)  # A vector to be filled with final demand values
+null_demand <- matrix(0, exio.len, 11)  # A vector to be filled with final demand values
 
 # Dimension : n_draw x n_deciles
 totE_per_hh <- vector()
@@ -213,7 +213,7 @@ dev.off()
 
 # Get intensities by COICOP consumption sector
 ind_intensity <- vector()
-null_demand_int <- matrix(0, 9600, n_sector_coicop)
+null_demand_int <- matrix(0, exio.len, n_sector_coicop)
 SectoralE_per_hh <- vector()
 
 for (i in 1:n_draw) {

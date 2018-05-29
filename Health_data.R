@@ -375,9 +375,9 @@ detach(CtyPerf)
 
 
 ### Health energy intensity (indirect) for EXIO countries
-idx_health_sectors <- seq(175, 9600, 200)
-idx_edu_sectors <- seq(174, 9600, 200)
-idx_rice_sectors <- seq(1, 9600, 200)
+idx_health_sectors <- seq(175, exio.len, 200)
+idx_edu_sectors <- seq(174, exio.len, 200)
+idx_rice_sectors <- seq(1, exio.len, 200)
 health_int <- data.frame(iso2c=exio_ctys, int = colSums(indirect_E_int[,idx_health_sectors])*EXR_EUR$r) %>% 
   left_join(WDI(country = exio_ctys, indicator = c("NY.GDP.PCAP.PP.CD", "NY.GDP.PCAP.CD"), 
                 start = 2007, end = 2007, extra = FALSE, cache = NULL)) %>%

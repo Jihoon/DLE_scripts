@@ -24,7 +24,7 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
   # cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
   
-  y_bp <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x48) in bp
+  y_bp <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   # y_bp <- as.data.frame(rowSums(y_bp))
   y_bp <- rowSums(y_bp)
   
