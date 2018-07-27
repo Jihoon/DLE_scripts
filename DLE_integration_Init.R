@@ -67,7 +67,7 @@ tot_demand <- rowSums(tot_output)
 save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda")
 # save(final_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
 # save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
-# save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda")
 
 ### Derive intensities ###
 
