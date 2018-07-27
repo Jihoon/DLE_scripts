@@ -66,3 +66,5 @@ Income/*
 Food/*
 *.gdx
 .Rproj.user
+.RDataTmp
+.RDataTmp
