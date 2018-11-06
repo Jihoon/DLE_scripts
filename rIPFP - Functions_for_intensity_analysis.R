@@ -348,3 +348,12 @@ PlotFuelIntensity <- function(intensity_mtx, noexp, ymax) {
   
   return(pp)
 }
+
+
+# Build embodied intensity table after excluding certain sectors (e.g. transportation)
+ConstructCustomTEI.EXIO <- function(dfei, idx_ex) { # dfei: n_carrier x (200*n_sect)
+  idx <- as.vector(sapply(seq(0,exio.len-200,200), function(x) x+idx_ex, simplify = "array"))
+  dfei[,idx] <- 0
+  tfei <- eigenMapMatMult(dfei, as.matrix(L_inverse)) # faster
+  return(tfei)
+}

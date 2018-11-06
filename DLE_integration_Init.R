@@ -7,9 +7,11 @@
 ### Define additinoal functions for this analysis
 # source("DLE_integration_Functions.R")
 
+# This is based on EXIO3 Final Energy extension.
 
 
 ### General prep ###
+library(WDI)
 
 PPP <- WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP"), start = 2011, end = 2011, extra = FALSE, cache = NULL)
 PPP_IND <- as.numeric(PPP %>% filter(year==2011 & iso2c=='IN') %>% select(PA.NUS.PPP))
@@ -67,7 +69,7 @@ tot_demand <- rowSums(tot_output)
 save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda")
 # save(final_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
 # save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda")
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda") # L_inverse
 
 ### Derive intensities ###
 
@@ -228,6 +230,7 @@ DLE.use.input <- DLE.use.input %>%
 DLE.use.input <- AddComponentToDLETable("Clothing", tabl="Units", val.list=unit.clothing.all, scenario="DLE.BAU", type="Stock", table=DLE.use.input)
 DLE.use.input <- AddComponentToDLETable("Food", tabl="Units", val.list=unit.food.base, scenario="DLE.BAU", type="Stock", table=DLE.use.input)
 DLE.use.input <- FillEmptyCellsinDLEinputTable(DLE.use.input, type="Units") %>% select(-Carrier)
+write.csv(DLE.use.input %>% select(Clothing, Food), paste0(result_path, "stock_IO_sectors.csv"))
 write.csv(DLE.use.input, paste0(result_path, "stock_timeseries_JM.csv"))
 
 

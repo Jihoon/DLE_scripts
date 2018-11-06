@@ -16,10 +16,6 @@
 n_draw <- 20
 D_val_uncertainty <- 0
 
-ICP_food_idx <- 1:45
-ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
-ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
-ICP_fuel_idx <-152:164
 
 ###############################
 # Derive sectoral intensities # 
@@ -288,7 +284,6 @@ ZAF_FD_ICP_adj[idx_inf,1] <- ZAF_FD_adj[idx_inf]
 ### Derive overall energy per capita for all HH for each scenario ###
 #####################################################################
 
-ICP_all_idx <- 1:164
 eHH_summary <- data.frame(dec = paste0('dec',1:10))
 
 # Brazil

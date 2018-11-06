@@ -1,7 +1,7 @@
 #### Important note ####
 
 # Functions here are revised versions of original Bridge_RAS.R.
-# The purpose is to incorporate the schrunken Q and fd_exio matrices in the rIPFP process, 
+# The purpose is to incorporate the shrunken Q and fd_exio matrices in the rIPFP process, 
 # so in the end to be able to estimate final energy intensity by ICP item.
 
 

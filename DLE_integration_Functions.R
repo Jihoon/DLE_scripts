@@ -266,7 +266,7 @@ HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
   fei.TROA[is.na(fei.TROA)] <- 0
   fei.LOSS[is.na(fei.LOSS)] <- 0
   
-  fei.exio <- as.matrix(fei.NENE + fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA)
+  fei.exio <- as.matrix(fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA) # w/o fei.NENE: NENE is about manufacturing process. Not about energy use & wellbeing
   nei.exio <- as.matrix(fei.NENE + fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA + fei.LOSS)
   
   fei.elec <- fei.exio
@@ -275,8 +275,8 @@ HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
   fei.non.elec <- fei.exio
   fei.non.elec[idx.Elec.carrier,] <- 0
   
-  fei.sub <- list(fei.NENE, fei.NTRA, fei.TAVI, fei.TMAR, fei.TOTH, fei.TRAI, fei.TROA, fei.LOSS)
-  names(fei.sub) <- c("NENE", "NTRA", "TAVI", "TMAR", "TOTH", "TRAI", "TROA")
+  fei.sub <- list(fei.NENE, fei.NTRA, fei.TAVI, fei.TMAR, fei.TOTH, fei.TRAI, fei.TROA, fei.LOSS) 
+  names(fei.sub) <- c("NENE", "NTRA", "TAVI", "TMAR", "TOTH", "TRAI", "TROA", "LOSS")
   
   output <- list(fei.exio, fei.elec, fei.non.elec, fei.sub, pei.nature, pei.USE, ei.SUPL, nei.exio)
   

@@ -141,6 +141,8 @@ IND_MJ_hh <- IND_fuel_hh %>% select(id, fuel, qty_impu, val_tot, MJ)
 
 # Final direct energy intensity
 IND_MJ_ALL <- readFinalEnergyfromDBAllHH() # in MJ / HH
+IND_totMJ_ALL <- IND_MJ_ALL %>% mutate(tot.GJ = rowSums(select(.,-hhid, -weight), na.rm=TRUE)/1000) %>% select(hhid, weight, tot.GJ)
+
 IND.tot.direct.MJ <- colSums(IND_MJ_ALL[,c(-1, -2)]*IND_MJ_ALL$weight)  # in MJ
 IND.tot.fuel.cost <- IND_FD_ICP_usd2011[152:164, 1]  # National total (from NSS) in M.USD 2007 (MER)
 IND.E.direct.int <- IND.tot.direct.MJ/IND.tot.fuel.cost/1e6 # MJ/USD 2007 MER

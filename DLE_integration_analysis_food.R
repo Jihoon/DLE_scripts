@@ -109,9 +109,22 @@ names(tfei.food.non.elec.lctbhv) <- names(tfei.food.lctbhv)
 
 # These units are kcal per capita per year
 DLE.kcal.pcap <- 2162.835  # From our IND food analysis < DRI.pcap$cal.DRI_pcap
-unit.food.base <- list(BRA=DLE.kcal.pcap * 365, 
-                       IND=DLE.kcal.pcap * 365, # Identical for three countries
-                       ZAF=DLE.kcal.pcap * 365)
+DRI.kcal.IND <- read.csv("C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Analysis/Food/DRI-india.csv") %>% filter(Nutrient=="calorie") %>%
+  spread(Group, DRI) %>% select(male_adult, male_minor, female_adult, female_minor)
+
+IND_HH_composition <-selectDBdata(tables='IND1_HH') %>% select(id, weight, hh_size, minor, male_adult, male_minor) %>% 
+  mutate(female_adult = hh_size - minor - male_adult, female_minor = minor - male_minor) %>%
+  summarise_at(vars(male_adult:female_minor), funs(sum(.*weight, na.rm=TRUE)))
+BRA_HH_composition <-selectDBdata(tables='BRA1_HH') %>% select(id, weight, hh_size, minor, male_adult, male_minor) %>% 
+  mutate(female_adult = hh_size - minor - male_adult, female_minor = minor - male_minor) %>%
+  summarise_at(vars(male_adult:female_minor), funs(sum(.*weight, na.rm=TRUE)))
+ZAF_HH_composition <-selectDBdata(tables='ZAF1_HH') %>% select(id, weight, hh_size, minor, male_adult, male_minor) %>% 
+  mutate(female_adult = hh_size - minor - male_adult, female_minor = minor - male_minor) %>%
+  summarise_at(vars(male_adult:female_minor), funs(sum(.*weight, na.rm=TRUE)))
+
+unit.food.base <- list(BRA=weighted.mean(DRI.kcal.IND, w=BRA_HH_composition) * 365, 
+                       IND=weighted.mean(DRI.kcal.IND, w=IND_HH_composition) * 365, 
+                       ZAF=weighted.mean(DRI.kcal.IND, w=ZAF_HH_composition) * 365)
 
 # Emission intensity DF
 IND.intensity.em <- rbind(

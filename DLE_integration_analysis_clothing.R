@@ -11,6 +11,10 @@ load(file="./Saved tables/BRA.tfei.icp.elec.Rda")
 load(file="./Saved tables/IND.tfei.icp.elec.Rda")
 load(file="./Saved tables/ZAF.tfei.icp.elec.Rda")
 
+load(file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/IND.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+
 
 
 ### Load more data for Analysis
@@ -163,7 +167,11 @@ avg.price.clothing <- as.numeric(clothing.all %>%
                                    summarise(avg.price = sum(val_tot*weight, na.rm=TRUE) / sum(weight.tot*weight, na.rm=TRUE) * 1000))
 avg.price.footwear <- as.numeric(footwear.all %>% 
                                    summarise(avg.price = sum(val_tot*weight, na.rm=TRUE) / sum(weight.tot*weight, na.rm=TRUE) * 1000))
-
+# Price per decile
+avg.price.clothing.dec <- clothing.all %>% group_by(decile) %>%
+                                   summarise(avg.price = sum(val_tot*weight, na.rm=TRUE) / sum(weight.tot*weight, na.rm=TRUE) * 1000)
+avg.price.footwear.dec <- footwear.all %>% group_by(decile) %>%
+  summarise(avg.price = sum(val_tot*weight, na.rm=TRUE) / sum(weight.tot*weight, na.rm=TRUE) * 1000)
 
 
 ### ZAF [kg/cap]
@@ -274,12 +282,24 @@ tfei.non.elec.clothing <- as.list(unlist(tfei.clothing) - unlist(tfei.elec.cloth
 tfei.non.elec.footwear <- as.list(unlist(tfei.footwear) - unlist(tfei.elec.footwear))
 tfei.non.elec.clothing.all <- as.list(unlist(tfei.clothing.all) - unlist(tfei.elec.clothing.all))
 
+
+# 1. Based on the avg price ($/kg) from India
 unit.clothing <- list(IND=dle.clothing.pcap.IND,  # [kg/cap]
                       BRA=dle.clothing.pcap.BRA,  
                       ZAF=dle.clothing.pcap.ZAF)
 unit.footwear <- list(IND=dle.footwear.pcap.IND, 
                       BRA=dle.footwear.pcap.BRA,  
                       ZAF=dle.footwear.pcap.ZAF) 
+
+# 2. Based on the kg-HDD relationship from Ed's data
+unit.clothing <- list(IND=dle.clothing.pcap.IND,  # [kg/cap]
+                      BRA=dle.clothing.pcap.BRA.HDD,  
+                      ZAF=dle.clothing.pcap.ZAF.HDD)
+unit.footwear <- list(IND=dle.footwear.pcap.IND, 
+                      BRA=dle.footwear.pcap.BRA.HDD,  
+                      ZAF=dle.footwear.pcap.ZAF.HDD) 
+
+
 unit.clothing.all <- as.list(unlist(unit.clothing) + unlist(unit.footwear))
 
 # Uncertainty

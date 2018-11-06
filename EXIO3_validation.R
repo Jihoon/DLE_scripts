@@ -1,9 +1,12 @@
+### Basic debug for the direct energy consumption (EXIO classification).
+### Mainly for comparison with IEA numbers (final consumption).
 
 ### Arkaitz/Richard Question on EXIO
 
+
 # exio.industry <- 86:96 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
-# exio.industry <- 97:103 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
-exio.industry <- 106:115 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
+exio.industry <- 97:103 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
+# exio.industry <- 106:115 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
 
 # compare.ei <- data.frame(carrier.name.fin, 
 #                          IND.DFE=dfe.exio[,IND_idx_ex[exio.industry]], 
@@ -39,27 +42,29 @@ names(compare.ei) <- c("Carrier", paste("IND", EX_catnames[exio.industry]), past
 
 # view(compare.ei)
 if (exio.industry[1]==86) {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Chemical and petrochemical.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Chemical and petrochemical-bugfix.csv")
 } else if (exio.industry[1]==97) {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-matallic minerals.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-matallic minerals-bugfix.csv")
 } else {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-ferrous metals.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-ferrous metals-bugfix.csv")
 }
 
+# After the bug fix (Sep 2018), the total DE values are more or less in line with what I found from IEA balance.
+# Details are in the email to Arkaitz (Mon 14-May-18 14:53) "RE: Final energy extension"
 
 
 
 
-
-### Additional outputs for FE meeting 27/4/2018
-# sects <- c(Beef=43, Pork=44, Poultry=45) # Cement, Steel, Aluminum
-sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
+### Additional outputs for FE meeting w/ Volker & Keywan 27/4/2018
+sects <- 1:200 
+names(sects) <- EX_catnames
+# sects <- c(Beef=43, Pork=44, Poultry=45) # Cement, Steel, Aluminum # 
+# sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
 elec.idx <- grep("Electricity ", carrier.name.fin)
-cty.idx.ex <- BRA_idx_ex
+cty.idx.ex <- IND_idx_ex
 
 NENE <- c(colSums(tfei.sub[[1]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[1]][-elec.idx, cty.idx.ex[sects]]))
 NTRA <- c(colSums(tfei.sub[[2]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[2]][-elec.idx, cty.idx.ex[sects]]))
-# NTRA <- c(colSums(dfei.sub[[2]][elec.idx, cty.idx.ex[sects]]),colSums(dfei.sub[[2]][-elec.idx, cty.idx.ex[sects]]))
 TAVI <- c(colSums(tfei.sub[[3]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[3]][-elec.idx, cty.idx.ex[sects]]))
 TMAR <- c(colSums(tfei.sub[[4]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[4]][-elec.idx, cty.idx.ex[sects]]))
 TOTH <- c(colSums(tfei.sub[[5]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[5]][-elec.idx, cty.idx.ex[sects]]))
@@ -73,8 +78,9 @@ sum.out <- data.frame(NENE, NTRA, TAVI, TMAR, TOTH, TRAI, TROA, TOTL.F, TOTL.P.p
 row.names(sum.out) <- c(paste0(names(sects), ".elec"), paste0(names(sects), ".non-elec"))
 write.table(sum.out, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
-a <- sum.out[1:3,] + sum.out[4:6,]
-row.names(a) <- names(sects)
+# a <- sum.out[1:3,] + sum.out[4:6,]
+a <- sum.out[1:length(sects),] + sum.out[(length(sects)+1):(2*length(sects)),]
+a <- a %>% mutate(EXIO = t(EX_catnames)) %>% select(EXIO, everything())
 write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 rowSums(tfei.elec[elec.idx, cty.idx.ex[sects]])/sum(tfei.elec[elec.idx, cty.idx.ex[sects]])
@@ -159,4 +165,61 @@ dev.off()
 
 # Countries with nice-looking trend
 cty_set <-  which(exio_ctys %in% c("BE", "SI", "CZ", "LV", "NL", "IN", "HU", "CN", "EE", "TW", "KR", "ZA"))
+
+
+
+### Below is for comparing the bug fix version with the previous EXIO3.
+
+
+# Debug purpose
+raw.S.bug <- read.csv(paste0(EXIO3_path_old, "S_2008.csv"), header = FALSE)  # Total stressor
+raw.st.bug <- read.csv(paste0(EXIO3_path_old, "st_2008.csv"), header = FALSE)  # Total stressor
+raw.F.bug <- read.csv(paste0(EXIO3_path_old, "F_2008.csv"), header = FALSE)  # Total stressor
+list[tfei.exio.bug, tfei.elec.bug, tfei.non.elec.bug, 
+     tfei.sub.bug, tpei.nature.bug, tpei.USE.bug, tpei.SUPL.bug, tnei.exio.bug] <- HarmonizeEXIO3ExtensionFormat(raw.st.bug)
+list[dfei.exio.bug, dfei.elec.bug, dfei.non.elec.bug, 
+     dfei.sub.bug, dpei.nature.bug, dpei.USE.bug, dpei.SUPL.bug, dnei.exio.bug] <- HarmonizeEXIO3ExtensionFormat(raw.S.bug)
+list[dfe.exio.bug, dfe.elec.bug, dfe.non.elec.bug, 
+     dfe.sub.bug, dpe.nature.bug, dpe.USE.bug, de.SUPL.bug, dne.exio.bug] <- HarmonizeEXIO3ExtensionFormat(raw.F.bug)
+
+
+all.equal(tfei.exio.bug, tfei.exio)
+all.equal(dfei.exio, dfei.exio.bug)
+
+
+
+### Compare old/new EXIO extension
+idx.test = IND_idx_ex # 1:200 # 
+
+IND.tfei.exio = (tfei.exio)[, idx.test]
+IND.tpei.nature = (tpei.nature)[, idx.test]
+IND.tpei.USE = (tpei.USE)[, idx.test]
+
+IND.tfei.exio.bug = (tfei.exio.bug)[, idx.test]
+a <- IND.tfei.exio/IND.tfei.exio.bug
+a[is.nan(a)] <- 0
+a<- data.frame(a)
+names(a) <- EX_catnames
+rownames(a) <- carrier.name.fin
+view(a)
+
+IND.dfei.exio = (dfei.exio)[, idx.test]
+IND.dfei.exio.bug = (dfei.exio.bug)[, idx.test]
+b <- IND.dfei.exio/IND.dfei.exio.bug
+b[is.nan(b)] <- 0
+b<- data.frame(b)
+names(b) <- EX_catnames
+rownames(b) <- carrier.name.fin
+view(b)
+
+IND.dfe.exio = (dfe.exio)[, idx.test]
+IND.dfe.exio.bug = (dfe.exio.bug)[, idx.test]
+c <- IND.dfe.exio/IND.dfe.exio.bug
+c[is.nan(c)] <- 0
+c<- data.frame(c)
+names(c) <- EX_catnames
+rownames(c) <- carrier.name.fin
+view(IND.dfe.exio)
+view(IND.dfe.exio.bug)
+write.table(carrier.name.fin, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 

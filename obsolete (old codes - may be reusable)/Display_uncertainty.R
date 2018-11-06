@@ -1,4 +1,5 @@
 ## See how the uncertainty is transferred
+# Mainly for IIOA conference Seoul
 
 ### For India for the example of "Butter and margarine"
 IN_place <- which(exio_ctys=='IN')

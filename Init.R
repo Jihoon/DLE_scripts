@@ -9,7 +9,7 @@
 
 exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", 
                "FR", "GR", 
-               # "HR", # Added new at EXIO3
+               "HR", # Added new at EXIO3
                "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", 
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
@@ -52,7 +52,11 @@ EXR_BRA <- as.numeric(EXR_cty %>% filter(country=="Brazil") %>% select(PA.NUS.FC
 EXR_ZAF <- as.numeric(EXR_cty %>% filter(country=="South Africa") %>% select(PA.NUS.FCRF))
 
 # HH Consumption in India 2007 [US$]
-HH_CON <- WDI(country = c("IN", "BR", "ZA"), indicator = c("NE.CON.PETC.CD", "NE.CON.PRVT.CD", "NE.CON.PETC.CN", "NE.CON.PRVT.KD"), 
+HH_CON <- WDI(country = c("IN", "BR", "ZA"), 
+              indicator = c(#"NE.CON.PETC.CD", 
+                "NE.CON.PRVT.CD", 
+                # "NE.CON.PETC.CN", 
+                "NE.CON.PRVT.KD"), 
               start = 2004, end = 2011, extra = FALSE, cache = NULL)
 BRA_con_grwth <- as.numeric(HH_CON %>% filter(year==2008 & iso2c=='BR') %>% select(NE.CON.PRVT.KD) / 
                               HH_CON %>% filter(year==2007 & iso2c=='BR') %>% select(NE.CON.PRVT.KD))
@@ -74,6 +78,7 @@ IND_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="IN" & year=
 ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year==2007) %>% select(pop) %>% as.numeric()#1.159e9
 
 
+
 ##############################################
 ###        Read in EXIO matrices           ###
 ##############################################
@@ -86,11 +91,12 @@ ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year=
 # But since EXIO3, these matrices are read in 'import_EXIO_FE_extension.R'
 # Now these intensities are based on 2008 IEA balance and fed into dfei.exio and tfei.exio.
 # Using 2008 instead of 2007 because the Indian final electricity consumption breakdown into industries doesn't exist until 2007.
-source("EXIO_init_load.R")
+source("EXIO_init_load.R") # EXIO2 read
 source("DLE_integration_functions.R")  
-source("import_EXIO_FE_extension.R")  # Incorporate EXIO3
+source("Import_EXIO3_FE_extension.R")  # Incorporate EXIO3
 
 # For EXIO3, L_inverse/final_demand/tot_demand should be updated.
+
 
 
 #########################################
@@ -130,6 +136,7 @@ ZAF_idx_ex <- seq(200*(ZAF_place-1)+1, 200*ZAF_place)   # 200 EXIO comodities
 ZAF_idx_ex.i <- seq(163*(ZAF_place-1)+1, 163*ZAF_place)   # 163 EXIO industries
 ZAF_fd_ex <- matrix(final_demand[,ZAF_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
 ZAF_fd_exio <- rowSums(ZAF_fd_ex) # Sum all HH FD across countries
+
 
 
 #########################################
@@ -192,6 +199,7 @@ source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access dat
 # source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/Functions for building Oracle DB tables.R")
 
 source("Read_final_demand_from_DB.R")
+
 source("Read_direct_energy_from_DB.R")
 
 # Read total FD for all population
@@ -267,7 +275,7 @@ icp_ntnu <-cbind(icp_seq, icp_cat, NTNU)
 names(icp_ntnu)[2:3] <- c("COICOP1","COICOP2")
 names(icp_ntnu)[5] <- "ICP_Heading"
 
-source("Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
+source("rIPFP - Process_WB.R")  # Read in the function 'processWBscript' and resulting mtxs for 4 countries
 
 # Issue: I still need to match with our CES DB and final NTNU 109 classification
 #        How to combine fuel consumption and other (food etc)
@@ -284,7 +292,7 @@ source("Process_WB.R")  # Read in the function 'processWBscript' and resulting m
 # IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[,2])
 # to get FD in ICP classification.
 
-source("Map_CES_COICOP.R")
+source("rIPFP - Map_CES_COICOP.R")
 # source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
 source("Load_init_data.R")  
 
@@ -297,7 +305,7 @@ source("Load_init_data.R")
 ### Read in function 'get_basic_price' ###
 ##########################################
 
-source("Valuation.R")
+source("rIPFP - Valuation.R")
 # source("Load_init_data.R")  
 
 
@@ -308,7 +316,7 @@ source("Valuation.R")
 
 # The uniform random draw routine based on a qual mapping
 
-source("Bridging_uncertainty.R")  
+source("rIPFP - Bridging_uncertainty.R")  
 
 
 
@@ -316,7 +324,7 @@ source("Bridging_uncertainty.R")
 ### Read in function 'Bridging_uncertainty.R' ###
 #################################################
 
-source("Functions_for_intensity_analysis.R")  
+source("rIPFP - Functions_for_intensity_analysis.R")  
 
 
 
@@ -324,7 +332,7 @@ source("Functions_for_intensity_analysis.R")
 ###    Set up environment for RAS run      ###
 ##############################################
 
-source("Bridge_RAS.R")
+source("rIPFP - Bridge_RAS.R")
 
 
 
@@ -334,3 +342,10 @@ source("Bridge_RAS.R")
 ##############################################
 
 # Analysis_for_paper.R is the main file for analysis
+
+ICP_food_idx <- 1:45
+ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
+ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
+ICP_fuel_idx <-152:164
+ICP_all_idx <- 1:164
+
