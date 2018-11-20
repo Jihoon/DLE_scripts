@@ -1,5 +1,5 @@
 # Read in Q_UN_EXIO_e edited version
-Q_UN_EXIO_e <- read_excel("H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
+Q_UN_EXIO_e <- read_excel("../Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
 Q_UN_EXIO_e <- as.matrix(Q_UN_EXIO_e[-dim(Q_UN_EXIO_e)[1],-c(1,dim(Q_UN_EXIO_e)[2])])
 
 # Make a new qual mapping between ICP (instead of NTNU109) and EXIO
@@ -38,8 +38,8 @@ row.names(bridge_icp_exio)[63] <- "Electricity.COICOP"   # Duplicate row names n
 row.names(bridge_icp_exio)[155] <- "Electricity"
 
 Q_UN_ICP_EXIO <- bridge_icp_exio
-write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_UN.csv")
-# write.csv(bridge_icp_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual.csv")
+write.csv(bridge_icp_exio, "../Bridging/CES-COICOP/ICP_EXIO_Qual_UN.csv")
+# write.csv(bridge_icp_exio, "../Bridging/CES-COICOP/ICP_EXIO_Qual.csv")
 
 # This matrix (ICP_EXIO_Qual.csv) is modified externally manually to fine-allocate mostly for food-subsectors.
 # The result is in H:\MyDocuments\IO work\Bridging\CES-COICOP\ICP_EXIO_Qual_Edited.xlsx

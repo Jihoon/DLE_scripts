@@ -56,7 +56,7 @@ IND_FD_code[is.na(IND_FD_code)] <- 0
 #################################
 
 # Read in original IND_FD_ALL
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
+load(file="./Saved tables/IND_AllHHConsump.Rda")
 IND_FD_ALL <- IND_FD_ALL[-grep("taxes", IND_FD_ALL$item, ignore.case = TRUE), ]
 
 IND_FD_ALL <- merge(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),], IND_map %>% select(CODE, item=ITEM_DLE), 
@@ -76,7 +76,7 @@ IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[1:(dim(IND_FD_code)[1]-n_
 IND_FD_ICP <- as.matrix(IND_FD_ICP)
 
 # Total final demand in ICP cat for all HH (not scaled up to Nat Acc level yet) (USD 2010 PPP as in DLE DB)
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHH_w_CODE.Rda")
+load(file="./Saved tables/IND_AllHH_w_CODE.Rda")
 # IND_FD_ICP_AllHH <- crossprod(CES_ICP_IND, as.matrix(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),-c(1,2), with=FALSE])) %>%
 #   rbind(as.matrix(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),-c(1,2) , with=FALSE]))
 # replace with eigenMapMatMult() later
@@ -138,13 +138,13 @@ BRA_FD_ICP_AllHH <- as.matrix(BRA_FD_ICP_AllHH[,-1]) * PPP_BRA / CPI_ratio_BRA /
 # BRA_FD_ICP_AllHH[,-1] <- NAer(BRA_FD_ICP_AllHH[,-1]) # Faster than 
 BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 
-save(IND_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
-save(BRA_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_harmonized.Rda")
-save(IND_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
-save(BRA_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
+save(IND_FD_ICP_AllHH, file="./Saved tables/IND_FD_harmonized.Rda")
+save(BRA_FD_ICP_AllHH, file="./Saved tables/BRA_FD_harmonized.Rda")
+save(IND_FD_ICP_usd2007, file="./Saved tables/IND_FD_ICP_usd2007.Rda")
+save(BRA_FD_ICP_usd2007, file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/IND_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/IND_FD_harmonized.Rda")
 
 
 
@@ -191,7 +191,7 @@ ZAF_FD_code[is.na(ZAF_FD_code)] <- 0
 #################################
 
 # Read in original IND_FD_ALL
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHHConsump.Rda")
+load(file="./Saved tables/ZAF_AllHHConsump.Rda")
 ZAF_FD_ALL <- ZAF_FD_ALL[-grep("taxes|VAT ", ZAF_FD_ALL$item, ignore.case = TRUE), ]
 
 ZAF_FD_ALL <- merge(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),], ZAF_map %>% select(CODE, item=ITEM_DLE), 
@@ -212,7 +212,7 @@ ZAF_FD_ICP <- t(CES_ICP_ZAF) %*% as.matrix(ZAF_FD_code[1:(dim(ZAF_FD_code)[1]-n_
 ZAF_FD_ICP <- as.matrix(ZAF_FD_ICP)
 
 # Total final demand in ICP cat for all HH (not scaled up to Nat Acc level yet) (USD 2010 PPP as in DLE DB)
-# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHH_w_CODE.Rda")
+# load(file="./Saved tables/ZAF_AllHH_w_CODE.Rda")
 ZAF_FD_ICP_AllHH <- eigenMapMatMult(t(CES_ICP_ZAF), as.matrix(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel), -c("item", "CODE"), with=FALSE])) %>%
   rbind(as.matrix(ZAF_FD_ALL[-(1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel)), -c("item", "CODE"), with=FALSE]))
 
@@ -237,7 +237,7 @@ ZAF_FD_ICP_usd2007 <- ZAF_FD_ICP_usd2011 / ZAF_con_grwth
 ZAF_FD_AllHH_2011 <- ZAF_FD_ICP_AllHH * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF    # From USD 2010 PPP to USD 2007 (MER)
 ZAF_FD_ICP_AllHH <- ZAF_FD_AllHH_2011 / ZAF_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
 
-save(ZAF_FD_ICP_AllHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_harmonized.Rda")
-save(ZAF_FD_ICP_usd2007, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_harmonized.Rda")
+save(ZAF_FD_ICP_AllHH, file="./Saved tables/ZAF_FD_harmonized.Rda")
+save(ZAF_FD_ICP_usd2007, file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/ZAF_FD_harmonized.Rda")

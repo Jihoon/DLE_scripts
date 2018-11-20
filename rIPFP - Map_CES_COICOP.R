@@ -10,7 +10,7 @@
 
 ### Read code-item name in DB mapping for IND
 # Theoretically ITEM_DLE could be identical to Surv_Heading, but ITEM_DLE is somehow modified.
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IND NSS 68 2011-2012 CE Codes.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/IND NSS 68 2011-2012 CE Codes.xlsx")
 code_item_IND  <- XLConnect::readWorksheet(wb, "NSS68", header=TRUE, forceConversion=T)
 names(code_item_IND) <- c("CODE", "ITEM_DLE", "UNIT")
 code_item_IND$UNIT <- NULL
@@ -78,7 +78,7 @@ row.names(CES_ICP_IND) <- IND_map$CODE
 #################
 
 ### Read code-item mapping for IDN
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/IDN NSES July 2008 CE Codes.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/IDN NSES July 2008 CE Codes.xlsx")
 code_item_IDN  <- XLConnect::readWorksheet(wb, "Codes", header=TRUE, forceConversion=T)
 names(code_item_IDN) <- c("CODE", "ITEM_DLE", "UNIT")
 code_item_IDN$UNIT <- NULL
@@ -119,11 +119,11 @@ row.names(CES_ICP_IDN) <- IDN_map$CODE
 ####################
 
 # Load ZAF_FOOD.raw and ZAF_OTH.raw
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FOOD_All.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_OTH_All.Rda")
+load(file="./Saved tables/ZAF_FOOD_All.Rda")
+load(file="./Saved tables/ZAF_OTH_All.Rda")
 
 ### Read code-item mapping for ZAF
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ZAF IES 2010-2011 CE Codes.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/ZAF IES 2010-2011 CE Codes.xlsx")
 code_item_ZAF  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T) %>% mutate(code=as.numeric(code))
 code_item_ZAF <- rbind(ZAF_FOOD.raw %>% select(code, item) %>% distinct(),
                        ZAF_OTH.raw %>% select(code, item) %>% distinct()) %>% arrange(code) %>% mutate(code=as.numeric(code))

@@ -15,7 +15,7 @@ no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames
 IND_inten_comb_all <- IND_inten_RAS_all
 IND_inten_comb_all[,no_expense_IND] <- IND_nonRAS_all[,no_expense_IND]
 
-save(IND_inten_comb_all, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_intensities.Rda")
+save(IND_inten_comb_all, file="./Saved tables/IND_intensities.Rda")
 
 
 
@@ -40,7 +40,7 @@ BRA_inten_comb_all[,no_expense_BRA] <- BRA_nonRAS_all[,no_expense_BRA]
 ########################################
 
 ### 1. India
-load("H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda")
+load("./Saved tables/IND_FD_harmonized.Rda")
 # n_draw x n_HH
 IND_inten_comb_all[,157] <- 0  # Ignore fuelwood for now
 xlcFreeMemory()
@@ -53,7 +53,7 @@ eHH <- merge(eHH, IND_HH, by="hhid")
 setkey(eHH, hhid, consumption)
 xlcFreeMemory()
 
-load("H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_GJperHH.Rda")
+load("./Saved tables/IND_GJperHH.Rda")
 eHH_cap <- eHH
 eHH_cap[, 2:(n_draw+1) := eHH_cap[,2:(n_draw+1), with=FALSE] / hh_size, with=FALSE]
 
@@ -63,13 +63,13 @@ eHH_cap_avg <- data.table(hhid = eHH[,1, with=FALSE],
                           sd = apply(eHH[,2:(n_draw+1), with=FALSE], 1, sd) / eHH$hh_size, 
                           eHH[,(n_draw+2):dim(eHH)[2], with=FALSE])
 names(eHH_cap_avg)[2] <- "V1"
-save(eHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_GJperHH.Rda")
+save(eHH, file="./Saved tables/IND_GJperHH.Rda")
 rm(eHH)
 gc()
 
 ### 2. Brazil
 
-load("H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_harmonized.Rda")
+load("./Saved tables/BRA_FD_harmonized.Rda")
 
 xlcFreeMemory()
 eHH <- t(BRA_inten_comb_all %*% BRA_FD_ICP_AllHH) / 1000 / scaler_BRA  # MJ to GJ per USD
@@ -83,7 +83,7 @@ xlcFreeMemory()
 # eHH_dec <- aggregate(.~decile, eHH, sum)
 
 # load(eHH)
-load("H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_GJperHH.Rda")
+load("./Saved tables/BRA_GJperHH.Rda")
 eHH_cap <- eHH
 eHH_cap[, 2:(n_draw+1) := eHH_cap[,2:(n_draw+1), with=FALSE] / hh_size, with=FALSE]
 
@@ -93,7 +93,7 @@ eHH_cap_avg <- data.table(hhid = eHH[,1, with=FALSE],
                           sd = apply(eHH[,2:(n_draw+1), with=FALSE], 1, sd) / eHH$hh_size, 
                           eHH[,(n_draw+2):dim(eHH)[2], with=FALSE])
 names(eHH_cap_avg)[2] <- "V1"
-save(eHH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_GJperHH.Rda")
+save(eHH, file="./Saved tables/BRA_GJperHH.Rda")
 
 
 # Sectoral 

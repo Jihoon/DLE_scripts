@@ -3,7 +3,21 @@
 ### Issue: The format will be different for other countries where we need to collect data
 ### Note: Even a 1 EUR expenditure (PP) on one sector is converted to multiple sector expenditures in BP, because it gets transfered to trans/trade sectors.
 
-source("Random_draw_test.R")    # get_draws
+
+
+# Just do Dirichlet with three points in n-dim space
+get_draws = function(n_draw, n_dim=3, coords) {
+  # alpha = 1
+  if(missing(coords)) {coords <- diag(n_dim)} # Coords can be n_dim X k (any k)
+  
+  draw_standard <- rdirichlet(n_draw, rep(1, dim(coords)[2]))  # n_draw X k
+  draw_projected <- draw_standard %*% t(as.matrix(coords))  # n_draw X n_dim
+  
+  return(draw_projected)
+  
+  # plot3d(draw_projected[,1], draw_projected[,2], draw_projected[,3], size=4)
+}
+
 
 xlcFreeMemory()
 
@@ -29,7 +43,7 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
   y_bp <- rowSums(y_bp)
   
   if (mc==0) {
-    wb <- XLConnect::loadWorkbook(paste("H:/MyDocuments/IO work/Valuation/", country, "_output.xls", sep=""))
+    wb <- XLConnect::loadWorkbook(paste("../Valuation/", country, "_output.xls", sep=""))
     
     # Index for xx_output.xls files
     f_hous_idx <- 169  # Column for Final hh demand
@@ -286,12 +300,12 @@ get_inv_valmtx <- function(val_mat) {
 ###################################################################
 
 a <- c("Code", "Descr", "SupPP", "TrdMrg", "TrpMrg", "ImpTax", "IPI", "ICMS", "OthTaxSub", "TotTaxSub", "SupBP")
-BRA_val_org <- read_excel("H:/MyDocuments/IO work/Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
+BRA_val_org <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
 BRA_val_org <- BRA_val_org %>% select(-Descr, -ImpTax, -IPI, -ICMS, -OthTaxSub) %>% filter(!is.na(Code)) %>% filter(Code!="Total")
 BRA_val <- BRA_val_org
 BRA_val$Code <- floor(as.numeric(BRA_val$Code) / 1000)
 BRA_val <- BRA_val %>% group_by(Code) %>% summarise_each(funs(sum))
-BRA_exio_map <- read_excel("H:/MyDocuments/IO work/Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
+BRA_exio_map <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
   mutate(Code=as.numeric(Code), CodeBRA=as.numeric(CodeBRA))
 
 BRA_val <- BRA_val[match(BRA_exio_map$CodeBRA, BRA_val$Code),]

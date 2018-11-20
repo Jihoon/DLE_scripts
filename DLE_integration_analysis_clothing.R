@@ -20,18 +20,18 @@ load(file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
 ### Load more data for Analysis
 
 # Load IND_OTH_Alldata
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_OTH_ALLdata.Rda")
+load(file="./Saved tables/IND1_OTH_ALLdata.Rda")
 IND_clothing <- IND_OTH_Alldata %>% filter(code >=350 & code <=376)
 IND_footwear <- IND_OTH_Alldata %>% filter(code >=390 & code <=395)
 
 # Load ZAF_OTH.raw
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_OTH_All.Rda")
+load(file="./Saved tables/ZAF_OTH_All.Rda")
 ZAF_clothing <- ZAF_OTH.raw %>% mutate(code=as.numeric(code)) %>% filter(code >=3111100 & code <=3141200)
 ZAF_footwear <- ZAF_OTH.raw %>% mutate(code=as.numeric(code)) %>% filter(code >=3211001 & code <=3213500)
 
 # BRA_OTH_ALLdata
 BRA_OTH_ALLdata <- selectDBdata(tables='BRA0_OTHCON') %>% left_join(data.frame(code=1:164, item=ICP_catnames))
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+load(file="./Saved tables/BRA_HH.Rda")
 BRA_clothing <- BRA_OTH_ALLdata %>% filter(code >=48 & code <=52) 
 BRA_footwear <- BRA_OTH_ALLdata %>% filter(code >=53 & code <=55) 
 

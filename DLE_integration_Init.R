@@ -66,10 +66,10 @@ final_demand <- read.csv(paste0(EXIO3_path, "Y_2007.csv"), header = FALSE)
 tot_output <- read.csv(paste0(EXIO3_path, "x_2007.csv"), header = FALSE)
 tot_demand <- rowSums(tot_output) 
 
-save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda")
-# save(final_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
-# save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda"))
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse_EXIO3_2007.Rda") # L_inverse
+save(L_inverse, file="./Saved tables/L_inverse_EXIO3_2007.Rda")
+# save(final_demand, file="./Saved tables/L_inverse_EXIO3_2007.Rda"))
+# save(L_inverse, file="./Saved tables/L_inverse_EXIO3_2007.Rda"))
+load(file="./Saved tables/L_inverse_EXIO3_2007.Rda") # L_inverse
 
 ### Derive intensities ###
 
@@ -270,7 +270,7 @@ FAO.emissions <- FAO.emissions %>% left_join(kcal.ssp2) %>% select(-SSP) %>%
   mutate(emi.int=CO2eq.kton/Pop/kcal.pday/365*1e9) # g/kcal 
 
 # Bring IND.food.tfei from "DLE_integration_analysis_food.R" 
-# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND.food.tfei.Rda")
+# load(file="./Saved tables/IND.food.tfei.Rda")
 Food.ef <- FAO.emissions %>% mutate(Scenario="DLE.BAU") %>%  # Assume identical intensity over time
   filter(Region!="IND") %>% select(Region, Scenario, emi.int) %>%
   left_join(ssp.raw %>% select(Region, Year)) %>%

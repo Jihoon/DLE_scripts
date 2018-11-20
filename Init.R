@@ -1,5 +1,7 @@
 # This file needs to be run once at the very beginning of an analysis
 
+rm(list=ls())
+setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIASA/DLE - Documents/WS2 - Documents/Analysis/IO/DLE_scripts/"
 
 #################
 ### Constants ###
@@ -91,6 +93,7 @@ ZAF_pop_2007 <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year=
 # But since EXIO3, these matrices are read in 'import_EXIO_FE_extension.R'
 # Now these intensities are based on 2008 IEA balance and fed into dfei.exio and tfei.exio.
 # Using 2008 instead of 2007 because the Indian final electricity consumption breakdown into industries doesn't exist until 2007.
+
 source("EXIO_init_load.R") # EXIO2 read
 source("DLE_integration_functions.R")  
 source("Import_EXIO3_FE_extension.R")  # Incorporate EXIO3
@@ -121,7 +124,7 @@ BRA_idx_ex <- seq(200*(BRA_place-1)+1, 200*BRA_place)   # 7 final demand columns
 # BRA_fd_ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200)
 # BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
 # BRA_fd_exio_imp <- rowSums(BRA_fd_ex[,-BRA_place]) # Sum all HH FD across countries
-BRA_fd_ex <- read_excel("H:/MyDocuments/IO work/Valuation/BR_output.xls", sheet="usebptot", skip=14, col_names=FALSE)
+BRA_fd_ex <- read_excel("../Valuation/BR_output.xls", sheet="usebptot", skip=14, col_names=FALSE)
 # Issue: Brazil FD has zero education expediture. (reasons unknown)
 # Simply replace the zero with the values found on actual BRA IO 
 BRA_fd_exio <- as.matrix(BRA_fd_ex[1:200,169]) 
@@ -149,19 +152,11 @@ ZAF_fd_exio <- rowSums(ZAF_fd_ex) # Sum all HH FD across countries
 n_sector_coicop <- 109
 
 # Mapping <- system.file("COICOP3_EXIO_bridge.xlsx", package = "XLConnect")
-# wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Uncertainty/COICOP3_EXIO_bridge.xlsx")
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN_Edited.xlsx")
 
 # Qualitative mapping (0 or 1)
-# bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="Qual_DK+FR", header=FALSE, 
-#                                                  startRow=3, endRow=2+n_sector_coicop, startCol=2, forceConversion=T)
 bridge_COICOP_EXIO_q <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header=FALSE, 
                                                  startRow=2, endRow=1+n_sector_coicop, startCol=1, endCol= 201, forceConversion=T)
-
-# Compare Gibran's updated qual mapping
-# wb <- XLConnect::loadWorkbook("C:/Users/min/Dropbox/HH environmental consumption/NTNU/product classification/COICOP3_EXIO_bridge.xlsx")
-# bridge_ntnu <- XLConnect::readWorksheet(wb, sheet="qualitative 0_1", header=FALSE, 
-#                                                  startRow=3, endRow=2+n_sector_coicop, startCol=3, forceConversion=T)
 
 # Final COICOP classification with 109 headings
 COICOP_catnames2 <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header=FALSE, startRow=2, endRow=1+n_sector_coicop, startCol=1, endCol=1)
@@ -175,7 +170,7 @@ EX_catnames <- XLConnect::readWorksheet(wb, sheet="COICOIP_EXIO_Qual_UN", header
 ###     Treating CES fuel sectors differently     ###
 #####################################################
 
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/CES_fuel_EXIO.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/CES_fuel_EXIO.xlsx")
 bridge_fuel_EXIO_q  <- XLConnect::readWorksheet(wb, "Sheet1", header=TRUE, forceConversion=T, 
                                                 startRow=2, startCol=3, endCol=202) 
 DLE_fuel_sector_Q  <- XLConnect::readWorksheet(wb, "Sheet2", header=TRUE, forceConversion=T, 
@@ -193,13 +188,9 @@ names(DLE_fuelnames_std) <- "item"
 ############################################################
 ### Read final demand vector from each country's CES DB  ###
 ############################################################
-# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/00 Load required packages.R")
-# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/01 Load generic helper functions.R")
 source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
-# source("P:/ene.general/DecentLivingEnergy/Surveys/Scripts/Functions for building Oracle DB tables.R")
 
 source("Read_final_demand_from_DB.R")
-
 source("Read_direct_energy_from_DB.R")
 
 # Read total FD for all population
@@ -212,16 +203,16 @@ DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 # source("Read_DLE_DB.R") 
 
 # IND
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda") # IND_FUEL_Alldata
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda") # IND_FD_ICP_AllHH
+load(file=paste0(getwd(), "/Saved tables/IND_FD.Rda"))
+load(file=paste0(getwd(), "/Saved tables/IND_HH.Rda"))
+load(file=paste0(getwd(), "/Saved tables/IND_AllHHConsump.Rda"))
+load(file=paste0(getwd(), "/Saved tables/IND1_FUEL_Alldata.Rda")) # IND_FUEL_Alldata
+load(file=paste0(getwd(), "/Saved tables/IND_FD_harmonized.Rda")) # IND_FD_ICP_AllHH
 
 # ZAF
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_HH.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHHConsump.Rda")
+load(file=paste0(getwd(), "/Saved tables/ZAF_FD.Rda"))
+load(file=paste0(getwd(), "/Saved tables/ZAF_HH.Rda"))
+load(file=paste0(getwd(), "/Saved tables/ZAF_AllHHConsump.Rda"))
 
 
 ##############################################
@@ -250,10 +241,7 @@ n_sector_icp_fuel <- n_sector_icp + dim(DLE_fuelnames_std)[1]
 #   2. Some positive EXIO FD values do not match to any ICP sectors. (e.g. stone from EXIO mapped to household maintenance in ICP)
 #     => can be checked by cbind(names(qual_map)[colConst_init!=0 & colSums(qual_map_init)==0], colConst_init[colConst_init!=0 & colSums(qual_map_init)==0])
 
-# wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_Edited.xlsx")
-# bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Q_nochange", header=TRUE, forceConversion=T, endRow=152, endCol=201) 
-
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/ICP_EXIO_Qual_UN_Edited.xlsx")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/ICP_EXIO_Qual_UN_Edited.xlsx")
 bridge_ICP_EXIO_q  <- XLConnect::readWorksheet(wb, "ICP_EXIO_Qual_UN2", header=TRUE, 
                                                forceConversion=T, endCol=201) 
 ICP_catnames <- bridge_ICP_EXIO_q[,1]
@@ -266,7 +254,7 @@ ICP_catnames <- bridge_ICP_EXIO_q[,1]
 
 ### Read in ICP heading number following NTNU 109 mapping (not 100%, some ICP headings are aggregated) ###
 Mapping <- system.file("ICP_SEQ.xlsx", package = "XLConnect")
-wb <- XLConnect::loadWorkbook("H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
+wb <- XLConnect::loadWorkbook("../Bridging/CES-COICOP/Worldbank/ICP_SEQ.xls")
 # I added 'Sheet2' and fixed some mis-categorizations for my needs.
 icp_seq <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=TRUE, startRow=2, startCol=1, endCol=1, forceConversion=T)
 icp_cat <- XLConnect::readWorksheet(wb, sheet="Sheet2", header=FALSE, startRow=3, startCol=3, endCol=4, forceConversion=T)
@@ -294,7 +282,7 @@ source("rIPFP - Process_WB.R")  # Read in the function 'processWBscript' and res
 
 source("rIPFP - Map_CES_COICOP.R")
 # source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
-source("Load_init_data.R")  
+# source("Load_init_data.R")  
 
 
 
@@ -306,7 +294,7 @@ source("Load_init_data.R")
 ##########################################
 
 source("rIPFP - Valuation.R")
-# source("Load_init_data.R")  
+source("Load_init_data.R") # Need 'get_purch_price'
 
 
 

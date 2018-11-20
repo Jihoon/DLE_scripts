@@ -79,13 +79,13 @@ fd.sum <- data.frame(name=t(EX_catnames), ind.use=rowSums(tot_use[IND_idx_ex,]),
 
 
 # To clean up the memory
-save(L_inverse, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
-save(iot, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/iot.Rda")
-save(indirect_E_int, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
-save(tot_use, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
-save(supplym, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
-save(final_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/final_demand.Rda")
-save(tot_demand, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_demand.Rda")
-save(materials, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/materials.Rda")
-save(fd_materials, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/fd_materials.Rda")
-save(indirect_pE_int.elec.prirow, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_pE_int.elec.prirow.Rda")
+save(L_inverse, file="./Saved tables/L_inverse.Rda")
+save(iot, file="./Saved tables/iot.Rda")
+save(indirect_E_int, file="./Saved tables/indirect_E_int.Rda")
+save(tot_use, file="./Saved tables/tot_use.Rda")
+save(supplym, file="./Saved tables/supplym.Rda")
+save(final_demand, file="./Saved tables/final_demand.Rda")
+save(tot_demand, file="./Saved tables/tot_demand.Rda")
+save(materials, file="./Saved tables/materials.Rda")
+save(fd_materials, file="./Saved tables/fd_materials.Rda")
+save(indirect_pE_int.elec.prirow, file="./Saved tables/indirect_pE_int.elec.prirow.Rda")

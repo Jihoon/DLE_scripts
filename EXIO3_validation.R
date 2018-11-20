@@ -4,8 +4,8 @@
 ### Arkaitz/Richard Question on EXIO
 
 
-# exio.industry <- 86:96 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
-exio.industry <- 97:103 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
+exio.industry <- 86:96 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
+# exio.industry <- 97:103 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
 # exio.industry <- 106:115 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Chemicals, 97:103: non-matallic mineral, 106:115: non-ferrous metal
 
 # compare.ei <- data.frame(carrier.name.fin, 
@@ -33,8 +33,8 @@ exio.industry <- 97:103 # 104:Steel, 108:Alu, 101: Cement, 100: Brick, 86:96: Ch
 #                          ZAF.TPEI.USE=tpei.USE[,ZAF_idx_ex[exio.industry]], 
 #                          ZAF.TPEI.net=tnei.exio[,ZAF_idx_ex[exio.industry]])
 compare.ei <- data.frame(carrier.name.fin, 
-                         IND.DFE=dfe.exio[,IND_idx_ex[exio.industry]], 
-                         BRA.DFE=dfe.exio[,BRA_idx_ex[exio.industry]], 
+                         IND.DFE=dfe.exio[,IND_idx_ex[exio.industry]],
+                         BRA.DFE=dfe.exio[,BRA_idx_ex[exio.industry]],
                          ZAF.DFE=dfe.exio[,ZAF_idx_ex[exio.industry]])
 compare.ei <- compare.ei %>% rbind(data.frame(carrier.name.fin="Elec.total", t(colSums(compare.ei[idx_elec,-1])))) %>%
   rbind(data.frame(carrier.name.fin="FE.total", t(colSums(compare.ei[,-1]))))
@@ -42,11 +42,11 @@ names(compare.ei) <- c("Carrier", paste("IND", EX_catnames[exio.industry]), past
 
 # view(compare.ei)
 if (exio.industry[1]==86) {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Chemical and petrochemical-bugfix.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Chemical and petrochemical-bugfix_new.csv")
 } else if (exio.industry[1]==97) {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-matallic minerals-bugfix.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-matallic minerals-bugfix_new.csv")
 } else {
-  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-ferrous metals-bugfix.csv")
+  write.csv(compare.ei, "H:/MyDocuments/Analysis/Final energy/Arkaitz/For Debug/IND-BRA-ZAF Non-ferrous metals-bugfix_new.csv")
 }
 
 # After the bug fix (Sep 2018), the total DE values are more or less in line with what I found from IEA balance.
@@ -56,10 +56,10 @@ if (exio.industry[1]==86) {
 
 
 ### Additional outputs for FE meeting w/ Volker & Keywan 27/4/2018
-sects <- 1:200 
-names(sects) <- EX_catnames
-# sects <- c(Beef=43, Pork=44, Poultry=45) # Cement, Steel, Aluminum # 
-# sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
+# sects <- 1:200 
+# sects <- c(Beef=43, Pork=44, Poultry=45) # Cement, Steel, Aluminum #
+sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
+names(sects) <- EX_catnames[sects]
 elec.idx <- grep("Electricity ", carrier.name.fin)
 cty.idx.ex <- IND_idx_ex
 
@@ -86,7 +86,8 @@ write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 rowSums(tfei.elec[elec.idx, cty.idx.ex[sects]])/sum(tfei.elec[elec.idx, cty.idx.ex[sects]])
 
 # Compare elec shares of countries
-elec.share <- data.frame(matrix(ncol=3))
+n.sect = length(sects)
+elec.share <- data.frame(matrix(ncol=n.sect))
 names(elec.share) <- names(sects)
 a <- data.frame(name=carrier.name.fin, tfei.exio[,IND_idx_ex[sects]]) %>% mutate(elec=ifelse(row_number() %in% elec.idx, 1, 0) ) %>%
   group_by(elec) %>% summarise_if(is.numeric, sum) %>% rbind(colSums(.)) 
@@ -131,11 +132,11 @@ write.table(elec.share, "clipboard", sep="\t", row.names = FALSE, col.names = TR
 
 
 # Derive elec share and f/p raio for all countries
-elec.share <- data.frame(matrix(ncol=3))
+elec.share <- data.frame(matrix(ncol=n.sect))
 names(elec.share) <- names(sects)
-p.to.f.prod <- data.frame(matrix(ncol=3))
+p.to.f.prod <- data.frame(matrix(ncol=n.sect))
 names(p.to.f.prod) <- names(sects)
-p.to.f.use <- data.frame(matrix(ncol=3))
+p.to.f.use <- data.frame(matrix(ncol=n.sect))
 names(p.to.f.use) <- names(sects)
 for (i in 1:49) {
   cty.idx.ex <- seq(200*(i-1)+1, 200*i)
@@ -147,10 +148,10 @@ for (i in 1:49) {
   p.to.f.use <- rbind(p.to.f.use, a[3,-1] / c(colSums(tpei.USE[,cty.idx.ex[sects]])))
 }
 
-# par(mfrow = c(7,7), mar = c(0, 0, 1, 0))
-# for (i in 1:49) {
-par(mfrow = c(3,4), mar = c(2, 1, 2, 1))
-for (i in cty_set) {
+par(mfrow = c(7,7), mar = c(0, 0, 1, 0))
+for (i in 1:49) {
+# par(mfrow = c(3,4), mar = c(2, 1, 2, 1))
+# for (i in cty_set) {
   plot(as.numeric(elec.share[i+1,]), type="o", col="blue", ylim=c(0,1), axes=FALSE, ann=FALSE)
   axis(1, at=1:3, lab=c("Cement","Steel","Alu"))
   axis(2, las=1, at=seq(0, 1, 0.1))

@@ -73,7 +73,6 @@ source_url("https://raw.githubusercontent.com/ggrothendieck/gsubfn/master/R/list
 # Run RAS and construct final matrix in original dimension
 library(mipfp)
 
-setwd("H:/MyDocuments/IO work/DLE_scripts")
 
 xlcFreeMemory()
 source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")

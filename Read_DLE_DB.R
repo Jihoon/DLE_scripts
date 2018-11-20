@@ -18,18 +18,18 @@ IND2_HH <- data.table(IND2_HH, key="hhid")
 setorder(IND2_HH, hhid)
 
 # Saving the raw data in R format (to save time)
-save(IND_FD, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD.Rda")
-save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda")
-# save(IND_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump_prcadj.Rda")
-save(IND2_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_AllHHConsump.Rda")
+save(IND_FD, file="./Saved tables/IND_FD.Rda")
+save(IND_FD_ALL, file="./Saved tables/IND_AllHHConsump.Rda")
+# save(IND_FD_ALL, file="./Saved tables/IND_AllHHConsump_prcadj.Rda")
+save(IND2_FD_ALL, file="./Saved tables/IND2_AllHHConsump.Rda")
 
-save(IND_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_HH.Rda")
-save(IND2_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND2_HH.Rda")
+save(IND_HH, file="./Saved tables/IND_HH.Rda")
+save(IND2_HH, file="./Saved tables/IND2_HH.Rda")
 
-save(IND_HH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_HH_All.Rda")
-save(IND_FOOD_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_Food_All.Rda")
-save(IND_FUEL_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda")
-save(IND_OTH_Alldata, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_OTH_Alldata.Rda")
+save(IND_HH_Alldata, file="./Saved tables/IND1_HH_All.Rda")
+save(IND_FOOD_Alldata, file="./Saved tables/IND1_Food_All.Rda")
+save(IND_FUEL_Alldata, file="./Saved tables/IND1_FUEL_Alldata.Rda")
+save(IND_OTH_Alldata, file="./Saved tables/IND1_OTH_Alldata.Rda")
 
 
 
@@ -49,8 +49,8 @@ BRA2_HH <- data.table(BRA2_HH, key="hhid")
 setorder(BRA2_HH, hhid)
 
 # Saving the raw data in R format (to save time)
-save(BRA_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_AllHHConsump.Rda")
-save(BRA_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_HH.Rda")
+save(BRA_FD_ALL, file="./Saved tables/BRA_AllHHConsump.Rda")
+save(BRA_HH, file="./Saved tables/BRA_HH.Rda")
 
 
 
@@ -69,9 +69,9 @@ ZAF_FOOD.raw <- selectDBdata(tables='ZAF1_FOOD') #%>% select(code, item) %>% dis
 ZAF_OTH.raw <- selectDBdata(tables='ZAF1_OTHCON')# %>% select(code, item) %>% distinct() %>% arrange(code)
 
 # Saving the raw data in R format (to save time)
-save(ZAF_FD, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD.Rda")
-save(ZAF_FD_ALL, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_AllHHConsump.Rda")
-save(ZAF_HH, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_HH.Rda")
+save(ZAF_FD, file="./Saved tables/ZAF_FD.Rda")
+save(ZAF_FD_ALL, file="./Saved tables/ZAF_AllHHConsump.Rda")
+save(ZAF_HH, file="./Saved tables/ZAF_HH.Rda")
 
-save(ZAF_FOOD.raw, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FOOD_All.Rda")
-save(ZAF_OTH.raw, file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_OTH_All.Rda")
+save(ZAF_FOOD.raw, file="./Saved tables/ZAF_FOOD_All.Rda")
+save(ZAF_OTH.raw, file="./Saved tables/ZAF_OTH_All.Rda")

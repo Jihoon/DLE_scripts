@@ -2,9 +2,9 @@
 # Now in primary energy terms
 
 # Survey expenditure
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD_ICP_usd2007.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/IND_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
 
 # ICP TFEIs
 load(file="./Saved tables/BRA.tfei.icp.Rda")

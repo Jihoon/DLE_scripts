@@ -71,14 +71,14 @@ processWBscript = function(file, iso3='IND') {
 # Process each country...
 # Output is data frame providing concordance between survey line item ('code')
 # and WB GCD COICOP aggregate category code ('icp_seq')
-wb_path = 'H:/MyDocuments/IO work/Bridging/CES-COICOP/Worldbank/'
+wb_path = '../Bridging/CES-COICOP/Worldbank/'
 IDN_WB = processWBscript(paste(wb_path, 'INDONESIA2010.txt', sep=''), iso3='IDN')
 BRA_WB = processWBscript(paste(wb_path, 'BRAZIL2008.txt', sep=''), iso3='BRA')
 ZAF_WB = processWBscript(paste(wb_path, 'SOUTH-AFRICA2010.txt', sep=''), iso3='ZAF')
 IND_WB = processWBscript(paste(wb_path, 'INDIA2011.txt', sep=''), iso3='IND')
 
 fuel.items = c('Electricity','Pipeline natural gas','LPG','Kerosene','Sawdust','Ethanol, non-transport','Diesel, non-transport','Gasoline, non-transport','Coal','Firewood','Ethanol, transport','Gasoline, transport','Diesel, transport','CNG, transport')
-ce_code = read_excel("H:/MyDocuments/IO work/Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes.xlsx") %>%
+ce_code = read_excel("../Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes.xlsx") %>%
   # mutate(code = as.numeric(code)) %>% 
   left_join(BRA_WB, by=c("code"="CODE")) %>%
   # mutate(ICP_SEQ = ifelse(is.na(ICP_SEQ), 0, ICP_SEQ)) %>%   # NAs occur because the WB does not map everything.
@@ -86,6 +86,6 @@ ce_code = read_excel("H:/MyDocuments/IO work/Bridging/CES-COICOP/BRA POF 2008-20
   mutate(ICP_item = ifelse(item %in% fuel.items, item, ICP_item)) %>%   # Fuel names do not follow ICP but DLE_DB classification.
   select(-item) %>% rename(item = ICP_item)
 
-xlsx::write.xlsx(as.data.frame(ce_code), "H:/MyDocuments/IO work/Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes ICP.xlsx", 
+xlsx::write.xlsx(as.data.frame(ce_code), "../Bridging/CES-COICOP/BRA POF 2008-2009 CE Codes ICP.xlsx", 
                   col.names=TRUE, row.names=FALSE)
 ce_code[ce_code$ICP_SEQ==0,]

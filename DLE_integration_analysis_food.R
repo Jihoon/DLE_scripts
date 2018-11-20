@@ -1,5 +1,5 @@
 # IND.food.tfei has annual kcal intake
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND.food.tfei.Rda")
+load(file=paste0(getwd(), "/Saved tables/IND.food.tfei.Rda"))
 # Why does this give so big EJ for total energy (>2 EJ), even with a subset of HHs, while tot.food.IND is around 0.6 EJ?
 # Reason not known yet.
 # For now, let's scale tot.food.IND with IND.food.tfei$EJ
@@ -9,10 +9,10 @@ load(file="./Saved tables/IND.tfei.icp.Rda")
 load(file="./Saved tables/ZAF.tfei.icp.Rda")
 
 # kcal.proj has daily kcal intake.
-kcal.proj = read_excel("H:/MyDocuments/Analysis/DLE trajectory/Data_FAO_2012_BICS_Narasimha.xlsx")
+kcal.proj = read_excel("../DLE trajectory/Data_FAO_2012_BICS_Narasimha.xlsx")
 kcal.proj = kcal.proj %>% filter(Var %in% c("calTot", "pop")) %>% filter(Region!="CHN") %>%
   spread(Var, Val) %>% mutate(AnnTotCal=pop*calTot*365) %>% select(-Sector) # TotCal in 1e6 kcal
-kcal.ssp2 = read_excel("H:/MyDocuments/Analysis/DLE trajectory/SSP_projection_Valin_BICS_2015.xlsx",
+kcal.ssp2 = read_excel("../DLE trajectory/SSP_projection_Valin_BICS_2015.xlsx",
                       sheet="Data") %>% 
   filter(SSP=="SSP2" & Reg!="ChinaReg" & Foodtype=="TOTAL - unscaled") %>%
   select(-Diet_type, -Foodtype) %>% filter(Year >=2010 & Year <=2050) %>% 

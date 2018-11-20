@@ -1,10 +1,10 @@
 library(readxl)
 
-COICOP_CPC <- read_excel("H:/MyDocuments/IO work/Bridging/UN correspondence tables/COICOP-CPC.xls")
+COICOP_CPC <- read_excel("../Bridging/UN correspondence tables/COICOP-CPC.xls")
 names(COICOP_CPC)[c(2,4)] <- c("Part_COICOP", "Part_CPC")
-CPC_ISIC <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables/CPCV1_0_ISIC_REV_3_correspondence.txt",
+CPC_ISIC <- read.table("../Bridging/UN correspondence tables/CPCV1_0_ISIC_REV_3_correspondence.txt",
                          header=TRUE, sep=",", as.is=T)
-# ISIC_names <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables/ISIC_Rev_3_english_structure.txt",
+# ISIC_names <- read.table("../Bridging/UN correspondence tables/ISIC_Rev_3_english_structure.txt",
 #            header=TRUE, sep="\t", quote="", as.is=T)
 # names(ISIC_names)[1] <- "lv_ISIC"
 # a <- strsplit(ISIC_names[,1], "\t")
@@ -70,7 +70,7 @@ Q_UN <- Q_UN[!rownames(Q_UN) %in% c('02.3.0', '12.2.0', '12.5.1', '12.6.1'),]
 Q_UN <- Q_UN[!rownames(Q_UN) %in% c('10.2.0', '10.3.0', '10.4.0', '10.5.0'),] 
 
 # Harmonize ISIC Rev3 with EXIO classification
-ISICrev3 <- read.table("H:/MyDocuments/IO work/Bridging/UN correspondence tables/ISIC_Rev_3_english_structure.txt",
+ISICrev3 <- read.table("../Bridging/UN correspondence tables/ISIC_Rev_3_english_structure.txt",
                        header=TRUE, sep="\t", quote = "", as.is = TRUE)
 ISICrev3$Code <- as.numeric(ISICrev3$Code)
 ISICrev3 <- ISICrev3[ISICrev3$Code > 1000 & !is.na(ISICrev3$Code),]
@@ -92,7 +92,7 @@ names(ISICrev3)[1] <- "lv_ISIC"
 
 # write.table(ISICrev3, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
-ISIC_EXIO <- read_excel("H:/MyDocuments/IO work/Bridging/UN correspondence tables/ISIC_EXIO_mapping.xlsx", 3)
+ISIC_EXIO <- read_excel("../Bridging/UN correspondence tables/ISIC_EXIO_mapping.xlsx", 3)
 ISIC_EXIO <- ISIC_EXIO %>% gather(name, ISIC, -EXIO) %>% select(-name) %>% arrange(ISIC) %>% filter(!is.na(ISIC))
 names(ISIC_EXIO) <- c("lv_EXIO", "lv_ISIC")
 ISIC_EXIO$lv_ISIC <- formatC(ISIC_EXIO$lv_ISIC, width=5, flag="0")
@@ -118,7 +118,7 @@ names(bridge_coicop_exio) <- EX_catnames
 row.names(bridge_coicop_exio) <- as.matrix(COICOP_catnames2)
 
 # This file is used to create ICP-EXIO mapping after some manual editing
-write.csv(bridge_coicop_exio, "H:/MyDocuments/IO work/Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN.csv")
+write.csv(bridge_coicop_exio, "../Bridging/CES-COICOP/COICOIP_EXIO_Qual_UN.csv")
 
 # Fuel rows replaced by the standardized DLE fuel sectors
 # But we don't have (for FRA) any detailed info about further fuel breakdowns

@@ -8,14 +8,14 @@ path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2
 TJ_per_MTOE <- 41870
 TWh_per_MTOE <- 11.63
 
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/L_inverse.Rda")
-# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/indirect_E_int.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_use.Rda")
-# load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/supplym.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/final_demand.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/tot_demand.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/materials.Rda")
-load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/fd_materials.Rda")
+load(file="./Saved tables/L_inverse.Rda")
+# load(file="./Saved tables/indirect_E_int.Rda")
+load(file="./Saved tables/tot_use.Rda")
+# load(file="./Saved tables/supplym.Rda")
+load(file="./Saved tables/final_demand.Rda")
+load(file="./Saved tables/tot_demand.Rda")
+load(file="./Saved tables/materials.Rda")
+load(file="./Saved tables/fd_materials.Rda")
 
 
 
@@ -53,8 +53,8 @@ elec.idx.ex           <- 128:141    # Column index for electricity sectors
 renew.elec.idx.ex     <- c(131:132, 135:138)    # Column index for renewable electricity sectors 
 nonrenew.elec.idx.ex  <- setdiff(elec.idx.ex, renew.elec.idx.ex)
 energy.carrier.idx.ex <- c(20:32, 64:85, 91:95, 128:146, 148, 176:182)    # Column index for energy sectors (excluding pulp and extraction sectors)
-captive_sector_idx_ex <- c(108, 36, 104, 90, 28, 62, 101, 50, 88, 89, 55)    # Column index for major captive generation sectors (Just for India for now)
-captive_sector_names  <- EX_catnames[captive_sector_idx_ex]
+# captive_sector_idx_ex <- c(108, 36, 104, 90, 28, 62, 101, 50, 88, 89, 55)    # Column index for major captive generation sectors (Just for India for now)
+# captive_sector_names  <- EX_catnames[captive_sector_idx_ex]
 # Aluminum1/2, steel, chemicals, petroleum(crude oil), paper, cement, sugar, fertilizer1/2, textiles
 
 
