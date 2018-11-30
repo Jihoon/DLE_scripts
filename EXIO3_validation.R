@@ -56,9 +56,9 @@ if (exio.industry[1]==86) {
 
 
 ### Additional outputs for FE meeting w/ Volker & Keywan 27/4/2018
-# sects <- 1:200 
+sects <- 1:200
 # sects <- c(Beef=43, Pork=44, Poultry=45) # Cement, Steel, Aluminum #
-sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
+# sects <- c(Cement=101, Steel=104, Alu=108) # Cement, Steel, Aluminum
 names(sects) <- EX_catnames[sects]
 elec.idx <- grep("Electricity ", carrier.name.fin)
 cty.idx.ex <- IND_idx_ex
@@ -73,15 +73,16 @@ TROA <- c(colSums(tfei.sub[[7]][elec.idx, cty.idx.ex[sects]]),colSums(tfei.sub[[
 TOTL.F <- c(colSums(tfei.exio[elec.idx,cty.idx.ex[sects]]),colSums(tfei.exio[-elec.idx,cty.idx.ex[sects]]))
 TOTL.P.prod <- c(colSums(tpei.nature[,cty.idx.ex[sects]]))
 TOTL.P.use <- c(colSums(tpei.USE[,cty.idx.ex[sects]]))
+TOTL.P.net <- c(colSums(tnei.exio[,cty.idx.ex[sects]]))
 
-sum.out <- data.frame(NENE, NTRA, TAVI, TMAR, TOTH, TRAI, TROA, TOTL.F, TOTL.P.prod, TOTL.P.use)
+sum.out <- data.frame(NENE, NTRA, TAVI, TMAR, TOTH, TRAI, TROA, TOTL.F, TOTL.P.prod, TOTL.P.use, TOTL.P.net)
 row.names(sum.out) <- c(paste0(names(sects), ".elec"), paste0(names(sects), ".non-elec"))
-write.table(sum.out, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
+write.table(sum.out, "clipboard-16384", sep="\t", row.names = TRUE, col.names = TRUE)
 
 # a <- sum.out[1:3,] + sum.out[4:6,]
 a <- sum.out[1:length(sects),] + sum.out[(length(sects)+1):(2*length(sects)),]
-a <- a %>% mutate(EXIO = t(EX_catnames)) %>% select(EXIO, everything())
-write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
+a <- a %>% mutate(EXIO = EX_catnames[sects]) %>% select(EXIO, everything())
+write.table(a, "clipboard-16384", sep="\t", row.names = TRUE, col.names = TRUE)
 
 rowSums(tfei.elec[elec.idx, cty.idx.ex[sects]])/sum(tfei.elec[elec.idx, cty.idx.ex[sects]])
 
@@ -130,6 +131,7 @@ elec.share <- rbind(elec.share, a[2,-1]/a[3,-1])
 elec.share <- elec.share %>% slice(-1) %>% mutate(country=c("IND", "BRA", "ZAF", "GER", "USA", "CHN")) %>% select(country, everything())
 write.table(elec.share, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
+ctys <- c(IND_place, BRA_place, ZAF_place, GER_place, USA_place, CHN_place)
 
 # Derive elec share and f/p raio for all countries
 elec.share <- data.frame(matrix(ncol=n.sect))
@@ -138,6 +140,9 @@ p.to.f.prod <- data.frame(matrix(ncol=n.sect))
 names(p.to.f.prod) <- names(sects)
 p.to.f.use <- data.frame(matrix(ncol=n.sect))
 names(p.to.f.use) <- names(sects)
+p.to.f.net <- data.frame(matrix(ncol=n.sect))
+names(p.to.f.net) <- names(sects)
+
 for (i in 1:49) {
   cty.idx.ex <- seq(200*(i-1)+1, 200*i)
   a <- data.frame(name=carrier.name.fin, tfei.exio[,cty.idx.ex[sects]]) %>% mutate(elec=ifelse(row_number() %in% elec.idx, 1, 0) ) %>%
@@ -145,8 +150,15 @@ for (i in 1:49) {
   names(a)[-1] <- names(sects)
   elec.share <- rbind(elec.share, a[2,-1]/a[3,-1])
   p.to.f.prod <- rbind(p.to.f.prod, a[3,-1] / c(colSums(tpei.nature[,cty.idx.ex[sects]])))
-  p.to.f.use <- rbind(p.to.f.use, a[3,-1] / c(colSums(tpei.USE[,cty.idx.ex[sects]])))
+  p.to.f.use  <- rbind(p.to.f.use, a[3,-1] / c(colSums(tpei.USE[,cty.idx.ex[sects]])))
+  p.to.f.net  <- rbind(p.to.f.net, a[3,-1] / c(colSums(tnei.exio[,cty.idx.ex[sects]])))
 }
+p.to.f.prod <- p.to.f.prod[-1,]
+p.to.f.use <- p.to.f.use[-1,]
+p.to.f.net <- p.to.f.net[-1,]
+elec.share <- elec.share[-1,]
+write.table(data.frame(cty=exio_ctys[ctys], p.to.f=p.to.f.net[ctys,]), "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+write.table(elec.share, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 par(mfrow = c(7,7), mar = c(0, 0, 1, 0))
 for (i in 1:49) {

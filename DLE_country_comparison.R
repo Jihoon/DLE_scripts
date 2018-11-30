@@ -2,9 +2,9 @@
 # Now in primary energy terms
 
 # Survey expenditure
-load(file="./Saved tables/IND_FD_ICP_usd2007.Rda")
-load(file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
-load(file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
+load(file="./Saved tables/IND_FD_ICP_io.yr.Rda")
+load(file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
+load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 
 # ICP TFEIs
 load(file="./Saved tables/BRA.tfei.icp.Rda")
@@ -42,13 +42,13 @@ tot.education.ZAF <- sum(tfei.exio[,ZAF_idx_ex[idx.education.exio]]) * ZAF_fd_ex
 c(tot.education.BRA, tot.education.IND, tot.education.ZAF)
 
 # Total per cap
-tot.health.BRA / BRA_pop_2007 * 1e9
-tot.health.IND / IND_pop_2007 * 1e9
-tot.health.ZAF / ZAF_pop_2007 * 1e9
+tot.health.BRA / BRA_pop_io.yr * 1e9
+tot.health.IND / IND_pop_io.yr * 1e9
+tot.health.ZAF / ZAF_pop_io.yr * 1e9
 
-tot.education.BRA / BRA_pop_2007 * 1e9
-tot.education.IND / IND_pop_2007 * 1e9
-tot.education.ZAF / ZAF_pop_2007 * 1e9
+tot.education.BRA / BRA_pop_io.yr * 1e9
+tot.education.IND / IND_pop_io.yr * 1e9
+tot.education.ZAF / ZAF_pop_io.yr * 1e9
 
 
 ################################
@@ -67,38 +67,38 @@ tot.education.ZAF / ZAF_pop_2007 * 1e9
           # idx.food.icp <- 1:45
           # 
           # # Averaging ICP sectors - Based on TPEI and original expenditure from survey
-          # weighted.mean(colMeans(BRA_intensity.use[, idx.food.icp]), weight=BRA_FD_ICP_usd2007[idx.food.icp, 1])
-          # weighted.mean(colMeans(IND_intensity.use[, idx.food.icp]), weight=IND_FD_ICP_usd2007[idx.food.icp, 1])
-          # weighted.mean(colMeans(ZAF_intensity.use[, idx.food.icp]), weight=ZAF_FD_ICP_usd2007[idx.food.icp, 1])
+          # weighted.mean(colMeans(BRA_intensity.use[, idx.food.icp]), weight=BRA_FD_ICP_io.yr[idx.food.icp, 1])
+          # weighted.mean(colMeans(IND_intensity.use[, idx.food.icp]), weight=IND_FD_ICP_io.yr[idx.food.icp, 1])
+          # weighted.mean(colMeans(ZAF_intensity.use[, idx.food.icp]), weight=ZAF_FD_ICP_io.yr[idx.food.icp, 1])
           # 
           # # Total energy/year (EJ/year) - Good to be based on household consumption (ICP)
-          # tot.food.BRA <- rowSums(BRA_intensity[, idx.food.icp] %*% diag(BRA_FD_ICP_usd2007[idx.food.icp, 1])) / 1e6
-          # tot.food.IND <- rowSums(IND_intensity[, idx.food.icp] %*% diag(IND_FD_ICP_usd2007[idx.food.icp, 1])) / 1e6
-          # tot.food.ZAF <- rowSums(ZAF_intensity[, idx.food.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.food.icp, 1])) / 1e6
+          # tot.food.BRA <- rowSums(BRA_intensity[, idx.food.icp] %*% diag(BRA_FD_ICP_io.yr[idx.food.icp, 1])) / 1e6
+          # tot.food.IND <- rowSums(IND_intensity[, idx.food.icp] %*% diag(IND_FD_ICP_io.yr[idx.food.icp, 1])) / 1e6
+          # tot.food.ZAF <- rowSums(ZAF_intensity[, idx.food.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.food.icp, 1])) / 1e6
           # 
           # # Approach 1.  Total energy/capita/year (GJ/cap/year) 
-          # c(min(tot.food.BRA), max(tot.food.BRA)) / as.numeric(BRA_pop_2007) * 1e9
-          # c(min(tot.food.IND), max(tot.food.IND)) / as.numeric(IND_pop_2007) * 1e9
-          # c(min(tot.food.ZAF), max(tot.food.ZAF)) / as.numeric(ZAF_pop_2007) * 1e9
+          # c(min(tot.food.BRA), max(tot.food.BRA)) / as.numeric(BRA_pop_io.yr) * 1e9
+          # c(min(tot.food.IND), max(tot.food.IND)) / as.numeric(IND_pop_io.yr) * 1e9
+          # c(min(tot.food.ZAF), max(tot.food.ZAF)) / as.numeric(ZAF_pop_io.yr) * 1e9
           # 
           # # Approach 2. Based on TPEI (either ICP) and individual hh expenditure (GJ/cap) - Better!
           # list[all_HH_f_BR, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity.use) # more reliable than IND_intensity
-          # a <- (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ] 
+          # a <- (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ] 
           # tot.ENE.food.BRA <- a$u
           # list[all_HH_f_BR, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'BRA', BRA_FD_ICP_AllHH, BRA_intensity.use) # more reliable than IND_intensity
-          # (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+          # (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
           # 
           # list[all_HH_f_IN, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'IND', IND_FD_ICP_HH_adj, IND_intensity.use) # more reliable than IND_intensity
-          # a <- (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+          # a <- (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
           # tot.ENE.food.IND <- a$u
           # list[all_HH_f_IN, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'IND', IND_FD_ICP_AllHH, IND_intensity.use) # more reliable than IND_intensity
-          # (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+          # (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
           # 
           # list[all_HH_f_ZA, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'ZAF', ZAF_FD_ICP_HH_adj, ZAF_intensity.use) # more reliable than IND_intensity
-          # a <- (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+          # a <- (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
           # tot.ENE.food.ZAF <- a$u
           # list[all_HH_f_ZA, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'ZAF', ZAF_FD_ICP_AllHH, ZAF_intensity.use) # more reliable than IND_intensity
-          # (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+          # (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
           # 
           # rm(all_HH_f_BR, all_HH_f_IN, all_HH_f_ZA)
           # gc()

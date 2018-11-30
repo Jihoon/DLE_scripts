@@ -403,7 +403,7 @@ RemoveConflictsInConstraints <- function(qmap_i, country="IND") {
   
   # Convert to pp without tax
   exio_fd_cty_usd <- eval(parse(text=paste0(country, "_fd_exio")))              # Mil.USD2007
-  icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))        # Mil.USD2007
+  icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_io.yr")))        # Mil.USD2007
   
   colConst_init <- get_purch_price(exio_fd_cty_usd, countrycode(country,"iso3c", "iso2c")) 
   scaler_cty <- sum(icp_fd_cty_usd[,1])/sum(colConst_init)

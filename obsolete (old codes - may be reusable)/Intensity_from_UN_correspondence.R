@@ -10,7 +10,7 @@ IND_inten_RAS_all <- SetupSectorIntensities(final_alloc_list_IND_all, NC_IND_all
 IND_nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_IND_all, "IN")
 
 # Filling in sectors with no expenditures
-no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
+no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_io.yr[,1]==0))
 no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 IND_inten_comb_all <- IND_inten_RAS_all
 IND_inten_comb_all[,no_expense_IND] <- IND_nonRAS_all[,no_expense_IND]
@@ -27,7 +27,7 @@ BRA_inten_RAS_all <- SetupSectorIntensities(final_alloc_list_BRA_all, NC_BRA_all
 BRA_nonRAS_all <- SetupSectorIntensities(alloc_nonRAS, NC_BRA_all, "BR")
 
 # Filling in sectors with no expenditures
-no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
+no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_io.yr[,1]==0))
 no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 BRA_inten_comb_all <- BRA_inten_RAS_all
 BRA_inten_comb_all[,no_expense_BRA] <- BRA_nonRAS_all[,no_expense_BRA]
@@ -133,25 +133,25 @@ dev.off()
 
 ##### Derive final values to plot #####
 # I use IND_inten_comb_all instead of IND_inten_RAS_all because that can be more inclusive. 
-# But the result will be identical, since IND_FD_ICP_usd2007 will have zeros where IND_inten_RAS_all is zero.
+# But the result will be identical, since IND_FD_ICP_io.yr will have zeros where IND_inten_RAS_all is zero.
 
 # 1. Intensity ($) by decile (MJ/2007$ PPP)
-totE_by_decile_IN_all <- IND_inten_comb_all %*% IND_FD_ICP_usd2007 / scaler_IND   # n_draw X n_decile (11)
-# int_by_decile_IN_all <- sweep(totE_by_decile_IN_all, 2, colSums(IND_FD_ICP_usd2007* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND 
+totE_by_decile_IN_all <- IND_inten_comb_all %*% IND_FD_ICP_io.yr / scaler_IND   # n_draw X n_decile (11)
+# int_by_decile_IN_all <- sweep(totE_by_decile_IN_all, 2, colSums(IND_FD_ICP_io.yr* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND 
 
-totE_by_decile_FR_all <- FRA_inten_comb_all %*% FRA_FD_ICP_usd2007 / scaler_FRA   # n_draw X n_decile (11)
-# int_by_decile_FR_all  <- sweep(totE_by_decile_FR_all, 2, colSums(FRA_FD_ICP_usd2007* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
+totE_by_decile_FR_all <- FRA_inten_comb_all %*% FRA_FD_ICP_io.yr / scaler_FRA   # n_draw X n_decile (11)
+# int_by_decile_FR_all  <- sweep(totE_by_decile_FR_all, 2, colSums(FRA_FD_ICP_io.yr* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
 
 # 2. Intensity by capita  by decile
-totE_per_cap_by_dec_IN <- 1000*cbind(totE_by_decile_IN_all[,1]/IND_pop_2007, totE_by_decile_IN_all[,2:11]/IND_pop_2007*10)
-totE_per_cap_by_dec_FR <- 1000*cbind(totE_by_decile_FR_all[,1]/FRA_pop_2007, totE_by_decile_FR_all[,2:11]/FRA_pop_2007*10)
+totE_per_cap_by_dec_IN <- 1000*cbind(totE_by_decile_IN_all[,1]/IND_pop_io.yr, totE_by_decile_IN_all[,2:11]/IND_pop_io.yr*10)
+totE_per_cap_by_dec_FR <- 1000*cbind(totE_by_decile_FR_all[,1]/FRA_pop_io.yr, totE_by_decile_FR_all[,2:11]/FRA_pop_io.yr*10)
 
 # 3. Food intensity ($)  by decile (MJ/2007$ PPP)
-foodE_by_decile_IN <- IND_inten_comb_all[,1:40] %*% IND_FD_ICP_usd2007[1:40,] / scaler_IND   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_IN <- sweep(foodE_by_decile_IN, 2, colSums(IND_FD_ICP_usd2007[1:40,]* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND
+foodE_by_decile_IN <- IND_inten_comb_all[,1:40] %*% IND_FD_ICP_io.yr[1:40,] / scaler_IND   # n_draw X n_decile (11) in 1000 GJ
+# food_int_by_decile_IN <- sweep(foodE_by_decile_IN, 2, colSums(IND_FD_ICP_io.yr[1:40,]* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND
 
-foodE_by_decile_FR <- FRA_inten_comb_all[,1:11] %*% FRA_FD_ICP_usd2007[1:11,] / scaler_FRA   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_FR <- sweep(foodE_by_decile_FR, 2, colSums(FRA_FD_ICP_usd2007[1:11,]* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
+foodE_by_decile_FR <- FRA_inten_comb_all[,1:11] %*% FRA_FD_ICP_io.yr[1:11,] / scaler_FRA   # n_draw X n_decile (11) in 1000 GJ
+# food_int_by_decile_FR <- sweep(foodE_by_decile_FR, 2, colSums(FRA_FD_ICP_io.yr[1:11,]* EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
 
 #### Plotting
 
@@ -218,12 +218,12 @@ dev.off()
 ##### Sanity check #####
 
 TotEmbodEne <- sum(eHH_cap$V5 * eHH_cap$hh_size * eHH_cap$weight)  # in GJ
-EneComparison <- data.frame(name=ICP_catnames, IND_int=apply(IND_inten_comb_all,2,mean), IND_exp=IND_FD_ICP_usd2007[,1], IND_GJ = 0, 
-                                  BRA_int=apply(BRA_inten_comb_all,2,mean), BRA_exp=BRA_FD_ICP_usd2007[,1], BRA_GJ = 0)
+EneComparison <- data.frame(name=ICP_catnames, IND_int=apply(IND_inten_comb_all,2,mean), IND_exp=IND_FD_ICP_io.yr[,1], IND_GJ = 0, 
+                                  BRA_int=apply(BRA_inten_comb_all,2,mean), BRA_exp=BRA_FD_ICP_io.yr[,1], BRA_GJ = 0)
 EneComparison$IND_GJ <- EneComparison$IND_int * EneComparison$IND_exp *1000 # GJ
 EneComparison$BRA_GJ <- EneComparison$BRA_int * EneComparison$BRA_exp *1000 # GJ
-sum(EneComparison$IND_GJ) / IND_pop_2007
-sum(EneComparison$BRA_GJ) / BRA_pop_2007
+sum(EneComparison$IND_GJ) / IND_pop_io.yr
+sum(EneComparison$BRA_GJ) / BRA_pop_io.yr
 
 
 
@@ -231,7 +231,7 @@ sum(EneComparison$BRA_GJ) / BRA_pop_2007
 # For all the rows with ones in the Q mapping
 library(pastecs)
 colnames(IND_inten_comb_all) <- rownames(Q_UN_ICP_EXIO)
-Impute_row <- which((rowSums(Q_UN_ICP_EXIO)!=0) & (IND_FD_ICP_usd2007[,1]==0))
+Impute_row <- which((rowSums(Q_UN_ICP_EXIO)!=0) & (IND_FD_ICP_io.yr[,1]==0))
 IND_inten_comb_all <- IND_inten_RAS_all
 IND_inten_comb_all[,Impute_row] <- IND_nonRAS_all[,Impute_row]
 
@@ -244,6 +244,6 @@ colnames(IND_int_summary_combined)[5] <- "NSS exp==0"
 write.csv(IND_int_summary_combined, "India - Intensity summary without direct E.csv")
 
 # Test
-totE_sector <- t(IND_inten_comb_all) * IND_FD_ICP_usd2007[,1] / scaler_IND 
+totE_sector <- t(IND_inten_comb_all) * IND_FD_ICP_io.yr[,1] / scaler_IND 
 totE_sector <- rbind(totE_sector, colSums(totE_sector))
 totE_summary <- t(stat.desc(t(totE_sector)))[,c(4,5,9,13)]

@@ -24,7 +24,7 @@ write.table(sum.out, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 # a <- sum.out[1:3,] + sum.out[4:6,]
 a <- sum.out[1:length(sects),] + sum.out[(length(sects)+1):(2*length(sects)),]
-a <- a %>% mutate(EXIO = t(EX_catnames)) %>% select(EXIO, everything())
+a <- a %>% mutate(EXIO = EX_catnames) %>% select(EXIO, everything())
 write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 
@@ -54,7 +54,7 @@ write.table(sum.out, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 # a <- sum.out[1:3,] + sum.out[4:6,]
 a <- sum.out[1:length(sects),] + sum.out[(length(sects)+1):(2*length(sects)),]
-a <- a %>% mutate(EXIO = t(EX_catnames)) %>% select(EXIO, everything())
+a <- a %>% mutate(EXIO = EX_catnames) %>% select(EXIO, everything())
 write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 
@@ -84,7 +84,7 @@ write.table(sum.out, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 # a <- sum.out[1:3,] + sum.out[4:6,]
 a <- sum.out[1:length(sects),] + sum.out[(length(sects)+1):(2*length(sects)),]
-a <- a %>% mutate(EXIO = t(EX_catnames)) %>% select(EXIO, everything())
+a <- a %>% mutate(EXIO = EX_catnames) %>% select(EXIO, everything())
 write.table(a, "clipboard", sep="\t", row.names = TRUE, col.names = TRUE)
 
 

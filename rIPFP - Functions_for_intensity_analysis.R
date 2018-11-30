@@ -3,8 +3,8 @@
 
 # Intensity under ICP classification
 # In the end, I will replace the codes above with this function.
-DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=indirect_fE_int, pri.intensity.mat=indirect_E_int) {
-  icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_usd2007")))
+DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=tfei.exio, pri.intensity.mat=tpei.USE) {
+  icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_io.yr")))
   
   list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
   final_alloc_list_all <- lapply(result_all, func1)

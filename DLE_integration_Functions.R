@@ -96,7 +96,7 @@ TFEI.ApplyKeyTechImprovement.EXIO <- function(country='IND',
                                           ifelse(country=="BRA", (EXR_BRA * CPI_BRA / PPP_BRA), 
                                                  (EXR_ZAF * CPI_ZAF / PPP_ZAF))) 
   
-  return(data.frame(name=t(EX_catnames),TFEI.exio.allregion))
+  return(data.frame(name=EX_catnames,TFEI.exio.allregion))
 }
 
 # calls

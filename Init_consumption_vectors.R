@@ -108,14 +108,14 @@ gc()
 #### 1.2 India - Inflation & exchange rate
 
 # Deciles
-IND_FD_ICP_usd2011 <- IND_FD_ICP * PPP_IND / CPI_ratio_IND / EXR_IND / 1e6 # to M.USD 2007 (MER)
-IND_FD_ICP_usd2007 <- IND_FD_ICP_usd2011 / IND_con_grwth
-# IND_FD_ICP_usd2007 <- IND_FD_ICP_usd2011 / ((consumption_growth^4)[c(as.numeric(icp_ntnu$COICOP1)[1:151],rep(4,n_CES_fuel)),])
+IND_FD_ICP_svy.yr <- IND_FD_ICP * PPP_IND / CPI_ratio_IND / EXR_IND / 1e6 # to M.USD at IO.year (MER)  - consumption quantity at the survey year (IND1:2011)
+IND_FD_ICP_io.yr <- IND_FD_ICP_svy.yr / IND_con_grwth # M.USD 2007 (MER)  - consumption quantity at the common IO year (EXIO2:2007)
+# IND_FD_ICP_io.yr <- IND_FD_ICP_svy.yr / ((consumption_growth^4)[c(as.numeric(icp_ntnu$COICOP1)[1:151],rep(4,n_CES_fuel)),])
 # This scaling by consumption_growth will go obsolete and simply use IND_con_grwth.
 
 # All households
-IND_FD_AllHH_2011 <- IND_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND    # From USD 2010 PPP to USD 2007 (MER)
-IND_FD_ICP_AllHH <- IND_FD_AllHH_2011 / IND_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
+IND_FD_AllHH_svy.yr <- IND_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND    # From USD 2010 PPP to USD 2007 (MER)
+IND_FD_ICP_AllHH <- IND_FD_AllHH_svy.yr / IND_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption at the common IO year (EXIO2:2007)
 
 
 
@@ -129,8 +129,8 @@ IND_FD_ICP_AllHH <- IND_FD_AllHH_2011 / IND_con_grwth   # to USD 2007 (MER)   # 
 # BRA1 is for 2008-2009
 BRA_FD <- data.frame(item=ICP_catnames) %>% left_join(BRA_FD)  # Join to make items consistent with the standardized names and order
 BRA_FD[is.na(BRA_FD)] <- 0
-BRA_FD_ICP_usd2007 <- as.matrix(BRA_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth) # to M.USD 2007
-# BRA1_FD_ICP_usd2007 <- cbind(BRA1_FD[,1], as.matrix(BRA1_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth)) # to M.USD 2007
+BRA_FD_ICP_io.yr <- as.matrix(BRA_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth) # to M.USD 2007
+# BRA1_FD_ICP_io.yr <- cbind(BRA1_FD[,1], as.matrix(BRA1_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth)) # to M.USD 2007
 
 # FD for all households
 BRA_FD_ICP_AllHH <- data.frame(item=ICP_catnames) %>% left_join(BRA_FD_ALL)
@@ -140,22 +140,22 @@ BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 
 save(IND_FD_ICP_AllHH, file="./Saved tables/IND_FD_harmonized.Rda")
 save(BRA_FD_ICP_AllHH, file="./Saved tables/BRA_FD_harmonized.Rda")
-save(IND_FD_ICP_usd2007, file="./Saved tables/IND_FD_ICP_usd2007.Rda")
-save(BRA_FD_ICP_usd2007, file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
-load(file="./Saved tables/IND_FD_ICP_usd2007.Rda")
-load(file="./Saved tables/BRA_FD_ICP_usd2007.Rda")
+save(IND_FD_ICP_io.yr, file="./Saved tables/IND_FD_ICP_io.yr.Rda")
+save(BRA_FD_ICP_io.yr, file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
+load(file="./Saved tables/IND_FD_ICP_io.yr.Rda")
+load(file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/IND_FD_harmonized.Rda")
 
 
 
 # Set Scalers
-scaler_IND <- sum(IND_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
-# scaler2_IND <- sum(IND2_FD_ICP_usd2007[,1]) / sum(get_purch_price(IND2_fd_exio, "IN"))
+scaler_IND <- sum(IND_FD_ICP_io.yr[,1]) / sum(get_purch_price(IND_fd_exio, "IN"))
+# scaler2_IND <- sum(IND2_FD_ICP_io.yr[,1]) / sum(get_purch_price(IND2_fd_exio, "IN"))
 scaler_IND2 <- scaler_IND
-init_FD_IND <- IND_FD_ICP_usd2007[,1] / scaler_IND
+init_FD_IND <- IND_FD_ICP_io.yr[,1] / scaler_IND
 
-scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
-init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
+scaler_BRA <- sum(BRA_FD_ICP_io.yr[,1]) / sum(get_purch_price(BRA_fd_exio, "BR"))
+init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
 
 
 # Enable this if IND2 analysis is needed
@@ -228,16 +228,16 @@ gc()
 #### 3.1 South Africa - Inflation & exchange rate
 
 # Deciles
-ZAF_FD_ICP_usd2011 <- ZAF_FD_ICP * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF / 1e6 # to M.USD 2007 (MER)
-ZAF_FD_ICP_usd2007 <- ZAF_FD_ICP_usd2011 / ZAF_con_grwth
-# ZAF_FD_ICP_usd2007 <- ZAF_FD_ICP_usd2011 / ((consumption_growth^4)[c(as.numeric(icp_ntnu$COICOP1)[1:151],rep(4,n_CES_fuel)),])
+ZAF_FD_ICP_svy.yr <- ZAF_FD_ICP * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF / 1e6 # to M.USD 2007 (MER)
+ZAF_FD_ICP_io.yr <- ZAF_FD_ICP_svy.yr / ZAF_con_grwth
+# ZAF_FD_ICP_io.yr <- ZAF_FD_ICP_svy.yr / ((consumption_growth^4)[c(as.numeric(icp_ntnu$COICOP1)[1:151],rep(4,n_CES_fuel)),])
 # This scaling by consumption_growth will go obsolete and simply use ZAF_con_grwth.
 
 # All households
-ZAF_FD_AllHH_2011 <- ZAF_FD_ICP_AllHH * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF    # From USD 2010 PPP to USD 2007 (MER)
-ZAF_FD_ICP_AllHH <- ZAF_FD_AllHH_2011 / ZAF_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
+ZAF_FD_AllHH_svy.yr <- ZAF_FD_ICP_AllHH * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF    # From USD 2010 PPP to USD 2007 (MER)
+ZAF_FD_ICP_AllHH <- ZAF_FD_AllHH_svy.yr / ZAF_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption in 2007
 
 save(ZAF_FD_ICP_AllHH, file="./Saved tables/ZAF_FD_harmonized.Rda")
-save(ZAF_FD_ICP_usd2007, file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
-load(file="./Saved tables/ZAF_FD_ICP_usd2007.Rda")
+save(ZAF_FD_ICP_io.yr, file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
+load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/ZAF_FD_harmonized.Rda")

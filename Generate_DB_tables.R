@@ -115,3 +115,52 @@ ggplot(a3 %>% filter(ICP_CODE >=41 & ICP_CODE <=80), aes(ICP_CODE, mean)) +
   geom_bar(aes(fill = COUNTRY), position = "dodge", stat="identity")
 
 writeDF2Oracle(a3, "PRI_E_INT_USE", primary.keys=c('COUNTRY', 'YR', 'ICP_CODE'))
+
+
+
+
+#####################################
+### FE intensities from EXIOBASE3 ###
+#####################################
+
+# These values are generated from DLE_integration_Init.R.
+load(file="./Saved tables/BRA.tfei.icp.Rda")
+load(file="./Saved tables/IND.tfei.icp.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.Rda")
+
+load(file="./Saved tables/BRA.tnei.icp.Rda")
+load(file="./Saved tables/IND.tnei.icp.Rda")
+load(file="./Saved tables/ZAF.tnei.icp.Rda")
+
+load(file="./Saved tables/BRA.tfei.icp.elec.Rda")
+load(file="./Saved tables/IND.tfei.icp.elec.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.elec.Rda")
+
+load(file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/IND.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+
+types <- c('.tfei.icp', '.tnei.icp', '.tfei.icp.elec', '.tfei.icp.non.elec')
+types.long <- c('Embodied final total', 'Embodied primary total', 'Embodied final electric', 'Embodied final non-electric')
+ctys <- c('IND', 'BRA', 'ZAF')
+
+int.db.mat <- list()
+for (i in types) {
+  cty.int <- paste0(ctys, i)
+    # int.mat[[j]] <- eval(parse(text=cty.int))
+  # }
+  int.mat = list(eval(parse(text=cty.int[1])), eval(parse(text=cty.int[2])), eval(parse(text=cty.int[3])))
+  names(int.mat) <- ctys
+  
+  int.sum <- list()
+  for (j in 1:length(ctys)) {
+    colnames(int.mat[[j]]) <- ICP_catnames
+    int_summary <- stat.desc(int.mat[[j]]) 
+    int_summary <- t(int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
+    int.sum[[j]] <- data.frame(COUNTRY=ctys[j], YR=IO.year, ICP_CODE=1:164, TYPE=types.long[which(types==i)], int_summary)
+  }
+  int.db.mat[[which(types==i)]] <- do.call("rbind", int.sum)
+}
+
+int.db <- do.call("rbind", int.db.mat)
+writeDF2Oracle(int.db, "ENE_INT_EXIO3", primary.keys=c('COUNTRY', 'YR', 'ICP_CODE', 'TYPE'))

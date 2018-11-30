@@ -241,16 +241,16 @@ carrier.name.fin[primary.in.use]
 # 
 # # Compare elec share (direct vs. indirect intensities) - relying on use block...
 # # This shows that we cannot simply assume direct electricity share is similar to indirect electricity share.
-# # view(data.frame(sector=t(EX_catnames),tot.dir=colSums(totuse_int[,IND_idx_ex]), elec.dir=colSums(elec_int[,IND_idx_ex]), 
+# # view(data.frame(sector=EX_catnames,tot.dir=colSums(totuse_int[,IND_idx_ex]), elec.dir=colSums(elec_int[,IND_idx_ex]), 
 # #                 tot.ind=colSums(indirect_use_int[,IND_idx_ex]), elec.ind=colSums(indirect_El_int[,IND_idx_ex])) %>%
 # #        mutate(share.elec.dir=elec.dir/tot.dir, share.elec.ind=elec.ind/tot.ind)) 
 # 
 # # Total Primary vs. Final 
 # # This again shows that some EXIO sectors (e.g. meat) have too high final energy consumption. (TP < TF)
-# view(data.frame(sector=t(EX_catnames), dir.pri=colSums(p_energy_int.prirow[,IND_idx_ex]), dir.fin=colSums(f_energy_int[,IND_idx_ex]),
+# view(data.frame(sector=EX_catnames, dir.pri=colSums(p_energy_int.prirow[,IND_idx_ex]), dir.fin=colSums(f_energy_int[,IND_idx_ex]),
 #                 tot.pri=colSums(indirect_pE_int.elec.prirow[,IND_idx_ex]), tot.fin=colSums(indirect_fE_int[,IND_idx_ex])) %>%
 #        mutate(share.dir=dir.fin/dir.pri, share.tot=tot.fin/tot.pri))
-# view(data.frame(sector=t(EX_catnames), dir.pri=colSums(p_energy_int.prirow[,IND_idx_ex]), dir.el=colSums(elec_int[,IND_idx_ex]),
+# view(data.frame(sector=EX_catnames, dir.pri=colSums(p_energy_int.prirow[,IND_idx_ex]), dir.el=colSums(elec_int[,IND_idx_ex]),
 #                 tot.pri=colSums(indirect_pE_int.elec.prirow[,IND_idx_ex]), tot.el=colSums(indirect_El_int[,IND_idx_ex])) %>%
 #        mutate(share.dir=dir.el/dir.pri, share.tot=tot.el/tot.pri))
 # 

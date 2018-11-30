@@ -32,7 +32,7 @@ fd_decile_FRA[,2:11] <- fd_decile_FRA[,2:11]/10  / EXR_EUR$r # 1/10 for each dec
 # This is in 109 NTNU COICOP classifications.
 a <- WDI(country = "FR", indicator = "NE.CON.PETC.KD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
 consumption_growth_FR <- a$NE.CON.PETC.KD[1]/a$NE.CON.PETC.KD[5]
-FRA_FD_ICP_usd2007 <- as.matrix(fd_decile_FRA / CPI_ratio_FRA) / consumption_growth_FR # M.EUR to M.USD 2007 [length: 109]
+FRA_FD_ICP_io.yr <- as.matrix(fd_decile_FRA / CPI_ratio_FRA) / consumption_growth_FR # M.EUR to M.USD 2007 [length: 109]
 
 GetTotalEmbeddedEnergy <- function(country='IN') {
   
@@ -49,7 +49,7 @@ GetTotalEmbeddedEnergy <- function(country='IN') {
   emb_energy <- cbind(emb_energy, rowSums(emb_energy))
   
   # country <- countrycode(country, "iso2c", "iso3c")
-  # pop2007 <- eval(parse(text=paste0(country, "_pop_2007")))
+  # pop2007 <- eval(parse(text=paste0(country, "_pop_io.yr")))
   
   # return(colSums(emb_energy)/pop2007*1000)  # in GJ/capita
   return(colSums(emb_energy))  # in TJ

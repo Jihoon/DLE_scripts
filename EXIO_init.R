@@ -72,7 +72,7 @@ tot_use <- tot_use[,c(-1,-2,-3)]
 # Get total use by product 
 tot_demand <- rowSums(final_demand) + rowSums(tot_use)  # X vector (global)
 b <- rowSums(final_demand[,-seq(7, exio.fd.len, 7)]) # Excluding (export for global demand = 0)
-fd.sum <- data.frame(name=t(EX_catnames), ind.use=rowSums(tot_use[IND_idx_ex,]), 
+fd.sum <- data.frame(name=EX_catnames, ind.use=rowSums(tot_use[IND_idx_ex,]), 
                      hh.fd=rowSums(final_demand[IND_idx_ex,seq(1, exio.fd.len, 7)]),
                      oth.fd=rowSums(final_demand[IND_idx_ex,-seq(1, exio.fd.len, 7)])) %>% 
   mutate(tot.use = hh.fd + oth.fd + ind.use)

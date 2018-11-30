@@ -49,34 +49,34 @@ idx.clothing.icp <- c(50, 51)  # 50:55
 idx.footwear.icp <- 54  # 50:55
 
 # Average intensity (MJ/USD) - Not used
-weighted.mean(colMeans(BRA.tfei.icp[, idx.clothing.icp]), weight=BRA_FD_ICP_usd2007[idx.clothing.icp, 1])
-weighted.mean(colMeans(IND.tfei.icp[, idx.clothing.icp]), weight=IND_FD_ICP_usd2007[idx.clothing.icp, 1])
-weighted.mean(colMeans(ZAF.tfei.icp[, idx.clothing.icp]), weight=ZAF_FD_ICP_usd2007[idx.clothing.icp, 1])
+weighted.mean(colMeans(BRA.tfei.icp[, idx.clothing.icp]), weight=BRA_FD_ICP_io.yr[idx.clothing.icp, 1])
+weighted.mean(colMeans(IND.tfei.icp[, idx.clothing.icp]), weight=IND_FD_ICP_io.yr[idx.clothing.icp, 1])
+weighted.mean(colMeans(ZAF.tfei.icp[, idx.clothing.icp]), weight=ZAF_FD_ICP_io.yr[idx.clothing.icp, 1])
 
 # Total energy/year (EJ/year) - Good to be based on household consumption (ICP)
-tot.clothing.BRA <- rowSums(BRA.tfei.icp[, idx.clothing.icp] %*% diag(BRA_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
-tot.clothing.IND <- rowSums(IND.tfei.icp[, idx.clothing.icp] %*% diag(IND_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_IND
-tot.clothing.ZAF <- rowSums(ZAF.tfei.icp[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
+tot.clothing.BRA <- rowSums(BRA.tfei.icp[, idx.clothing.icp] %*% diag(BRA_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
+tot.clothing.IND <- rowSums(IND.tfei.icp[, idx.clothing.icp] %*% diag(IND_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_IND
+tot.clothing.ZAF <- rowSums(ZAF.tfei.icp[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
 
-tot.footwear.BRA <- (BRA.tfei.icp[, idx.footwear.icp] * BRA_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
-tot.footwear.IND <- (IND.tfei.icp[, idx.footwear.icp] * IND_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_IND
-tot.footwear.ZAF <- (ZAF.tfei.icp[, idx.footwear.icp] * ZAF_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
+tot.footwear.BRA <- (BRA.tfei.icp[, idx.footwear.icp] * BRA_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
+tot.footwear.IND <- (IND.tfei.icp[, idx.footwear.icp] * IND_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_IND
+tot.footwear.ZAF <- (ZAF.tfei.icp[, idx.footwear.icp] * ZAF_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
 
-tot.clothing.elec.BRA <- rowSums(BRA.tfei.icp.elec[, idx.clothing.icp] %*% diag(BRA_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
-tot.clothing.elec.IND <- rowSums(IND.tfei.icp.elec[, idx.clothing.icp] %*% diag(IND_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_IND
-tot.clothing.elec.ZAF <- rowSums(ZAF.tfei.icp.elec[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
+tot.clothing.elec.BRA <- rowSums(BRA.tfei.icp.elec[, idx.clothing.icp] %*% diag(BRA_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
+tot.clothing.elec.IND <- rowSums(IND.tfei.icp.elec[, idx.clothing.icp] %*% diag(IND_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_IND
+tot.clothing.elec.ZAF <- rowSums(ZAF.tfei.icp.elec[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
 
-tot.footwear.elec.BRA <- (BRA.tfei.icp.elec[, idx.footwear.icp] * BRA_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
-tot.footwear.elec.IND <- (IND.tfei.icp.elec[, idx.footwear.icp] * IND_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_IND
-tot.footwear.elec.ZAF <- (ZAF.tfei.icp.elec[, idx.footwear.icp] * ZAF_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
+tot.footwear.elec.BRA <- (BRA.tfei.icp.elec[, idx.footwear.icp] * BRA_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
+tot.footwear.elec.IND <- (IND.tfei.icp.elec[, idx.footwear.icp] * IND_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_IND
+tot.footwear.elec.ZAF <- (ZAF.tfei.icp.elec[, idx.footwear.icp] * ZAF_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
 
-tot.clothing.non.elec.BRA <- rowSums(BRA.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(BRA_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
-tot.clothing.non.elec.IND <- rowSums(IND.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(IND_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_IND
-tot.clothing.non.elec.ZAF <- rowSums(ZAF.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
+tot.clothing.non.elec.BRA <- rowSums(BRA.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(BRA_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_BRA
+tot.clothing.non.elec.IND <- rowSums(IND.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(IND_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_IND
+tot.clothing.non.elec.ZAF <- rowSums(ZAF.tfei.icp.non.elec[, idx.clothing.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.clothing.icp, 1])) / 1e6 / scaler_ZAF
 
-tot.footwear.non.elec.BRA <- (BRA.tfei.icp.non.elec[, idx.footwear.icp] * BRA_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
-tot.footwear.non.elec.IND <- (IND.tfei.icp.non.elec[, idx.footwear.icp] * IND_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_IND
-tot.footwear.non.elec.ZAF <- (ZAF.tfei.icp.non.elec[, idx.footwear.icp] * ZAF_FD_ICP_usd2007[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
+tot.footwear.non.elec.BRA <- (BRA.tfei.icp.non.elec[, idx.footwear.icp] * BRA_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_BRA
+tot.footwear.non.elec.IND <- (IND.tfei.icp.non.elec[, idx.footwear.icp] * IND_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_IND
+tot.footwear.non.elec.ZAF <- (ZAF.tfei.icp.non.elec[, idx.footwear.icp] * ZAF_FD_ICP_io.yr[idx.footwear.icp, 1]) / 1e6 / scaler_ZAF
 
 
       # # Approach 2. Based on TPEI (.use) and individual hh expenditure (GJ/cap) - Better! But not used for simple integration
@@ -87,25 +87,25 @@ tot.footwear.non.elec.ZAF <- (ZAF.tfei.icp.non.elec[, idx.footwear.icp] * ZAF_FD
       # load("./Saved tables/BRA_FD_harmonized.Rda") #BRA_FD_ICP_AllHH
       # list[all_HH_c_BR, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'BRA', BRA_FD_ICP_HH_adj_BR, BRA_intensity.use) # more reliable than IND_intensity
       # list[all_HH_c_BR, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'BRA', BRA_FD_ICP_HH_adj_BR, BRA.tfei.icp) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_BR) * as.numeric(BRA_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_BR) * as.numeric(BRA_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # list[all_HH_c_BR, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'BRA', BRA_FD_ICP_AllHH, BRA_intensity.use) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_BR) * as.numeric(BRA_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_BR) * as.numeric(BRA_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # 
       # load("./Saved tables/IND_intensities.use.Rda")
       # load("./Saved tables/IND_FD_ICP_HH_adj.Rda")
       # load("./Saved tables/IND_FD_harmonized.Rda") #IND_FD_ICP_AllHH
       # list[all_HH_c_IN, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'IND', IND_FD_ICP_HH_adj, IND_intensity.use) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_IN) * as.numeric(IND_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_IN) * as.numeric(IND_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # list[all_HH_c_IN, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'IND', IND_FD_ICP_AllHH, IND_intensity.use) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_IN) * as.numeric(IND_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_IN) * as.numeric(IND_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # 
       # load("./Saved tables/ZAF_intensities.use.Rda")
       # load("./Saved tables/ZAF_FD_ICP_HH_adj.Rda")
       # load("./Saved tables/ZAF_FD_harmonized.Rda") #ZAF_FD_ICP_AllHH
       # list[all_HH_c_ZA, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'ZAF', ZAF_FD_ICP_HH_adj, ZAF_intensity.use) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_ZA) * as.numeric(ZAF_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_ZA) * as.numeric(ZAF_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # list[all_HH_c_ZA, sd_hs] <- GetHHSectoralEnergyPerCap(idx.clothing.icp,'ZAF', ZAF_FD_ICP_AllHH, ZAF_intensity.use) # more reliable than IND_intensity
-      # (SummarizeGJPerCap(all_HH_c_ZA) * as.numeric(ZAF_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd)
+      # (SummarizeGJPerCap(all_HH_c_ZA) * as.numeric(ZAF_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd)
       # 
       # rm(all_HH_c_BR, all_HH_c_IN, all_HH_c_ZA)
       # gc()
@@ -149,10 +149,10 @@ dle.footwear.pcap.IND <- footwear.all %>% summarise(median = weighted.median(wei
 # avg.clothing.pcap.IND <- clothing.all %>% summarise(mean = weighted.mean(weight.tot/hh_size, weight, na.rm=TRUE)/1000) %>% as.numeric() # 1.3 kg/cap
 # avg.footwear.pcap.IND <- footwear.all %>% summarise(mean = weighted.mean(weight.tot/hh_size, weight, na.rm=TRUE)/1000) %>% as.numeric()  # 0.9 kg/cap
 avg.clothing.pcap.IND <- clothing.all %>% 
-  summarise(val_tot=sum(weight.tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/IND_pop_2007/1000) %>%
+  summarise(val_tot=sum(weight.tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/IND_pop_io.yr/1000) %>%
   select(kg.pcap) %>% as.numeric()
 avg.footwear.pcap.IND <- footwear.all %>% 
-  summarise(val_tot=sum(weight.tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/IND_pop_2007/1000) %>%
+  summarise(val_tot=sum(weight.tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/IND_pop_io.yr/1000) %>%
   select(kg.pcap) %>% as.numeric()
 
 # Mean expenditure $/cap - IND - Not used
@@ -187,10 +187,10 @@ dle.footwear.pcap.ZAF <- ZAF_footwear.all %>%
   select(kg.pcap) %>% as.numeric()
 
 avg.clothing.pcap.ZAF <- ZAF_clothing.all %>%
-  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/ZAF_pop_2007/avg.price.clothing) %>%
+  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/ZAF_pop_io.yr/avg.price.clothing) %>%
   select(kg.pcap) %>% as.numeric()
 avg.footwear.pcap.ZAF <- ZAF_footwear.all %>%
-  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/ZAF_pop_2007/avg.price.footwear) %>%
+  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/ZAF_pop_io.yr/avg.price.footwear) %>%
   select(kg.pcap) %>% as.numeric()
 
 # Mean expenditure $ - ZAF
@@ -215,10 +215,10 @@ dle.footwear.pcap.BRA <- BRA_footwear.all %>%
   select(kg.pcap) %>% as.numeric()
 
 avg.clothing.pcap.BRA <- BRA_clothing %>% left_join(BRA_HH, by = c("id" = "hhid")) %>%
-  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/BRA_pop_2007/avg.price.clothing) %>%
+  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/BRA_pop_io.yr/avg.price.clothing) %>%
   select(kg.pcap) %>% as.numeric()
 avg.footwear.pcap.BRA <- BRA_footwear %>% left_join(BRA_HH, by = c("id" = "hhid")) %>%
-  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/BRA_pop_2007/avg.price.footwear) %>%
+  summarise(val_tot=sum(val_tot*weight, na.rm=TRUE)) %>% mutate(kg.pcap=val_tot/BRA_pop_io.yr/avg.price.footwear) %>%
   select(kg.pcap) %>% as.numeric()
 
 # Mean expenditure $ - BRA
@@ -231,20 +231,20 @@ exp.footwear.pcap.BRA <- BRA_footwear.all %>%
 
 ### Derive total kg of Clothing (to get MJ/kg)
 
-tot.clothing.kg.IND <- avg.clothing.pcap.IND *IND_pop_2007
-tot.footwear.kg.IND <- avg.footwear.pcap.IND *IND_pop_2007
-tot.dle.clothing.kg.IND <- dle.clothing.pcap.IND *IND_pop_2007
-tot.dle.footwear.kg.IND <- dle.footwear.pcap.IND *IND_pop_2007
+tot.clothing.kg.IND <- avg.clothing.pcap.IND *IND_pop_io.yr
+tot.footwear.kg.IND <- avg.footwear.pcap.IND *IND_pop_io.yr
+tot.dle.clothing.kg.IND <- dle.clothing.pcap.IND *IND_pop_io.yr
+tot.dle.footwear.kg.IND <- dle.footwear.pcap.IND *IND_pop_io.yr
 
-tot.clothing.kg.ZAF <- avg.clothing.pcap.ZAF *ZAF_pop_2007
-tot.footwear.kg.ZAF <- avg.footwear.pcap.ZAF *ZAF_pop_2007
-tot.dle.clothing.kg.ZAF <- dle.clothing.pcap.ZAF *ZAF_pop_2007
-tot.dle.footwear.kg.ZAF <- dle.footwear.pcap.ZAF *ZAF_pop_2007
+tot.clothing.kg.ZAF <- avg.clothing.pcap.ZAF *ZAF_pop_io.yr
+tot.footwear.kg.ZAF <- avg.footwear.pcap.ZAF *ZAF_pop_io.yr
+tot.dle.clothing.kg.ZAF <- dle.clothing.pcap.ZAF *ZAF_pop_io.yr
+tot.dle.footwear.kg.ZAF <- dle.footwear.pcap.ZAF *ZAF_pop_io.yr
 
-tot.clothing.kg.BRA <- avg.clothing.pcap.BRA *BRA_pop_2007
-tot.footwear.kg.BRA <- avg.footwear.pcap.BRA *BRA_pop_2007
-tot.dle.clothing.kg.BRA <- dle.clothing.pcap.BRA *BRA_pop_2007
-tot.dle.footwear.kg.BRA <- dle.footwear.pcap.BRA *BRA_pop_2007
+tot.clothing.kg.BRA <- avg.clothing.pcap.BRA *BRA_pop_io.yr
+tot.footwear.kg.BRA <- avg.footwear.pcap.BRA *BRA_pop_io.yr
+tot.dle.clothing.kg.BRA <- dle.clothing.pcap.BRA *BRA_pop_io.yr
+tot.dle.footwear.kg.BRA <- dle.footwear.pcap.BRA *BRA_pop_io.yr
 
 
 

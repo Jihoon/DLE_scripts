@@ -28,21 +28,21 @@ idx.food.icp <- 1:45
 
 # Approach #1
 # in [EJ] = 1e12 MJ
-tot.food.BRA <- mean(rowSums(BRA.tfei.icp[, idx.food.icp] %*% diag(BRA_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_BRA
-tot.food.IND <- mean(rowSums(IND.tfei.icp[, idx.food.icp] %*% diag(IND_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_IND
-tot.food.ZAF <- mean(rowSums(ZAF.tfei.icp[, idx.food.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_ZAF
+tot.food.BRA <- mean(rowSums(BRA.tfei.icp[, idx.food.icp] %*% diag(BRA_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_BRA
+tot.food.IND <- mean(rowSums(IND.tfei.icp[, idx.food.icp] %*% diag(IND_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_IND
+tot.food.ZAF <- mean(rowSums(ZAF.tfei.icp[, idx.food.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_ZAF
 
-tot.food.elec.BRA <- mean(rowSums(BRA.tfei.icp.elec[, idx.food.icp] %*% diag(BRA_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_BRA
-tot.food.elec.IND <- mean(rowSums(IND.tfei.icp.elec[, idx.food.icp] %*% diag(IND_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_IND
-tot.food.elec.ZAF <- mean(rowSums(ZAF.tfei.icp.elec[, idx.food.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.food.icp, 1]))) / 1e6 / scaler_ZAF
+tot.food.elec.BRA <- mean(rowSums(BRA.tfei.icp.elec[, idx.food.icp] %*% diag(BRA_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_BRA
+tot.food.elec.IND <- mean(rowSums(IND.tfei.icp.elec[, idx.food.icp] %*% diag(IND_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_IND
+tot.food.elec.ZAF <- mean(rowSums(ZAF.tfei.icp.elec[, idx.food.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.food.icp, 1]))) / 1e6 / scaler_ZAF
 
 # Test Approach #2
     # list[all_HH_f_IN, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'IND', IND_FD_ICP_AllHH, IND.tfei.icp) # more reliable than IND_intensity
-    # (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+    # (SummarizeGJPerCap(all_HH_f_IN) * (IND_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
     # list[all_HH_f_ZA, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'ZAF', ZAF_FD_ICP_AllHH, ZAF.tfei.icp) # more reliable than IND_intensity
-    # (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+    # (SummarizeGJPerCap(all_HH_f_ZA) * (ZAF_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
     # list[all_HH_f_BR, sd_hs] <- GetHHSectoralEnergyPerCap(ICP_food_idx,'BRA', BRA_FD_ICP_AllHH, BRA.tfei.icp) # more reliable than IND_intensity
-    # (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_2007)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
+    # (SummarizeGJPerCap(all_HH_f_BR) * (BRA_pop_io.yr)) %>% mutate(min=u-2*sd, max=u+2*sd) / 1e9 # [EJ]
 
 
 # Scale the optm output with the aggregate value (tot.food.IND) because optm output seems too high because of mean of avg vs. avg of mean
@@ -52,7 +52,7 @@ IND.food.tfei$EJ <- IND.food.tfei$EJ * mean(tot.food.IND)/IND.food.tfei$EJ[1]
 # Also scale kcal based on SSP2 assumption
 # Base case divide by Hugo's SSP2 (2010) kcal (instead of our optimization outputs), which can be more reliable (w/o e.g. eat-out assumptions)
 # Other opt scenarios are scaled at the same rate.
-DLE.base.kcal.pcap <- IND.food.tfei$kcal[1]/365/IND_pop_2007
+DLE.base.kcal.pcap <- IND.food.tfei$kcal[1]/365/IND_pop_io.yr
 SSP2.base.kcal.pcap <- kcal.ssp2 %>% filter(Region=="IND" & Year==2010) %>% select(Val) %>% as.numeric()
 IND.food.tfei$kcal <- IND.food.tfei$kcal * SSP2.base.kcal.pcap/DLE.base.kcal.pcap
 # Update intensities
@@ -60,10 +60,10 @@ IND.food.tfei <- IND.food.tfei %>% mutate(ene.int=EJ/kcal*1e12, emi.int=gCO2e/kc
 
 
 # For BRA and ZAF, all scenarios are the same (no deficiency assumed)
-BRA.base      <- tot.food.BRA      / (kcal.ssp2 %>% filter(Region=="BRA" & Year==2010)%>%select(Val) * BRA_pop_2007/1e12*365)
-ZAF.base      <- tot.food.ZAF      / (kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010)%>%select(Val) * ZAF_pop_2007/1e12*365)
-BRA.base.elec <- tot.food.elec.BRA / (kcal.ssp2 %>% filter(Region=="BRA" & Year==2010)%>%select(Val) * BRA_pop_2007/1e12*365) 
-ZAF.base.elec <- tot.food.elec.ZAF / (kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010)%>%select(Val) * ZAF_pop_2007/1e12*365)
+BRA.base      <- tot.food.BRA      / (kcal.ssp2 %>% filter(Region=="BRA" & Year==2010)%>%select(Val) * BRA_pop_io.yr/1e12*365)
+ZAF.base      <- tot.food.ZAF      / (kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010)%>%select(Val) * ZAF_pop_io.yr/1e12*365)
+BRA.base.elec <- tot.food.elec.BRA / (kcal.ssp2 %>% filter(Region=="BRA" & Year==2010)%>%select(Val) * BRA_pop_io.yr/1e12*365) 
+ZAF.base.elec <- tot.food.elec.ZAF / (kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010)%>%select(Val) * ZAF_pop_io.yr/1e12*365)
 
 # For IND, intensities depend on scenarios. (MJ/kcal) 
 IND.base <- IND.food.tfei %>% filter(name=="base") %>% select(ene.int) %>% as.numeric()

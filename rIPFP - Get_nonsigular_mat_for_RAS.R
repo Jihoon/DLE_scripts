@@ -62,17 +62,17 @@ FRA_inten_nonRAS_noVal <- SetupSectorIntensities(alloc_nonRAS, NC_FRA_noVal, "FR
 # Note: There are cases where ICP expenditure is zero for a sector from a country.
 # In the RAS approach, we do not get intensity numbers because no expenditure is assigned and thus no emission.
 # In this case, I copy intensities from the non-RAS estimation.
-no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
+no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_io.yr[,1]==0))
 no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 IND_inten_RAS_combined_noVal <- IND_inten_RAS_noVal
 IND_inten_RAS_combined_noVal[,no_expense_IND] <- IND_inten_nonRAS_noVal[,no_expense_IND]
 
-no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
+no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_io.yr[,1]==0))
 no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 BRA_inten_RAS_combined_noVal <- BRA_inten_RAS_noVal
 BRA_inten_RAS_combined_noVal[,no_expense_BRA] <- BRA_inten_nonRAS_noVal[,no_expense_BRA]
 
-no_expense_FRA <- which((rowSums(bridge_COICOP_EXIO_q[,-1])!=0) & (FRA_FD_ICP_usd2007[,1]==0))
+no_expense_FRA <- which((rowSums(bridge_COICOP_EXIO_q[,-1])!=0) & (FRA_FD_ICP_io.yr[,1]==0))
 FRA_inten_RAS_combined_noVal <- FRA_inten_RAS_noVal
 FRA_inten_RAS_combined_noVal[,no_expense_FRA] <- FRA_inten_nonRAS_noVal[,no_expense_FRA]
 
@@ -108,41 +108,41 @@ par(opar)
 # hh consumption [$2007] = 6.898717e+11
 # per-cap energy
 a <- WDI(country = "IN", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
-a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_IN[,1]) / 1e3 / IND_pop_2007
+a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_IN[,1]) / 1e3 / IND_pop_io.yr
 
 # Total primary energy consumption  
 # https://www.eia.gov/cfapps/ipdbproject/IEDIndex3.cfm?tid=44&pid=44&aid=2
 # TPEC -> 19 QBtu = 479 Mtoe (2007)
-2.005E+19 / 1e9 / IND_pop_2007
+2.005E+19 / 1e9 / IND_pop_io.yr
 # http://www.statista.com/statistics/265582/primary-energy-consumption-in-india/
 # 420.3 Mtoe(2007)
-1.75971204E+19 / 1e9 / IND_pop_2007
+1.75971204E+19 / 1e9 / IND_pop_io.yr
 # http://www.statista.com/statistics/265582/primary-energy-consumption-in-india/
 # 575 Mtoe
-2.40741E+19 / 1e9 / IND_pop_2007
+2.40741E+19 / 1e9 / IND_pop_io.yr
 # 622 Mtoe from http://www.iea.org/sankey/#?c=India&s=Balance
-2.6041E+19 / 1e9 / IND_pop_2007
+2.6041E+19 / 1e9 / IND_pop_io.yr
 
 # France
-FRA_pop_2007 <- 64e6
+FRA_pop_io.yr <- 64e6
 # https://www.google.at/search?q=primary+energy+consumption+france&espv=2&biw=1920&bih=911&tbm=isch&tbo=u&source=univ&sa=X&ved=0ahUKEwiXnpScuLHMAhXBIcAKHaWoAV0QsAQIIQ&dpr=1#imgrc=h_RwRGCAT_rZyM%3A
 # 250 Mtoe (2007)
-1.0467E+19 / 1e9 / FRA_pop_2007
+1.0467E+19 / 1e9 / FRA_pop_io.yr
 
 # per-cap energy
 a <- WDI(country = "FR", indicator = "NE.CON.PETC.CD", start = 2007, end = 2011, extra = FALSE, cache = NULL)
-a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_FR[,1]) / 1e3 / FRA_pop_2007
+a$NE.CON.PETC.CD[5] * EXR_EUR$r * median(int_by_decile_FR[,1]) / 1e3 / FRA_pop_io.yr
 
 # https://www.eia.gov/cfapps/ipdbproject/IEDIndex3.cfm?tid=44&pid=44&aid=2
 # TPEC -> 10 QBtu = 252 Mtoe (2007) = 1.06E+19 J
 # TPEC -> 275 Mtoe (2007) from http://www.iea.org/sankey/#?c=Brazil&s=Balance
-1.15E+19 / 1e9 / BRA_pop_2007
+1.15E+19 / 1e9 / BRA_pop_io.yr
 
 # Compare rowSum sizes between CES and RASed one
-a <- cbind(bridge_ICP_EXIO_q[,1], rowSums(final_RAS_list[[1]]), IND_FD_ICP_usd2007[,1], IND_FD_ICP_usd2007[,1] > rowSums(final_RAS_list[[1]]))
+a <- cbind(bridge_ICP_EXIO_q[,1], rowSums(final_RAS_list[[1]]), IND_FD_ICP_io.yr[,1], IND_FD_ICP_io.yr[,1] > rowSums(final_RAS_list[[1]]))
 
-idx_anomaly <- IND_FD_ICP_usd2007[,1] > rowSums(final_RAS_list[[1]])
-anomaly <- data.frame(bridge_ICP_EXIO_q[idx_anomaly,1], IND_FD_ICP_usd2007[,1][idx_anomaly], rowSums(final_RAS_list[[1]])[idx_anomaly])
+idx_anomaly <- IND_FD_ICP_io.yr[,1] > rowSums(final_RAS_list[[1]])
+anomaly <- data.frame(bridge_ICP_EXIO_q[idx_anomaly,1], IND_FD_ICP_io.yr[,1][idx_anomaly], rowSums(final_RAS_list[[1]])[idx_anomaly])
 names(anomaly) <- c("SV_sector", "SV_exp", "RAS_exp")
 write.table(anomaly, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 

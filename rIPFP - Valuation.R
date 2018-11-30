@@ -166,11 +166,11 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 # For now, use three countries
 
 val_IN <- get_valuation_mtx('IN', 0)
-val_BR <- get_valuation_mtx('BR', 0)
+val_BR_EX <- get_valuation_mtx('BR', 0)
 val_FR <- get_valuation_mtx('FR', 0)
 val_US <- get_valuation_mtx('US', 0)
 val_ZA <- get_valuation_mtx('ZA', 0)
-val_mtx <- list(val_FR, val_BR, val_US, val_IN, val_ZA)
+val_mtx <- list(val_FR, val_BR_EX, val_US, val_IN, val_ZA)
 names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 
@@ -325,5 +325,10 @@ valscale <- sum(BRA_val$TrdMrg[-trd_idx]) / sum(BRA_val$TrdMrg[trd_idx])
 BRA_val$TrdMrg[-trd_idx] <- BRA_val$TrdMrg[-trd_idx] / abs(valscale)
 
 attach(BRA_val)
-val_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
+val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
 detach(BRA_val)
+
+val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
+names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
+
+# User can select which val_mtx to use with val_BR_BR or val_BR_EX. By default, val_BR_BR is preferred.

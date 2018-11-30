@@ -34,6 +34,7 @@ IND_HH.CDDHDD <- IND_HH %>%
   # mutate_cond(is.nan(HDD.18), HDD.18=avg.HDD.18.IND) %>% 
   mutate_cond(is.nan(CDD), CDD=avg.CDD.IND) %>% select(id, region, HDD, CDD) #, HDD.18)
 
+# clothing.all from 
 clothing.HDD <- clothing.all %>% full_join(footwear.all %>% select(id, weight.tot.f = weight.tot)) %>%
   left_join(IND_HH.CDDHDD) %>% 
   mutate_at(vars(weight.tot, income), funs(pcap=./hh_size)) %>% mutate(HDD2 = HDD^2)
@@ -69,18 +70,15 @@ write.table(tidy.clothing, "clipboard", sep="\t", row.names = FALSE, col.names =
 
 
 clothing.region.income <- clothing.HDD %>% group_by(region, decile) %>% 
-  summarise(weight.clothing = weighted.mean(weight.tot, w=weight), HDD = first(HDD), 
+  summarise(weight.clothing = weighted.mean(weight.tot, w=weight), HDD = first(HDD), weight.pcap = weighted.mean(weight.tot_pcap, w=weight),
             # HDD.18 = first(HDD.18), 
-            pop=sum(weight*hh_size))
+            pop=sum(weight*hh_size)) #%>% mutate(weight.pcap = weight.clothing/pop)
 
 ggplot(clothing.region.income, aes(x=HDD, y=weight.clothing)) +
   geom_point(aes(group = decile, colour=decile))
 ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing)) +
   geom_point(aes(group = decile, colour=decile))
-ggplot(clothing.region.income, aes(x=HDD, y=weight.clothing/1000, size=pop, group = decile, colour=decile)) +
-  stat_sum() + scale_size_area(max_size = 15, breaks=c(5e6, 1e7, 2e7), labels = c("5 mil" ,"10 mil", "20 mil")) + 
-  labs(x="HDD.30", y="Household clothing consumption (kg)", 
-       colour="Consumption decile", size="Population") 
+
 
 ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing, size=weight, group = decile, colour=decile)) +
   stat_sum() + scale_size_area(max_size = 12) + labs(x="HDD.18")
@@ -116,3 +114,22 @@ ZAF_HH.HDD <- ZAF_HH.HDD %>% mutate(weight.tot= predict(lm.clothing, ZAF_HH.HDD)
 
 dle.clothing.pcap.ZAF.HDD <- weighted.median(ZAF_HH.HDD$weight.pcap, w=ZAF_HH.HDD$weight)/1000
 dle.footwear.pcap.ZAF.HDD <- weighted.median(ZAF_HH.HDD$weight.pcap.f, w=ZAF_HH.HDD$weight)/1000
+
+
+### Plot in the DLE SI
+dle.clothing.pcap.IND <- clothing.all %>% summarise(median = weighted.median(weight.tot/hh_size, weight, na.rm=TRUE)/1000) %>% as.numeric() # 1.3 kg/cap
+
+temp.sum = data.frame(country=c('IND', 'BRA', 'ZAF'), 
+           HDD.mean=c(avg.HDD.IND, 
+                      BRA_HH.HDD %>% summarise(weighted.mean(HDD, w=weight)) %>% as.numeric(), 
+                      ZAF_HH.HDD %>% summarise(weighted.mean(HDD, w=weight)) %>% as.numeric()),
+           weight.pcap=c(dle.clothing.pcap.IND, dle.clothing.pcap.BRA.HDD, dle.clothing.pcap.ZAF.HDD))
+
+ggplot() + 
+  stat_sum(data=clothing.region.income, aes(x=HDD, y=weight.pcap/1000, size=pop, group = decile, colour=decile)) + 
+  scale_size_area(max_size = 15, breaks=c(5e6, 1e7, 2e7), labels = c("5 mil" ,"10 mil", "20 mil")) + 
+  labs(x="HDD.30", y="Per-capita clothing consumption (kg)", 
+       colour="Consumption decile", size="Population") +
+  geom_point(data=temp.sum, aes(x=HDD.mean, y=weight.pcap), size=3, shape=23, color='deepskyblue1', fill='deepskyblue1') +
+  # scale_shape_manual(values=c(4), guide = FALSE) +
+  geom_text(data=temp.sum, aes(x=HDD.mean, y=weight.pcap, label = country), nudge_x=230, fontface='bold', color='deepskyblue1')

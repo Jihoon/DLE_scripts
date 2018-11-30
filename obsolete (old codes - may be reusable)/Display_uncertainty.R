@@ -55,27 +55,27 @@ PE_int_sector_direc <- energy_int[nature_input_idx, IN_idx[1]-1+EXIO_sect_mapped
 PE_int_sector_indirec <- indirect_E_int[nature_input_idx, IN_idx[1]-1+EXIO_sect_mapped]  # The energy extension has not intensities but total consumptions.
 colSums(PE_int_sector_indirec)
 
-barplot(IND_FD_ICP_usd2007[,2], xlab="ICP sector", main="Sectoral expenditure by the lowest decile in India [2007 US$] ")
-text(1:n_sector_icp*1.2, y=IND_FD_ICP_usd2007[,2], 1:n_sector_icp, pos=1, offset=0, cex = 0.7, srt = 90)
+barplot(IND_FD_ICP_io.yr[,2], xlab="ICP sector", main="Sectoral expenditure by the lowest decile in India [2007 US$] ")
+text(1:n_sector_icp*1.2, y=IND_FD_ICP_io.yr[,2], 1:n_sector_icp, pos=1, offset=0, cex = 0.7, srt = 90)
 
 divider <- c(2, 8, 14, 17, 22, 25, 28, 32, 37, 40, 47, 55, 65, 84, 95, 112, 116, 134, 135, 137)
 col_IND <- c(shadepalette(5, "white", "orange"), shadepalette(5, "darkgreen", "white"))
 col_FRA <- c(shadepalette(5, "white", "blue"), shadepalette(5, "red", "white"))
-barplot(t(IND_FD_ICP_usd2007)[2:11,1:40], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(IND_FD_ICP_io.yr)[2:11,1:40], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 1:40)
-barplot(t(IND_FD_ICP_usd2007)[2:11,41:80], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(IND_FD_ICP_io.yr)[2:11,41:80], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 41:80)
-barplot(t(IND_FD_ICP_usd2007)[2:11,81:120], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(IND_FD_ICP_io.yr)[2:11,81:120], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 81:120)
-barplot(t(IND_FD_ICP_usd2007)[2:11,121:151], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(IND_FD_ICP_io.yr)[2:11,121:151], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 121:151)
-barplot(t(IND_FD_ICP_usd2007)[2:11,1:151], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(IND_FD_ICP_io.yr)[2:11,1:151], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 1:151)
 
 opar <- par() 
 food_ICP <- 1:40
 food_COICOP <- 1:11
-a<-(sweep(IND_FD_ICP_usd2007[food_ICP,], 2, colSums(IND_FD_ICP_usd2007[food_ICP,], na.rm = TRUE), '/'))
+a<-(sweep(IND_FD_ICP_io.yr[food_ICP,], 2, colSums(IND_FD_ICP_io.yr[food_ICP,], na.rm = TRUE), '/'))
 remove_idx <- which(rowSums(a)==0)
 a <- a[-remove_idx,]
 pdf(file = paste0(figure_path, "5.1 IND food breakdown.pdf"), width = 15, height = 10)
@@ -84,7 +84,7 @@ pdf(file = paste0(figure_path, "5.1 IND food breakdown.pdf"), width = 15, height
           las=2, col = col_IND, names.arg = ICP_catnames[food_ICP[-remove_idx]])
 dev.off()
 
-b<-(sweep(FRA_FD_ICP_usd2007[food_COICOP,], 2, colSums(FRA_FD_ICP_usd2007[food_COICOP,], na.rm = TRUE), '/'))
+b<-(sweep(FRA_FD_ICP_io.yr[food_COICOP,], 2, colSums(FRA_FD_ICP_io.yr[food_COICOP,], na.rm = TRUE), '/'))
 pdf(file = paste0(figure_path, "5.2 FRA food breakdown.pdf"), width = 15, height = 10)
   par(mar=c(22,4.1,2.1,2.1))
   barplot(t(b)[2:11,], beside=TRUE, ylab = "Fraction among food consumption", 
@@ -95,8 +95,8 @@ par(opar)
 focus_sect_COICOP <- 42 # "Small electric household appliances" in COICOP
 hist(int_by_decile_FR[,2], 200, main="Decile 1 - France", xlab ="Intensity [MJ/EUR]")
 hist(FRA_inten_RAS[,focus_sect_COICOP], 200, main="Small electric household appliances (COICOP) - FRANCE", xlab ="Intensity [MJ/EUR]")
-barplot(FRA_FD_ICP_usd2007[,2])
-barplot(t(FRA_FD_ICP_usd2007)[2:11,1:50], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(FRA_FD_ICP_io.yr[,2])
+barplot(t(FRA_FD_ICP_io.yr)[2:11,1:50], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 1:50)
-barplot(t(FRA_FD_ICP_usd2007)[2:11,51:109], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
+barplot(t(FRA_FD_ICP_io.yr)[2:11,51:109], beside=TRUE, ylab = "Expenditure [2007 US$]", las=2, col = col_IND, 
         names.arg = 51:109)

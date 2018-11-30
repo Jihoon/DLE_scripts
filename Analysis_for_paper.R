@@ -26,8 +26,6 @@ D_val_uncertainty <- 0
 
 # 1.1. BRA - EXIO default
 
-val_BR_EX <- get_valuation_mtx('BR', 0)
-
 # Re-set val_mtx for further analysis
 val_mtx <- list(val_FR, val_BR_EX, val_US, val_IN, val_ZA)
 names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
@@ -40,17 +38,13 @@ save(BRA_FD_adj_val_EXIO, file="./Saved tables/BRA_FD_adj_val_EXIO.Rda")
 
 # 1.2. BRA - Brazil-specific valuation (from Guilioto)
 
-attach(BRA_val)
-val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
-detach(BRA_val)
-
 # Re-set val_mtx for further analysis
 val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
 names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
-scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_BR)
-init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
+scaler_BRA <- sum(BRA_FD_ICP_io.yr[,1]) / sum(BRA_fd_exio_pp_BR)
+init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
 
 list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
 # list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
@@ -124,11 +118,11 @@ list[ZAF_intensity.use, ZAF_alloc.use, NC_ZAF.use, ZAF_FD_adj.use] <- DeriveInte
 save(ZAF_intensity.use, file="./Saved tables/ZAF_intensities.use.Rda")
 
 
-no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_usd2007[,1]==0))
+no_expense_IND <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (IND_FD_ICP_io.yr[,1]==0))
 no_expense_IND <- no_expense_IND[!(no_expense_IND %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
-no_expense_ZAF <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (ZAF_FD_ICP_usd2007[,1]==0))
+no_expense_ZAF <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (ZAF_FD_ICP_io.yr[,1]==0))
 no_expense_ZAF <- no_expense_ZAF[!(no_expense_ZAF %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
-no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_usd2007[,1]==0))
+no_expense_BRA <- which((rowSums(bridge_ICP_EXIO_q[,-1])!=0) & (BRA_FD_ICP_io.yr[,1]==0))
 no_expense_BRA <- no_expense_BRA[!(no_expense_BRA %in% grep("UNBR", ICP_catnames))]   # Remove UNBR items
 
 
@@ -196,7 +190,7 @@ p2 <- PlotFuelIntensity(ZAF_intensity.use, no_expense_ZAF, 600)
 dev.off()
 
 view(data.frame(icp=ICP_catnames, pri.avg=colMeans(IND_intensity), final.avg=colMeans(IND_f.intensity) ))
-view(data.frame(exio=t(EX_catnames), pri.avg=colSums(indirect_E_int[, IND_idx_ex]), final.avg=colSums(indirect_fE_int[, IND_idx_ex])))
+view(data.frame(exio=EX_catnames, pri.avg=colSums(indirect_E_int[, IND_idx_ex]), final.avg=colSums(indirect_fE_int[, IND_idx_ex])))
 
 #####################
 # ICP FD adjustment #
@@ -240,8 +234,8 @@ save(IND_FD_ICP_HH_adj, file="./Saved tables/IND_FD_ICP_HH_adj.Rda")
 
 # scaler_IND needed since IND_FD_ICP_HH_adj is not scaled to match fd_exio
 
-IND_FD_ICP_adj <- IND_FD_ICP_usd2007 * (chng_pct_IND + 1)
-r_dec <- colSums(IND_FD_ICP_usd2007[,-1])/sum(IND_FD_ICP_usd2007[,1])  # ratio of decile total to (unweighted) total
+IND_FD_ICP_adj <- IND_FD_ICP_io.yr * (chng_pct_IND + 1)
+r_dec <- colSums(IND_FD_ICP_io.yr[,-1])/sum(IND_FD_ICP_io.yr[,1])  # ratio of decile total to (unweighted) total
 IND_FD_ICP_adj[idx_inf,-1] <- t(sapply(IND_FD_adj[idx_inf], # M.USD
                                         function(x) x * r_dec)) * scaler_IND   
 IND_FD_ICP_adj[idx_inf,1] <- IND_FD_adj[idx_inf]
@@ -268,8 +262,8 @@ gc()
 save(ZAF_FD_ICP_HH_adj, file="./Saved tables/ZAF_FD_ICP_HH_adj.Rda")
 # scaler_ZAF needed since ZAF_FD_ICP_HH_adj is not scaled to match fd_exio
 
-ZAF_FD_ICP_adj <- ZAF_FD_ICP_usd2007 * (chng_pct_ZAF + 1)
-r_dec <- colSums(ZAF_FD_ICP_usd2007[,-1])/sum(ZAF_FD_ICP_usd2007[,1])  # ratio of decile total to (unweighted) total
+ZAF_FD_ICP_adj <- ZAF_FD_ICP_io.yr * (chng_pct_ZAF + 1)
+r_dec <- colSums(ZAF_FD_ICP_io.yr[,-1])/sum(ZAF_FD_ICP_io.yr[,1])  # ratio of decile total to (unweighted) total
 ZAF_FD_ICP_adj[idx_inf,-1] <- t(sapply(ZAF_FD_adj[idx_inf], # M.USD
                                        function(x) x * r_dec)) * scaler_ZAF   
 ZAF_FD_ICP_adj[idx_inf,1] <- ZAF_FD_adj[idx_inf]
@@ -543,8 +537,8 @@ BRA_FD_compare <- data.frame(ICP_catnames, init=as.integer(init_FD_BRA),
                              EX_adj=as.integer(BRA_FD_adj_val_EXIO), EX_pct=chng_pct_val_EXIO*100)
 View(IND_FD_compare)
 View(BRA_FD_compare)
-View(cbind(BRA_fd_exio, BRA_fd_exio_pp_EX, BRA_fd_exio_pp_BR, BRA_fd_exio_pp_BR/BRA_fd_exio_pp_EX, t(EX_catnames)))
-View(cbind(IND_fd_exio, IND_fd_exio_pp, t(EX_catnames)))
+View(cbind(BRA_fd_exio, BRA_fd_exio_pp_EX, BRA_fd_exio_pp_BR, BRA_fd_exio_pp_BR/BRA_fd_exio_pp_EX, EX_catnames))
+View(cbind(IND_fd_exio, IND_fd_exio_pp, EX_catnames))
 View(eHH_summary)
 
 sect_idx <- grep("household fuel", ICP_catnames, ignore.case = TRUE)
@@ -564,20 +558,20 @@ TotEmbodEne_BRA <- mean(apply(eHH_BRA[,2:(dim(eHH_BRA)[2]-dim(BRA_HH)[2]), with=
 TotEmbodEne_IND <- mean(apply(eHH_IND[,2:(dim(eHH_IND)[2]-dim(IND_HH)[2]-2), with=FALSE], 2, 
                               function(x) {sum(x * eHH_IND$hh_size *eHH_IND$weight)}))
 TotEmbodEne_IND <- sum(apply(eHH_IND[,2:(dim(eHH_IND)[2]-dim(IND_HH)[2]-2), with=FALSE], 1, mean) * eHH_IND$hh_size *eHH_IND$weight)
-TotEmbodEne_BRA / BRA_pop_2007  # Average GJ/capita for the country
-TotEmbodEne_IND / IND_pop_2007
+TotEmbodEne_BRA / BRA_pop_io.yr  # Average GJ/capita for the country
+TotEmbodEne_IND / IND_pop_io.yr
 TotEmbodEne_IND / sum(eHH_IND$hh_size *eHH_IND$weight)
 
 # Food energy per capita
 TotFoodEne_IND <- mean(apply(all_HH_f_IN[,2:(dim(all_HH_f_IN)[2]-dim(IND_HH)[2]-2), with=FALSE], 2, 
                               function(x) {sum(x * all_HH_f_IN$hh_size *all_HH_f_IN$weight)}))
-TotFoodEne_IND / IND_pop_2007
+TotFoodEne_IND / IND_pop_io.yr
 
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_AllHH, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
 TotHHFD_BRA <- sum(apply(BRA_FD_ICP_HH_adj_EX, 1, function(x) {sum(x * eHH_BRA$weight)})) /1e6
 TotHHFD_IND <- sum(apply(IND_FD_ICP_AllHH, 1, function(x) {sum(x * eHH_IND$weight)})) /1e6
-sum(IND_FD_ICP_usd2007[,1])
-sum(BRA_FD_ICP_usd2007[,1])
+sum(IND_FD_ICP_io.yr[,1])
+sum(BRA_FD_ICP_io.yr[,1])
 
 # We see that Brazil GJ/capita become very high..
 # Let's try to find out which sector it is..
@@ -661,7 +655,7 @@ BRA.agg.dec <- exp.food.allHH[tot.expend.food>0] %>% select(V1:V45, decile, weig
 int.fdbev.per.cap <- rowSums(data.matrix(BRA.agg.dec[,2:46]) %*% diag(mean.int.fdbev)) / 1e3 / BRA.agg$pop
 
 # Aggregate GJ/USD for all food = 12.1        
-BRA_adj_fdbev <- 1e6 * BRA_FD_ICP_usd2007 * (chng_pct_val_BRA + 1) / scaler_BRA # M.USD to USD
+BRA_adj_fdbev <- 1e6 * BRA_FD_ICP_io.yr * (chng_pct_val_BRA + 1) / scaler_BRA # M.USD to USD
 BRA_adj_fdbev.tot <- BRA_adj_fdbev[ICP_food_idx,1]  # = 1e6 * BRA_FD_adj_val_BRA[ICP_food_idx]
 int.fdbev.per.usd <- sum(BRA_adj_fdbev.tot * mean.int.fdbev) / sum(BRA_adj_fdbev.tot)
 

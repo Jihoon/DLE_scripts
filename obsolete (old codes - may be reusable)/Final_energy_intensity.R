@@ -144,7 +144,7 @@ IND_MJ_ALL <- readFinalEnergyfromDBAllHH() # in MJ / HH
 IND_totMJ_ALL <- IND_MJ_ALL %>% mutate(tot.GJ = rowSums(select(.,-hhid, -weight), na.rm=TRUE)/1000) %>% select(hhid, weight, tot.GJ)
 
 IND.tot.direct.MJ <- colSums(IND_MJ_ALL[,c(-1, -2)]*IND_MJ_ALL$weight)  # in MJ
-IND.tot.fuel.cost <- IND_FD_ICP_usd2011[152:164, 1]  # National total (from NSS) in M.USD 2007 (MER)
+IND.tot.fuel.cost <- IND_FD_ICP_svy.yr[152:164, 1]  # National total (from NSS) in M.USD 2007 (MER)
 IND.E.direct.int <- IND.tot.direct.MJ/IND.tot.fuel.cost/1e6 # MJ/USD 2007 MER
 IND.E.direct.int[is.nan(IND.E.direct.int)] <- 0
 
@@ -156,7 +156,7 @@ mapped <- data.frame(which(Q==1, arr.ind=TRUE)) %>% arrange(row) %>% left_join(d
 
 IdentifyColumnsToCombine <- function(n.dim=2) {
   a <- mapped %>% filter(colsum==n.dim) %>% arrange(col) %>% group_by(col) %>% mutate(order=paste0("row",1:n.dim)) %>% spread(key=order, value=row) %>% 
-    left_join(data.frame(col=1:200, EXIO=t(EX_catnames))) 
+    left_join(data.frame(col=1:200, EXIO=EX_catnames)) 
   a$id <- do.call(paste, a[names(a)[startsWith(names(a), "row")]])
   col_combine <- a %>% left_join(data.frame(table(a$id)) %>% rename(id = Var1)) %>% filter(Freq>1) 
   
@@ -319,19 +319,19 @@ exidx.i <- 1
 direc.input.i <- matrix(tot_use[,country_ex.i[exidx.i]], ncol=num.cty)
 # sum(direc.input.i[32,])
 # sum(direc.input.i[85,])
-direc.input.i <- data.frame(name=t(EX_catnames), dom=direc.input.i[,country.idx], imp=rowSums(direc.input.i[,-country.idx])) %>% 
+direc.input.i <- data.frame(name=EX_catnames, dom=direc.input.i[,country.idx], imp=rowSums(direc.input.i[,-country.idx])) %>% 
   mutate(sum=(dom+imp)/sum(dom+imp), dom=dom/sum(dom), imp=imp/sum(imp))
 
 direc.input <- matrix(iot.mat[,country_ex[exidx]], ncol=num.cty)
 # sum(direc.input[32,])
 # sum(direc.input[85,])
-direc.input <- data.frame(name=t(EX_catnames), dom=direc.input[,country.idx], imp=rowSums(direc.input[,-country.idx])) %>% 
+direc.input <- data.frame(name=EX_catnames, dom=direc.input[,country.idx], imp=rowSums(direc.input[,-country.idx])) %>% 
   mutate(sum=(dom+imp)/sum(dom+imp), dom=dom/sum(dom), imp=imp/sum(imp))
 colSums(direc.input[,-1])
 
 indirec.input <- matrix(L_inverse[,country_ex[exidx]], ncol=num.cty)  # -diag(exio.len)
 # indirec.input[exidx, country.idx] <- indirec.input[exidx, country.idx] - 1
-indirec.input <- data.frame(name=t(EX_catnames), 
+indirec.input <- data.frame(name=EX_catnames, 
                             dom=indirec.input[,country.idx], # 
                             dir.f.int=colSums(f_energy_int[,country_ex]),
                             dir.p.int=colSums(p_energy_int[,country_ex]),
@@ -352,7 +352,7 @@ ShowExpenditureShare <- function(countrty="IN", EXIOsectnum) {
   direc.input <- matrix(iot.mat[,country_ex[EXIOsectnum]], ncol=num.cty)
   indirec.input <- matrix(L_inverse[,country_ex[EXIOsectnum]], ncol=num.cty)  # -diag(exio.len)
   
-  input.monetary <- data.frame(name=t(EX_catnames), 
+  input.monetary <- data.frame(name=EX_catnames, 
                                dir.tot=direc.input[,country.idx] + rowSums(direc.input[,-country.idx]), # domestic + import
                                ind.tot=indirec.input[,country.idx] + rowSums(indirec.input[,-country.idx]))
   
@@ -433,7 +433,7 @@ aggmap.exio[is.na(aggmap.exio)] <- 0
 ### Some visualizations and checks of the derived intensities
 # Compare intensities direct vs indirect, primary vs final
 # in MJ/EUR
-intensity.sum.IND <- data.frame(num=1:200, EXIO=t(EX_catnames), 
+intensity.sum.IND <- data.frame(num=1:200, EXIO=EX_catnames, 
                                 dir.el=colSums(elec_int[,IND_idx_ex]), 
                                 dir.f=colSums(f_energy_int[,IND_idx_ex]), 
                                 dir.p.nat=colSums(energy_int[,IND_idx_ex]), 
@@ -450,7 +450,7 @@ p <- sum(tot_demand[IND_idx_ex[128:139]])/tot.elec.gen.IND # price EUR/MJ = M.EU
 
 
 # BRA
-intensity.sum.BRA <- data.frame(num=1:200, EXIO=t(EX_catnames), 
+intensity.sum.BRA <- data.frame(num=1:200, EXIO=EX_catnames, 
                                 dir.el=colSums(elec_int[,BRA_idx_ex]), 
                                 dir.f=colSums(f_energy_int[,BRA_idx_ex]), 
                                 dir.p.nat=colSums(energy_int[,BRA_idx_ex]), 
@@ -474,7 +474,7 @@ sum(intensity.sum.BRA$tot.el * tot_demand[BRA_idx_ex]) / sum(intensity.sum.BRA$d
 sum(intensity.sum.BRA$tot.el * rowSums(final_demand[,BRA_idx_fd])) / sum(intensity.sum.BRA$dir.el * rowSums(final_demand[,BRA_idx_fd]))
 sum(intensity.sum.BRA$tot.el * rowSums(final_demand[,BRA_idx_fd])) / sum(fd_materials[elec_use_idx,BRA_idx_fd])
 # sum(intensity.sum.BRA$tot.el * tot_demand[BRA_idx_ex]) / (sum(tot.useE.elec[,BRA_idx_ex]) + sum(fd_materials[elec_use_idx,BRA_idx_fd]))
-view(data.frame(EXIO=t(EX_catnames), IND.tot.el=intensity.sum.IND$tot.el, BRA.tot.el=intensity.sum.BRA$tot.el))
+view(data.frame(EXIO=EX_catnames, IND.tot.el=intensity.sum.IND$tot.el, BRA.tot.el=intensity.sum.BRA$tot.el))
 
 
 # Derive T&D loss assumption
@@ -575,12 +575,12 @@ a <- t((1-indir.elec.share) * t(indirect_E_int))
 # So I can either take colSums to make it a vector (of 9800), or leave it and take colsums after a SetupSectorIntensities run
 indir.fin.eng.int.derived <- IEA.final.tot.2007 / sum(a %*% rowSums(final_demand)) * a    # ind.fe.int * final.demand = total final energy (global)
 
-view(data.frame(EXIO=t(EX_catnames), #pri.final.ratio.dir=pri.final.ratio.dir[IND_idx_ex], 
+view(data.frame(EXIO=EX_catnames, #pri.final.ratio.dir=pri.final.ratio.dir[IND_idx_ex], 
                 indir.elec.share=indir.elec.share[IND_idx_ex],
                 int.pri.nat=intensity.sum.IND$tot.p.nat,
                 indir.fin.eng.int=colSums(indirect_fE_int[,IND_idx_ex]), 
                 indir.fin.eng.int.derived=colSums(indir.fin.eng.int.derived)[IND_idx_ex]))
-view(data.frame(EXIO=t(EX_catnames), #pri.final.ratio.dir=pri.final.ratio.dir[IND_idx_ex], 
+view(data.frame(EXIO=EX_catnames, #pri.final.ratio.dir=pri.final.ratio.dir[IND_idx_ex], 
                 indir.elec.share=indir.elec.share[BRA_idx_ex],
                 int.pri.nat=colSums(indirect_E_int[,BRA_idx_ex]),
                 indir.fin.eng.int=colSums(indirect_fE_int[,BRA_idx_ex]), 
@@ -864,7 +864,7 @@ sc <- rep(scaler.P.F$Oth$elec.share, num.cty); sc[BRA_idx_ex] <- scaler.P.F$BRA$
 TFEI.breakdown.exio <- sapply(c(1:200), function(x) {
   DeriveConsumptionEnergyShares.ex("IN", x, type='final', elec.share=sc)})
 
-# intensity.summary2 <- data.frame(EXIO=t(EX_catnames), t(a.ex2), TFEI=TFEI.tot[IND_idx_ex], 
+# intensity.summary2 <- data.frame(EXIO=EX_catnames, t(a.ex2), TFEI=TFEI.tot[IND_idx_ex], 
 #                 DFEI=colSums(f_energy_int)[IND_idx_ex], 
 #                 TPEI=colSums(indirect_pE_int.elec.prirow)[IND_idx_ex], 
 #                 DPEI=colSums(p_energy_int.prirow)[IND_idx_ex], TEI=colSums(indirect_El_int)[IND_idx_ex], 
@@ -873,13 +873,13 @@ TFEI.breakdown.exio <- sapply(c(1:200), function(x) {
 # view(intensity.summary2)
 
 # For all 49 EXIO regions by EXIO sector
-TFEI.exio <- data.frame(Region=rep(exio_ctys, each=200), EXIO=t(EX_catnames), t(TFEI.breakdown.exio), TFEI=TFEI.tot)
+TFEI.exio <- data.frame(Region=rep(exio_ctys, each=200), EXIO=EX_catnames, t(TFEI.breakdown.exio), TFEI=TFEI.tot)
 names(TFEI.exio) <- c("Region", "EXIO", "ind.therm", "ind.elec", "rail", "road", "pipeline", "sea", "inland", "air", "other", "total")
 save(TFEI.exio, file="./Saved tables/TFEI.exio.Rda")
 
 # Will it be fine to assume all transport TFEI is in transport? (not that bad in the end..)
 # Check indirect non-transport $ expenditure in transport sectors
-a <- data.frame(EXIO=t(EX_catnames), sapply(c(157:163), function(x) {rowSums(matrix(L_inverse[,IND_idx_ex[x]], nrow=200))}))
+a <- data.frame(EXIO=EX_catnames, sapply(c(157:163), function(x) {rowSums(matrix(L_inverse[,IND_idx_ex[x]], nrow=200))}))
 names(a)[-1] <- EX_catnames[157:163]
 
 # Then I can use each column of TFEI.exio to derive partial ICP tfei's.

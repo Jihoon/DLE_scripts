@@ -47,13 +47,13 @@ for (i in 1:length(key.sects)) {
 # Embodied material consumtpion from food in 2010 (Barrel or ton)
 tot.mat.food <- list(
   BRA = sapply(mat.int.icp.list$BRA, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(BRA_FD_ICP_usd2007[idx.food.icp, 1]))) / scaler_BRA
+    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(BRA_FD_ICP_io.yr[idx.food.icp, 1]))) / scaler_BRA
   }),
   IND = sapply(mat.int.icp.list$IND, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(IND_FD_ICP_usd2007[idx.food.icp, 1]))) / scaler_IND
+    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(IND_FD_ICP_io.yr[idx.food.icp, 1]))) / scaler_IND
   }),
   ZAF = sapply(mat.int.icp.list$ZAF, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(ZAF_FD_ICP_usd2007[idx.food.icp, 1]))) / scaler_ZAF
+    mean(rowSums(mat.int.cty[, idx.food.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.food.icp, 1]))) / scaler_ZAF
   })
 )
 
@@ -62,22 +62,22 @@ tot.mat.food <- list(
 idx.clothing.all <- c(idx.clothing.icp, idx.footwear.icp)
 tot.mat.clothing <- list(
   BRA = sapply(mat.int.icp.list$BRA, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(BRA_FD_ICP_usd2007[idx.clothing.all, 1]))) / scaler_BRA
+    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(BRA_FD_ICP_io.yr[idx.clothing.all, 1]))) / scaler_BRA
   }),
   IND = sapply(mat.int.icp.list$IND, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(IND_FD_ICP_usd2007[idx.clothing.all, 1]))) / scaler_IND
+    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(IND_FD_ICP_io.yr[idx.clothing.all, 1]))) / scaler_IND
   }),
   ZAF = sapply(mat.int.icp.list$ZAF, function (mat.int.cty) {
-    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(ZAF_FD_ICP_usd2007[idx.clothing.all, 1]))) / scaler_ZAF
+    mean(rowSums(mat.int.cty[, idx.clothing.all] %*% diag(ZAF_FD_ICP_io.yr[idx.clothing.all, 1]))) / scaler_ZAF
   })
 )
 
 
 # Total kcal of food
 tot.kcal <- list(
-  BRA = kcal.ssp2 %>% filter(Region=="BRA" & Year==2010) %>% select(Val) %>% as.numeric() * BRA_pop_2007 *365,
-  IND = kcal.ssp2 %>% filter(Region=="IND" & Year==2010) %>% select(Val) %>% as.numeric() * IND_pop_2007 *365,
-  ZAF = kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010) %>% select(Val) %>% as.numeric() * ZAF_pop_2007 *365
+  BRA = kcal.ssp2 %>% filter(Region=="BRA" & Year==2010) %>% select(Val) %>% as.numeric() * BRA_pop_io.yr *365,
+  IND = kcal.ssp2 %>% filter(Region=="IND" & Year==2010) %>% select(Val) %>% as.numeric() * IND_pop_io.yr *365,
+  ZAF = kcal.ssp2 %>% filter(Region=="ZAF" & Year==2010) %>% select(Val) %>% as.numeric() * ZAF_pop_io.yr *365
 )
 
 # Total kg of clothing

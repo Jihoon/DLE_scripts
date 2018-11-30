@@ -2,32 +2,32 @@
 ### Calculate average energy intensity by income decile ###
 ###########################################################
 
-totE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal %*% IND_FD_ICP_usd2007 / scaler_IND   # n_draw X n_decile (11)
+totE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal %*% IND_FD_ICP_io.yr / scaler_IND   # n_draw X n_decile (11)
 PPP_IND2007 <- WDI(country = "IN", indicator = "PA.NUS.PRVT.PP", start = 2007, end = 2007, extra = FALSE, cache = NULL)
-# int_by_decile_IN_noVal <- sweep(totE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007* EXR_IND / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND 
-totE_per_cap_by_dec_IN <- 1000*cbind(totE_by_decile_IN_noVal[,1]/IND_pop_2007, totE_by_decile_IN_noVal[,2:11]/IND_pop_2007*10)
-colnames(totE_per_cap_by_dec_IN) <- colnames(IND_FD_ICP_usd2007)
+# int_by_decile_IN_noVal <- sweep(totE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_io.yr* EXR_IND / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND 
+totE_per_cap_by_dec_IN <- 1000*cbind(totE_by_decile_IN_noVal[,1]/IND_pop_io.yr, totE_by_decile_IN_noVal[,2:11]/IND_pop_io.yr*10)
+colnames(totE_per_cap_by_dec_IN) <- colnames(IND_FD_ICP_io.yr)
 
-totE_by_decile_BR_noVal <- BRA_inten_RAS_combined_noVal %*% BRA_FD_ICP_usd2007 / scaler_BRA   # n_draw X n_decile (11)
+totE_by_decile_BR_noVal <- BRA_inten_RAS_combined_noVal %*% BRA_FD_ICP_io.yr / scaler_BRA   # n_draw X n_decile (11)
 PPP_BRA2007 <- WDI(country = "IN", indicator = "PA.NUS.PRVT.PP", start = 2007, end = 2007, extra = FALSE, cache = NULL)
-# int_by_decile_BR_noVal <- sweep(totE_by_decile_BR_noVal, 2, colSums(BRA_FD_ICP_usd2007* EXR_BRA / PPP_BRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_BRA 
-totE_per_cap_by_dec_BR <- 1000*cbind(totE_by_decile_BR_noVal[,1]/BRA_pop_2007, totE_by_decile_BR_noVal[,2:11]/BRA_pop_2007*10)
-colnames(totE_per_cap_by_dec_BR) <- colnames(BRA_FD_ICP_usd2007)
+# int_by_decile_BR_noVal <- sweep(totE_by_decile_BR_noVal, 2, colSums(BRA_FD_ICP_io.yr* EXR_BRA / PPP_BRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_BRA 
+totE_per_cap_by_dec_BR <- 1000*cbind(totE_by_decile_BR_noVal[,1]/BRA_pop_io.yr, totE_by_decile_BR_noVal[,2:11]/BRA_pop_io.yr*10)
+colnames(totE_per_cap_by_dec_BR) <- colnames(BRA_FD_ICP_io.yr)
 
-totE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal %*% FRA_FD_ICP_usd2007 / scaler_FRA   # n_draw X n_decile (11)
+totE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal %*% FRA_FD_ICP_io.yr / scaler_FRA   # n_draw X n_decile (11)
 PPP_FRA2007 <- WDI(country = "FR", indicator = "PA.NUS.PRVT.PP", start = 2007, end = 2007, extra = FALSE, cache = NULL)
-# int_by_decile_FR_noVal  <- sweep(totE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007 * EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
-totE_per_cap_by_dec_FR <- 1000*cbind(totE_by_decile_FR_noVal[,1]/FRA_pop_2007, totE_by_decile_FR_noVal[,2:11]/FRA_pop_2007*10)
-colnames(totE_per_cap_by_dec_FR) <- colnames(IND_FD_ICP_usd2007)
+# int_by_decile_FR_noVal  <- sweep(totE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_io.yr * EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
+totE_per_cap_by_dec_FR <- 1000*cbind(totE_by_decile_FR_noVal[,1]/FRA_pop_io.yr, totE_by_decile_FR_noVal[,2:11]/FRA_pop_io.yr*10)
+colnames(totE_per_cap_by_dec_FR) <- colnames(IND_FD_ICP_io.yr)
 
 # Food only
-foodE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal[,1:40] %*% IND_FD_ICP_usd2007[1:40,] / scaler_IND   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_IN_noVal <- sweep(foodE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_usd2007[1:40,]* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND
-foodE_per_cap_by_dec_IN <- 1000*cbind(foodE_by_decile_IN_noVal[,1]/IND_pop_2007, foodE_by_decile_IN_noVal[,2:11]/IND_pop_2007*10)
+foodE_by_decile_IN_noVal <- IND_inten_RAS_combined_noVal[,1:40] %*% IND_FD_ICP_io.yr[1:40,] / scaler_IND   # n_draw X n_decile (11) in 1000 GJ
+# food_int_by_decile_IN_noVal <- sweep(foodE_by_decile_IN_noVal, 2, colSums(IND_FD_ICP_io.yr[1:40,]* EXR_IND$r / PPP_IND2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') * scaler_IND
+foodE_per_cap_by_dec_IN <- 1000*cbind(foodE_by_decile_IN_noVal[,1]/IND_pop_io.yr, foodE_by_decile_IN_noVal[,2:11]/IND_pop_io.yr*10)
 
-foodE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal[,1:11] %*% FRA_FD_ICP_usd2007[1:11,] / scaler_FRA   # n_draw X n_decile (11) in 1000 GJ
-# food_int_by_decile_FR_noVal <- sweep(foodE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_usd2007[1:11,] * EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
-foodE_per_cap_by_dec_FR <- 1000*cbind(foodE_by_decile_FR_noVal[,1]/FRA_pop_2007, foodE_by_decile_FR_noVal[,2:11]/FRA_pop_2007*10)
+foodE_by_decile_FR_noVal <- FRA_inten_RAS_combined_noVal[,1:11] %*% FRA_FD_ICP_io.yr[1:11,] / scaler_FRA   # n_draw X n_decile (11) in 1000 GJ
+# food_int_by_decile_FR_noVal <- sweep(foodE_by_decile_FR_noVal, 2, colSums(FRA_FD_ICP_io.yr[1:11,] * EXR_EUR$r / PPP_FRA2007$PA.NUS.PRVT.PP, na.rm = TRUE), '/') *scaler_FRA
+foodE_per_cap_by_dec_FR <- 1000*cbind(foodE_by_decile_FR_noVal[,1]/FRA_pop_io.yr, foodE_by_decile_FR_noVal[,2:11]/FRA_pop_io.yr*10)
 
 
 

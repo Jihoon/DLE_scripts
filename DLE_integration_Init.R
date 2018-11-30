@@ -7,97 +7,39 @@
 ### Define additinoal functions for this analysis
 # source("DLE_integration_Functions.R")
 
-# This is based on EXIO3 Final Energy extension.
-
-
-### General prep ###
-library(WDI)
-
-PPP <- WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP"), start = 2011, end = 2011, extra = FALSE, cache = NULL)
-PPP_IND <- as.numeric(PPP %>% filter(year==2011 & iso2c=='IN') %>% select(PA.NUS.PPP))
-PPP_BRA <- as.numeric(PPP %>% filter(year==2011 & iso2c=='BR') %>% select(PA.NUS.PPP))
-PPP_ZAF <- as.numeric(PPP %>% filter(year==2011 & iso2c=='ZA') %>% select(PA.NUS.PPP))
-CPI_IND <- as.numeric(CPI %>% filter(year==2011 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
-CPI_BRA <- as.numeric(CPI %>% filter(year==2011 & iso2c=='BR') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='BR') %>% select(FP.CPI.TOTL))
-CPI_ZAF <- as.numeric(CPI %>% filter(year==2011 & iso2c=='ZA') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='ZA') %>% select(FP.CPI.TOTL))
-
-
-DLE.sectors <- c("Food", "Clothing", "Health.Edu", "Housing.BL", "Housing.OP", "Water.Sani", "Road", "Appliance", "Transport")
-DLE.countries <- c('IND', 'BRA', 'ZAF')
-
 # Returns time-series (now, 2030, 2050)
 Year.end <- 2050
 Year.base <- 2015
 Year.obs <- c(Year.base, seq(2020, Year.end, 10))
 
-# Then we need to overwrite L_inverse, tot_demand, final_demand, and the country list with EXIO3 data.
-exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", 
-               "FR", "GR", 
-               "HR", # Added new at EXIO3
-               "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", 
-               "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
-               "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
-               "NO", "ID", "ZA", "WA", "WL", "WE", "WF", "WM")
-
-num.cty <- length(exio_ctys)
-exio.len <- length(exio_ctys)*200
-exio.fd.len <- length(exio_ctys)*7
-
-# Get IND final demand from EXIO [M.EUR to M.USD]
-IND_place <- which(exio_ctys=="IN")
-IND_idx_fd <- seq(7*(IND_place-1)+1, 7*IND_place)   # 7 final demand columns per country
-IND_idx_ex <- seq(200*(IND_place-1)+1, 200*IND_place)   # 200 EXIO comodities
-
-# Get BRA final demand from EXIO [M.EUR to M.USD]
-BRA_place <- which(exio_ctys=="BR")
-BRA_idx_fd <- seq(7*(BRA_place-1)+1, 7*BRA_place)   # 7 final demand columns per country
-BRA_idx_ex <- seq(200*(BRA_place-1)+1, 200*BRA_place)   # 7 final demand columns per country
-
-# Get ZAF final demand from EXIO [M.EUR to M.USD]
-ZAF_place <- which(exio_ctys=="ZA")
-ZAF_idx_fd <- seq(7*(ZAF_place-1)+1, 7*ZAF_place)   # 7 final demand columns per country
-ZAF_idx_ex <- seq(200*(ZAF_place-1)+1, 200*ZAF_place)   # 200 EXIO comodities
+#DLE.sectors <- c("Food", "Clothing", "Health.Edu", "Housing.BL", "Housing.OP", "Water.Sani", "Road", "Appliance", "Transport")
+DLE.countries <- c('IND', 'BRA', 'ZAF')
 
 
 
-# Overwrite these with values from EXIO3
-L_inverse <- read.csv(paste0(EXIO3_path, "L_2007.csv"), header = FALSE)
-final_demand <- read.csv(paste0(EXIO3_path, "Y_2007.csv"), header = FALSE)
-tot_output <- read.csv(paste0(EXIO3_path, "x_2007.csv"), header = FALSE)
-tot_demand <- rowSums(tot_output) 
-
-save(L_inverse, file="./Saved tables/L_inverse_EXIO3_2007.Rda")
-# save(final_demand, file="./Saved tables/L_inverse_EXIO3_2007.Rda"))
-# save(L_inverse, file="./Saved tables/L_inverse_EXIO3_2007.Rda"))
-load(file="./Saved tables/L_inverse_EXIO3_2007.Rda") # L_inverse
-
-### Derive intensities ###
-
-# Read TFEI and DFEI from EXIO3 (tfei.exio / dfei.exio)
-# source("import_EXIO_FE_extension.R")
-# Already run at Init.R
-
-# Derive ICP TFEI (or TPEI if necessary)
-attach(BRA_val)
-val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
-detach(BRA_val)
-
-# Re-set val_mtx for further analysis
-val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
-
-BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
-scaler_BRA <- sum(BRA_FD_ICP_usd2007[,1]) / sum(BRA_fd_exio_pp_BR)
-init_FD_BRA <- BRA_FD_ICP_usd2007[,1] / scaler_BRA
-
+# This is based on EXIO3 Final Energy extension.
 n_draw <- 100
 
-list[BRA.tpei.use.icp, BRA.alloc.use, NC_BRA_val_BRA.use, BRA_FD_adj_val_BRA.use] <- 
-  DeriveIntensities('BRA', 'primary', pri.intensity.mat=tpei.USE)
-list[IND_intensity.use, IND_alloc.use, NC_IND.use, IND_FD_adj.use] <- 
-  DeriveIntensities('IND', 'primary', pri.intensity.mat=tpei.USE)
-list[ZAF_intensity.use, ZAF_alloc.use, NC_ZAF.use, ZAF_FD_adj.use] <- 
-  DeriveIntensities('ZAF', 'primary', pri.intensity.mat=tpei.USE) 
+# list[BRA.tpei.use.icp, BRA.alloc.use, NC_BRA_val_BRA.use, BRA_FD_adj_val_BRA.use] <- 
+#   DeriveIntensities('BRA', 'primary', pri.intensity.mat=tpei.USE)
+# list[IND_intensity.use, IND_alloc.use, NC_IND.use, IND_FD_adj.use] <- 
+#   DeriveIntensities('IND', 'primary', pri.intensity.mat=tpei.USE)
+# list[ZAF_intensity.use, ZAF_alloc.use, NC_ZAF.use, ZAF_FD_adj.use] <- 
+#   DeriveIntensities('ZAF', 'primary', pri.intensity.mat=tpei.USE) 
+# 
+# list[BRA.tpei.nature.icp, BRA.alloc.nature, NC_BRA_val_BRA.nature, BRA_FD_adj_val_BRA.nature] <- 
+#   DeriveIntensities('BRA', 'primary', pri.intensity.mat=tpei.nature)
+# list[IND_intensity.nature, IND_alloc.nature, NC_IND.nature, IND_FD_adj.nature] <- 
+#   DeriveIntensities('IND', 'primary', pri.intensity.mat=tpei.nature)
+# list[ZAF_intensity.nature, ZAF_alloc.nature, NC_ZAF.nature, ZAF_FD_adj.nature] <- 
+#   DeriveIntensities('ZAF', 'primary', pri.intensity.mat=tpei.nature) 
+
+list[BRA.tnei.icp, BRA.alloc.tnei, NC_BRA_val_BRA.tnei, BRA_FD_adj_val_BRA.tnei] <- 
+  DeriveIntensities('BRA', 'primary', pri.intensity.mat=tnei.exio)
+list[IND.tnei.icp, IND_alloc.tnei, NC_IND.tnei, IND_FD_adj.tnei] <- 
+  DeriveIntensities('IND', 'primary', pri.intensity.mat=tnei.exio)
+list[ZAF.tnei.icp, ZAF_alloc.tnei, NC_ZAF.tnei, ZAF_FD_adj.tnei] <- 
+  DeriveIntensities('ZAF', 'primary', pri.intensity.mat=tnei.exio) 
 
 list[BRA.tfei.icp, BRA.alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final', final.intensity.mat=tfei.exio)
 list[IND.tfei.icp, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'final', final.intensity.mat=tfei.exio)
@@ -115,6 +57,10 @@ save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.Rda")
 save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.Rda")
 save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.Rda")
 
+save(BRA.tnei.icp, file="./Saved tables/BRA.tnei.icp.Rda")
+save(IND.tnei.icp, file="./Saved tables/IND.tnei.icp.Rda")
+save(ZAF.tnei.icp, file="./Saved tables/ZAF.tnei.icp.Rda")
+
 save(BRA.tfei.icp.elec, file="./Saved tables/BRA.tfei.icp.elec.Rda")
 save(IND.tfei.icp.elec, file="./Saved tables/IND.tfei.icp.elec.Rda")
 save(ZAF.tfei.icp.elec, file="./Saved tables/ZAF.tfei.icp.elec.Rda")
@@ -124,7 +70,18 @@ save(IND.tfei.icp.non.elec, file="./Saved tables/IND.tfei.icp.non.elec.Rda")
 save(ZAF.tfei.icp.non.elec, file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
 
 
-
+# for eyeballing/comparison ICP intensities
+b <- data.frame(ICP_catnames, 
+                
+                BRA.tpei.nature=colMeans(BRA.tpei.nature.icp),  BRA.tpei.use=colMeans(BRA.tpei.use.icp),  
+                BRA.tnei=colMeans(BRA.tnei.icp), BRA.tfei=colMeans(BRA.tfei.icp), BRA.tfei.elec=colMeans(BRA.tfei.icp.elec), 
+                
+                IND.tpei.nature=colMeans(IND_intensity.nature), IND.tpei.use=colMeans(IND_intensity.use), 
+                IND.tnei=colMeans(IND.tnei.icp), IND.tfei=colMeans(IND.tfei.icp), IND.tfei.elec=colMeans(IND.tfei.icp.elec),
+                
+                ZAF.tpei.nature=colMeans(ZAF_intensity.nature), ZAF.tpei.use=colMeans(ZAF_intensity.use), 
+                ZAF.tnei=colMeans(ZAF.tnei.icp), ZAF.tfei=colMeans(ZAF.tfei.icp), ZAF.tfei.elec=colMeans(ZAF.tfei.icp.elec))
+write.table(b, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 
 
