@@ -267,6 +267,13 @@ get_purch_price <- function(v_bp, country = 'IN'){
   v_pp <- t(Dinv) %*% v_bp
   
   taxR <- D[,201]
+  
+  # When using an IO year other than 2007 (e.g.2010), there can be a mismatch between HHFD of exio2010 and tax information from 2007,
+  # which leads to 100% tax rate with FD=0. Then I set the tax rate to zero for these sectors.
+  # Ultimately, we need to use the valuation data from the same IO year (once it's available).
+  tax.div <- 1-taxR
+  taxR[tax.div>=0 & tax.div<1e-5] <- 0 
+  
   v_pp <- v_pp / (1-taxR)
   
   # print(which(v_pp<0))

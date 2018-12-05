@@ -2,23 +2,39 @@
 ### Deriving FE distribution from NSS samples
 ### Based on the new EXIO3 intensities (Also try to compare it with the older one (.bug suffix))
 
-# list[IND.tfei.icp.bug, IND_alloc.bug, NC_IND.bug, IND_FD_adj.bug] <- DeriveIntensities('IND', 'final', final.intensity.mat=tfei.exio.bug)
 list[IND.tfei.icp, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'final', final.intensity.mat=tfei.exio)
-# list[IND.tpei.icp.bug, IND_alloc.bug, NC_IND.bug, IND_FD_adj.bug] <- DeriveIntensities('IND', 'primary', pri.intensity.mat=tpei.nature.bug)
-list[IND.tpei.icp, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary', pri.intensity.mat=tpei.nature)
+# list[IND.tpei.icp, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'primary', pri.intensity.mat=tnei.exio)
+chng_pct_IND <- (IND_FD_adj - init_FD_IND) / init_FD_IND
+chng_pct_IND[is.nan(chng_pct_IND)] <- 0
+
+IND_FD_ICP_HH_adj <- IND_FD_ICP_AllHH * (chng_pct_IND + 1)
+idx_inf <- which(is.infinite(chng_pct_IND))  # Identify rows with Inf adjustments
+r_HH <- colSums(IND_FD_ICP_AllHH)/sum(IND_FD_ICP_AllHH)  # ratio of hh total to (unweighted) total
+IND_FD_ICP_HH_adj[idx_inf,] <- t(sapply(IND_FD_adj[idx_inf] * 1e6, # M.USD to USD
+                                        function(x) x * r_HH / sum(r_HH * IND_HH$weight))) * scaler_IND   
+rm(r_HH)
+gc()
+
+save(IND_alloc, file="./Saved tables/IND_alloc.Rda")
+save(IND_FD_adj, file="./Saved tables/IND_FD_adj.Rda")
+save(IND_FD_ICP_HH_adj, file="./Saved tables/IND_FD_ICP_HH_adj.Rda")
+
+load(file="./Saved tables/IND.tfei.icp.Rda")
+load(file="./Saved tables/IND_alloc.Rda")
+load(file="./Saved tables/IND_FD_adj.Rda")
+load(file="./Saved tables/IND_FD_ICP_HH_adj.Rda")
+
+# Or just do this if saved alright
+# load(file="./Saved tables/IND.tfei.icp.Rda")
+# load(file="./Saved tables/IND.tnei.icp.Rda")
 
 IND.tfei.icp.avg <- colMeans(IND.tfei.icp)
-# IND.tfei.icp.bug.avg <- colMeans(IND.tfei.icp.bug)
 IND.tpei.icp.avg <- colMeans(IND.tpei.icp)
-# IND.tpei.icp.bug.avg <- colMeans(IND.tpei.icp.bug)
 
 # a <- data.frame(ICP = ICP_catnames, tfei.new =IND.tfei.icp.avg, tpei.new =IND.tpei.icp.avg, tfei.bug =IND.tfei.icp.bug.avg, tpei.bug =IND.tpei.icp.bug.avg) 
 # view(a)
 
- 
-# list[eHH_IND.bug, eHH_sd.bug] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND.tfei.icp.bug)
 list[eHH_IND, eHH_sd] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj, IND.tfei.icp)
-# a <- SummarizeGJPerCapByDecile(eHH_IND.bug)
 b <- SummarizeGJPerCapByDecile(eHH_IND)
 
 # Without transportation (based on NTRA extension)
@@ -34,6 +50,9 @@ IND_FD_ICP_HH_adj.noTRP[ICP_transport_idx,] <- 0 # Zero out transportation expen
 list[eHH_IND.noTRP, eHH_sd.noTRP] <-  GetHHSectoralEnergyPerCap(ICP_all_idx, 'IND', IND_FD_ICP_HH_adj.noTRP, IND.tfei.icp)
 a1 <- SummarizeGJPerCapByDecile(eHH_IND.noTRP)
 
+
+IND_FUEL_Alldata <-selectDBdata(tables='IND1_FUEL')
+IND_MJ_ALL <- readFinalEnergyfromDBAllHH() # in MJ per HH (wide format)
 
 # Direct energy for the hh (not per cap)
 IND_dir.FE_hh <- IND_MJ_ALL %>% 
@@ -134,5 +153,5 @@ axis(side = 2)
 
 abline(v=avg.FE.hh$tot.GJ.pcap, col="lightgray", lty="dotted")
 
-ggplot(IND_tot.FE_hh %>% filter(income.pcap <20000), aes(x=income.pcap, y=tot.GJ.pcap)) +
+ggplot(IND_tot.FE_hh.All %>% filter(income.pcap <20000), aes(x=income.pcap, y=tot.GJ.pcap)) +
   geom_point(size=0.01) + coord_trans(y="log10", x="log10")

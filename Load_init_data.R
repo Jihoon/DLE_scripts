@@ -1,10 +1,7 @@
 #########################
 ### IND
 #########################
-# IND_FD_ALL
-load(file="./Saved tables/IND_AllHHConsump.Rda")
-# IND_HH
-load(file="./Saved tables/IND_HH.Rda")
+
 # IND_FD_ICP_AllHH
 load(file="./Saved tables/IND_FD_harmonized.Rda")
 #IND_FD_ICP_io.yr
@@ -27,10 +24,6 @@ init_FD_IND <- IND_FD_ICP_io.yr[,1] / scaler_IND
 ### BRA
 #########################
 
-# BRA_FD_ALL
-load(file="./Saved tables/BRA_AllHHConsump.Rda")
-# BRA_HH
-load(file="./Saved tables/BRA_HH.Rda")
 # BRA_FD_ICP_AllHH
 load(file="./Saved tables/BRA_FD_harmonized.Rda")
 load(file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
@@ -48,11 +41,7 @@ init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
 ### ZAF1 - ZAF_HH
 #########################
 
-load(file="./Saved tables/ZAF_HH.Rda")
-# ZAF1 - ZAF_FD
-load(file="./Saved tables/ZAF_FD.Rda")
-# ZAF1 - ZAF_FD_ALL
-load(file="./Saved tables/ZAF_AllHHConsump.Rda")
+load(file="./Saved tables/ZAF_FD_harmonized.Rda")
 load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 
 load(file="./Saved tables/ZAF_FD_ICP_HH_adj.Rda")

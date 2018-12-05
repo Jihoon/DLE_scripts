@@ -230,6 +230,7 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
   
   print(sum(is.na(HHold$income)))
   
+  IND_MJ_hh <- BuildMJperHH()
   Fuel_summary <- Fuel %>% left_join(IND_MJ_hh %>% select(id, fuel, MJ)) %>% rename(hhid = id) %>% 
     right_join(HHold) %>%    # Using right_join to keep all the IDs and matching columns with a_dec
     # mutate(fd_tot =val_tot*weight) %>% 
@@ -237,7 +238,7 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
     summarise(MJ_tot=sum(MJ, na.rm = TRUE), weight=first(weight)) %>% arrange(fuel) 
   
   Fuel_summary <- Fuel_summary %>% 
-    rbind.fill(data.frame(fuel = DLE_fuel_types, MJ_tot=0)) %>% 
+    bind_rows(data.frame(fuel = DLE_fuel_types, MJ_tot=0)) %>% 
     rename(item = fuel) %>% 
     spread(item, MJ_tot) %>% 
     filter(!is.na(hhid)) %>% 
@@ -252,6 +253,33 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
   # names(Fuel_std) <- names(Fuel_summary)
   
   return(Fuel_std)
+}
+
+
+BuildMJperHH = function() {
+  conv.ene <- read.xlsx("H:/MyDocuments/Analysis/Final energy/India-NSS energy conversion.xlsx", cols=1:3)
+  
+  IND_fuel_hh <- IND_FUEL_Alldata %>% group_by(id, fuel) %>% 
+    summarise(qty_tot=sum(qty_tot, na.rm=TRUE), val_tot=sum(val_tot, na.rm=TRUE)) %>% arrange(id)
+  
+  # Dung price estimation - India
+  # USD 1=60 rupee (2015) https://tradingeconomics.com/india/currency
+  # 59(=60) rupee per 1.5 kg (2015) https://www.thequint.com/technology/2015/12/30/get-cow-dung-cakes-online-via-amazon-for-your-puja-at-rs-59 
+  CPI_2015 <- as.numeric(CPI %>% filter(year==2015 & iso2c=='IN') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==2007 & iso2c=='IN') %>% select(FP.CPI.TOTL))
+  prc_gobar <- 1/1.5/CPI_2015  # USD2007/kg
+  
+  fuel_price <- IND_FUEL_Alldata %>% group_by(fuel) %>% mutate(price=val_tot/qty_tot) %>% summarise(price_avg = mean(price, na.rm=TRUE))
+  fuel_price <- fuel_price %>% mutate_cond(fuel=="Dung", price_avg = prc_gobar) %>%
+    mutate_cond(fuel=="Diesel, transport", price_avg = fuel_price$price_avg[fuel_price$fuel=="Diesel, non-transport"]) %>% 
+    mutate_cond(fuel=="Gasoline, transport", price_avg = fuel_price$price_avg[fuel_price$fuel=="Gasoline, non-transport"])
+  
+  IND_fuel_hh <- IND_fuel_hh %>% mutate(price_hh=val_tot/qty_tot) %>%
+    left_join(fuel_price) %>% mutate_cond(is.nan(price_hh), price_hh=price_avg) %>% arrange(id) %>% mutate(qty_impu = qty_tot) %>% 
+    mutate_cond(qty_tot==0, qty_impu = val_tot/price_avg) %>% left_join(conv.ene) %>% mutate(MJ=MJ_per_unit*qty_impu)
+  
+  IND_MJ_hh <- IND_fuel_hh %>% select(id, fuel, qty_impu, val_tot, MJ) # MJ by HH & fuel
+  
+  return(IND_MJ_hh)
 }
 
 

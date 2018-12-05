@@ -191,7 +191,6 @@ ZAF_FD_code[is.na(ZAF_FD_code)] <- 0
 #################################
 
 # Read in original IND_FD_ALL
-load(file="./Saved tables/ZAF_AllHHConsump.Rda")
 ZAF_FD_ALL <- ZAF_FD_ALL[-grep("taxes|VAT ", ZAF_FD_ALL$item, ignore.case = TRUE), ]
 
 ZAF_FD_ALL <- merge(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),], ZAF_map %>% select(CODE, item=ITEM_DLE), 
@@ -241,3 +240,6 @@ save(ZAF_FD_ICP_AllHH, file="./Saved tables/ZAF_FD_harmonized.Rda")
 save(ZAF_FD_ICP_io.yr, file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/ZAF_FD_harmonized.Rda")
+
+scaler_ZAF <- sum(ZAF_FD_ICP_io.yr[,1]) / sum(get_purch_price(ZAF_fd_exio, "ZA"))
+init_FD_ZAF <- ZAF_FD_ICP_io.yr[,1] / scaler_ZAF

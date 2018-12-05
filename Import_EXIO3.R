@@ -1,6 +1,6 @@
-EXIO3_path_old = "H:/MyDocuments/Analysis/Final energy/EXIO3-FE/IOT_bug_w_India/"
-EXIO3_path = "H:/MyDocuments/Analysis/Final energy/EXIO3-FE/IOT_bug_w_TROA/"
-EXIO3_path_fix = "H:/MyDocuments/Analysis/Final energy/EXIO3-FE/IOT/EnvExt_NEU_1995-2015_14Nov/"
+EXIO3_path_old = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_India/"
+EXIO3_path = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_TROA/"
+EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_14Nov/"
 
 # Monetary Mtx EXIO3
 # raw.Y <- read.csv(paste0(EXIO3_path, "Y_2007.csv"), header = FALSE)  # Final demand
@@ -10,13 +10,19 @@ EXIO3_path_fix = "H:/MyDocuments/Analysis/Final energy/EXIO3-FE/IOT/EnvExt_NEU_1
 ### Before TROA bug-fix
 
 # Satellites (Still loading it becasue non-energy materials may be used some day)
-raw.S.2008 <- read.csv(paste0(EXIO3_path, "S_2008.csv"), header = FALSE)    # Stressor (Intensity)
-raw.st.2008 <- read.csv(paste0(EXIO3_path, "st_2008.csv"), header = FALSE)  # Total stressor
-raw.S.2007 <- read.csv(paste0(EXIO3_path, "S_2007.csv"), header = FALSE)    # Stressor (Intensity)
-raw.st.2007 <- read.csv(paste0(EXIO3_path, "st_2007.csv"), header = FALSE)  # Total stressor
+# raw.S.2008 <- read.csv(paste0(EXIO3_path, "S_2008.csv"), header = FALSE)    # Stressor (Intensity)
+# raw.st.2008 <- read.csv(paste0(EXIO3_path, "st_2008.csv"), header = FALSE)  # Total stressor
+# raw.S.2007 <- read.csv(paste0(EXIO3_path, "S_2007.csv"), header = FALSE)    # Stressor (Intensity)
+# raw.st.2007 <- read.csv(paste0(EXIO3_path, "st_2007.csv"), header = FALSE)  # Total stressor
+# 
+# raw.F.2007 <- read.csv(paste0(EXIO3_path, "F_2007.csv"), header = FALSE)
+# raw.F.2008 <- read.csv(paste0(EXIO3_path, "F_2008.csv"), header = FALSE)
 
-raw.F.2007 <- read.csv(paste0(EXIO3_path, "F_2007.csv"), header = FALSE)
-raw.F.2008 <- read.csv(paste0(EXIO3_path, "F_2008.csv"), header = FALSE)
+raw.S <- read.csv(paste0(EXIO3_path, "S_", IO.year, ".csv"), header = FALSE)    # Stressor (Intensity)
+raw.st <- read.csv(paste0(EXIO3_path, "st_", IO.year, ".csv"), header = FALSE)  # Total stressor
+raw.F <- read.csv(paste0(EXIO3_path, "F_", IO.year, ".csv"), header = FALSE)
+raw.V <- read.csv(paste0(EXIO3_path, "V_", IO.year, ".csv"), header = FALSE)
+
 # raw.F_hh <- read.csv(paste0(EXIO3_path, "F_hh_2007.csv"), header = FALSE)
 # raw.F_hh.2008 <- read.csv(paste0(EXIO3_path, "F_hh_2008.csv"), header = FALSE)
 
@@ -68,19 +74,23 @@ carriers.RWood <- c(
 # View(cbind(rep(label.Arkz$carrier, 8)[carriers.RWood], as.character(label.S$name[idx.NE])))
 
 # New fixed version replaces the energy part of the extension.
-raw.F.2007[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_2007.csv"), header = FALSE)[carriers.RWood,]
-raw.F.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_2008.csv"), header = FALSE)[carriers.RWood,]
-raw.S.2007[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_2007.csv"), header = FALSE)[carriers.RWood,]
-raw.S.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_2008.csv"), header = FALSE)[carriers.RWood,]
-raw.st.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_2008.csv"), header = FALSE)[carriers.RWood,]
+# raw.F.2007[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_2007.csv"), header = FALSE)[carriers.RWood,]
+# raw.F.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_2008.csv"), header = FALSE)[carriers.RWood,]
+# raw.S.2007[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_2007.csv"), header = FALSE)[carriers.RWood,]
+# raw.S.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_2008.csv"), header = FALSE)[carriers.RWood,]
+# raw.st.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_2008.csv"), header = FALSE)[carriers.RWood,]
+
+raw.F[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
+raw.S[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
+raw.st[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
 
 
 
 
 # Arrange intensity outputs (with 69 carriers)
-list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tpei.nature, tpei.USE, tpei.SUPL, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st.2008)
-list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dpei.nature, dpei.USE, dpei.SUPL, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S.2008)
-list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dpe.nature, dpe.USE, de.SUPL, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F.2008)
+list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tpei.nature, tpei.USE, tpei.SUPL, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st)
+list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dpei.nature, dpei.USE, dpei.SUPL, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S)
+list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dpe.nature, dpe.USE, de.SUPL, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F)
 # list[dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dpe.nature.hh, 
 #      dpe.USE.hh, de.SUPL.hh, dne.exio.hh] <- HarmonizeEXIO3ExtensionFormat(raw.F_hh.2008)
 
@@ -181,6 +191,15 @@ tot_demand <- rowSums(tot_output)
 
 save(L_inverse, file=paste0("./Saved tables/L_inverse_EXIO3_", IO.year, ".Rda"))
 load(file=paste0("./Saved tables/L_inverse_EXIO3_", IO.year, ".Rda")) # L_inverse
+
+IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
+IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
+
+BRA_fd_ex <- matrix(final_demand[,BRA_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
+BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
+
+ZAF_fd_ex <- matrix(final_demand[,ZAF_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
+ZAF_fd_exio <- rowSums(ZAF_fd_ex) # Sum all HH FD across countries
 
 ### Derive intensities ###
 

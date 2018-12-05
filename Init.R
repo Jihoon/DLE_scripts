@@ -21,7 +21,7 @@ num.cty <- length(exio_ctys)
 exio.len <- length(exio_ctys)*200
 exio.fd.len <- length(exio_ctys)*7
 
-n_draw <- 1000
+n_draw <- 100
 D_val_uncertainty <- 0  # or 1 : Whether to include uncertainty analysis for valuation mtx - margins and tax rates
 draw_count <- 1
 options(digits=3)
@@ -230,19 +230,20 @@ DLE_fuel_types <- ConstructyFuelTypeSet() %>% arrange(fuel)
 # Reading and constructing matrices
 # source("Read_DLE_DB.R") 
 
-# IND
+# Read pre-constructed raw DB data
+# # IND
 load(file=paste0(getwd(), "/Saved tables/IND_FD.Rda"))
 load(file=paste0(getwd(), "/Saved tables/IND_HH.Rda"))
 load(file=paste0(getwd(), "/Saved tables/IND_AllHHConsump.Rda"))
-load(file=paste0(getwd(), "/Saved tables/IND1_FUEL_Alldata.Rda")) # IND_FUEL_Alldata
-load(file=paste0(getwd(), "/Saved tables/IND_FD_harmonized.Rda")) # IND_FD_ICP_AllHH
-
-# ZAF
+# load(file=paste0(getwd(), "/Saved tables/IND1_FUEL_Alldata.Rda")) # IND_FUEL_Alldata
+# load(file=paste0(getwd(), "/Saved tables/IND_FD_harmonized.Rda")) # IND_FD_ICP_AllHH
+# 
+# # ZAF
 load(file=paste0(getwd(), "/Saved tables/ZAF_FD.Rda"))
 load(file=paste0(getwd(), "/Saved tables/ZAF_HH.Rda"))
 load(file=paste0(getwd(), "/Saved tables/ZAF_AllHHConsump.Rda"))
-
-# BRA
+# 
+# # BRA
 load(file=paste0(getwd(), "/Saved tables/BRA_FD.Rda"))
 load(file=paste0(getwd(), "/Saved tables/BRA_HH.Rda"))
 load(file=paste0(getwd(), "/Saved tables/BRA_AllHHConsump.Rda"))
@@ -281,7 +282,19 @@ source("rIPFP - Process_WB.R")  # Read in the function 'processWBscript' and res
 # to get FD in ICP classification.
 
 source("rIPFP - Map_CES_COICOP.R")
-# source("Load_init_data.R")  
+
+
+
+##############################################
+###    Load EXIOBASE3      ###
+##############################################
+
+# For EXIO3, L_inverse/final_demand/tot_demand should be updated.
+# For now I only use 2007 and 2008
+# This also overwrites EXIO FD vectors.
+source("Import_EXIO3.R")  # Incorporate EXIO3
+
+# Need to come before "rIPFP - Valuation.R" because valuation data also changes
 
 
 
@@ -318,16 +331,6 @@ source("rIPFP - Functions_for_intensity_analysis.R")
 ##############################################
 
 source("rIPFP - Bridge_RAS.R")
-
-
-
-##############################################
-###    Set up environment for RAS run      ###
-##############################################
-
-# For EXIO3, L_inverse/final_demand/tot_demand should be updated.
-# For now I only use 2007 and 2008
-source("Import_EXIO3.R")  # Incorporate EXIO3
 
 
 
