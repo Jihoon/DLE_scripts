@@ -32,7 +32,7 @@ trade_margin_breakdown <- data.frame(FR = numeric(4), US = numeric(4), IN = nume
 trd_idx <- 152:155
 trp_idx <- 157:163
 
-get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: do Monte Carlo (1) or not (0) for val mtx?)
+get_valuation_mtx <- function(country, mc=0, io.year=2010){   # Two-letter country code (mc: do Monte Carlo (1) or not (0) for val mtx?)
   
   cty_place <- which(exio_ctys==country)
   # cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
@@ -44,6 +44,7 @@ get_valuation_mtx <- function(country, mc=0){   # Two-letter country code (mc: d
   
   if (mc==0) {
     wb <- XLConnect::loadWorkbook(paste("../Valuation/", country, "_output.xls", sep=""))
+    # wb <- XLConnect::loadWorkbook(paste0("../Valuation/Valuation_3_4/", country, "_", io.year, ".xls"))
     
     # Index for xx_output.xls files
     f_hous_idx <- 169  # Column for Final hh demand
