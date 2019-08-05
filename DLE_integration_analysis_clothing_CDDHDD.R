@@ -3,7 +3,7 @@ hdd.path <- "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Analysis/Climate
 
 
 svy = "IND1"
-IND_HH <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, REGION, tables=c(paste0(svy, '_HH'))) %>%
+IND_HH.CDDHDD <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, REGION, tables=c(paste0(svy, '_HH'))) %>%
   mutate_cond(region=="Orissa", region="Odisha")
 
 
@@ -21,15 +21,15 @@ cdd.IND <- read_csv(paste0(hdd.path, "DoT_CDD_tas_18.3India.csv")) %>% filter(va
   rename(region=reg, CDD=value) %>%
   mutate_cond(region=="NCT of Delhi", region="Delhi")
 
-IND_HH <- IND_HH  %>% left_join(hdd.IND) %>% 
+IND_HH.CDDHDD <- IND_HH.CDDHDD  %>% left_join(hdd.IND) %>% 
   # left_join(hdd.IND.18) %>% 
   left_join(cdd.IND)
 
 
-avg.HDD.IND <- weighted.mean(IND_HH$HDD, w=IND_HH$weight*IND_HH$hh_size, na.rm=TRUE) # Weighted national average 
-# avg.HDD.18.IND <- weighted.mean(IND_HH$HDD.18, w=IND_HH$weight*IND_HH$hh_size, na.rm=TRUE) # Weighted national average 
-avg.CDD.IND <- weighted.mean(IND_HH$CDD, w=IND_HH$weight*IND_HH$hh_size, na.rm=TRUE)
-IND_HH.CDDHDD <- IND_HH %>% 
+avg.HDD.IND <- weighted.mean(IND_HH.CDDHDD$HDD, w=IND_HH.CDDHDD$weight*IND_HH.CDDHDD$hh_size, na.rm=TRUE) # Weighted national average 
+# avg.HDD.18.IND <- weighted.mean(IND_HH.CDDHDD$HDD.18, w=IND_HH.CDDHDD$weight*IND_HH.CDDHDD$hh_size, na.rm=TRUE) # Weighted national average 
+avg.CDD.IND <- weighted.mean(IND_HH.CDDHDD$CDD, w=IND_HH.CDDHDD$weight*IND_HH.CDDHDD$hh_size, na.rm=TRUE)
+IND_HH.CDDHDD <- IND_HH.CDDHDD %>% 
   mutate_cond(is.nan(HDD), HDD=avg.HDD.IND) %>% 
   # mutate_cond(is.nan(HDD.18), HDD.18=avg.HDD.18.IND) %>% 
   mutate_cond(is.nan(CDD), CDD=avg.CDD.IND) %>% select(id, region, HDD, CDD) #, HDD.18)
@@ -53,8 +53,8 @@ outlier_consumption <- IND_clothing %>% right_join(outliers)
 clothing.HDD <- clothing.HDD %>% filter(!(id %in% outliers$id))
 
 # Clothing kg model
-install_github("dgrtwo/broom")
-library(broom)
+# install_github("dgrtwo/broom")
+# library(broom)
 
 lm.clothing <- lm(weight.tot ~ expenditure + HDD + hh_size, clothing.HDD, weights = weight)
 # lm.clothing <- lm(weight.tot ~ consumption + HDD + hh_size, clothing.HDD)
@@ -64,8 +64,8 @@ summary(lm.clothing)
 # summary(lm.clothing.18) 
 summary(lm.footwear) 
 
-tidy.clothing <-tidy(lm.clothing)
-write.table(tidy.clothing, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
+# tidy.clothing <-tidy(lm.clothing)
+# write.table(tidy.clothing, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
 
 

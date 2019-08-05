@@ -1,3 +1,5 @@
+library(fields) # for colorbar.plot
+
 # Read in PPP rates (using openxlsx library) because of an error for XLConnect loadWorkbook function
 # Probably need to go for either library, not both
 wb <- openxlsx::loadWorkbook("P:/ene.general/DecentLivingEnergy/Surveys/International Comparison Program 2011/ICP2011 Data for Researchers_June22-2015 [IIASA].xlsx")

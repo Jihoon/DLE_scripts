@@ -1,4 +1,3 @@
-###########################################
 ## Functions for intensity analysis ##
 
 # Intensity under ICP classification
@@ -8,6 +7,13 @@ DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=t
   
   list[result_all, NC_all, FD_adj] <- Run_rIPFP(bridge_ICP_EXIO_q[,-1], country)
   final_alloc_list_all <- lapply(result_all, func1)
+  
+  #### Tentatively inserted to generate average bridge mtx (for India collabo (Soumyajit) and Pm2.5) 5/20/2019
+  out <- data.frame(ICP=ICP_catnames, Reduce("+", final_alloc_list_all)/ length(final_alloc_list_all))
+  names(out)[-1] <- EX_catnames
+  write.xlsx(out,
+             paste0("C:/Users/min/IIASA/DLE - Documents/Air Pollution/IND.bridge.EXIO-COICOP.xlsx"))
+  ####
   
   if (class(final.intensity.mat)=="numeric") {
     final.intensity.mat <- matrix(final.intensity.mat, nrow=1)

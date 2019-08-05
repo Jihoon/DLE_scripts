@@ -23,10 +23,10 @@ raw.st <- read.csv(paste0(EXIO3_path, "st_", IO.year, ".csv"), header = FALSE)  
 raw.F <- read.csv(paste0(EXIO3_path, "F_", IO.year, ".csv"), header = FALSE)
 raw.V <- read.csv(paste0(EXIO3_path, "V_", IO.year, ".csv"), header = FALSE)
 
-# raw.F_hh <- read.csv(paste0(EXIO3_path, "F_hh_2007.csv"), header = FALSE)
+raw.F_hh <- read.csv(paste0(EXIO3_path, "F_hh_", IO.year, ".csv"), header = FALSE)
 # raw.F_hh.2008 <- read.csv(paste0(EXIO3_path, "F_hh_2008.csv"), header = FALSE)
 
-label.S <- read.xls(paste0(EXIO3_path, "labs_S_2011.xls"), header = FALSE)[,1:2] %>% rename(name = V1, unit = V2) # slice(1413:1707)
+label.S <- read_xls(paste0(EXIO3_path, "labs_S_2011.xls"), col_names = FALSE)[,1:2] %>% rename(name = ...1, unit = ...2) # slice(1413:1707)
 
 # idx.FE <- grep("Energy Carrier Net", label.S$name)
 idx.FE.NENE <- grep("NENE", label.S$name)
@@ -43,14 +43,13 @@ idx.SUPL <- grep("Energy Carrier Supply ", label.S$name)
 idx.FE <- c(idx.FE.NENE, idx.FE.NTRA, idx.FE.TAVI, idx.FE.TMAR, idx.FE.TOTH, idx.FE.TRAI, idx.FE.TROA)
 idx.NE <- c(idx.FE, idx.FE.LOSS)
 
-idx.Elec.carrier <- grep("Electricity by ", carrier.name.fin) # Among the 69 carriers
 
 
 ### TROA bug-fix 
 # These are different dimensions from those above, because Arkaitz sent in different formats.
 # It is easier to replace this FE part in the older format in order to keep all other info (PE).
 
-label.Arkz <- read_xlsx(paste0(EXIO3_path_fix, "NEU_products_IIASA.xlsx"), col_names = FALSE) %>% rename(carrier=X__1, num=X__2)
+label.Arkz <- read_xlsx(paste0(EXIO3_path_fix, "NEU_products_IIASA.xlsx"), col_names = FALSE) %>% rename(carrier=...1, num=...2)
 carriers.Arkz <- gsub("Energy Carrier Net ", "", label.Arkz$carrier)
 n_carriers.Arkz <- length(carriers.Arkz)
 carriers.RWood <- c(
@@ -71,6 +70,9 @@ carriers.RWood <- c(
   sapply(gsub("Energy Carrier Net TROA ", "", label.S$name[idx.FE.TROA]), function(x) {which(x==carriers.Arkz)})+n_carriers.Arkz*6,
   sapply(gsub("Energy Carrier Net LOSS ", "", label.S$name[idx.FE.LOSS]), function(x) {which(x==carriers.Arkz)})+n_carriers.Arkz*7)
 
+
+idx.Elec.carrier <- grep("Electricity by ", carriers.Arkz) # Among the 69 carriers
+
 # View(cbind(rep(label.Arkz$carrier, 8)[carriers.RWood], as.character(label.S$name[idx.NE])))
 
 # New fixed version replaces the energy part of the extension.
@@ -88,11 +90,10 @@ raw.st[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_", IO.year, ".csv"), head
 
 
 # Arrange intensity outputs (with 69 carriers)
-list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tpei.nature, tpei.USE, tpei.SUPL, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st)
-list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dpei.nature, dpei.USE, dpei.SUPL, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S)
-list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dpe.nature, dpe.USE, de.SUPL, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F)
-# list[dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dpe.nature.hh, 
-#      dpe.USE.hh, de.SUPL.hh, dne.exio.hh] <- HarmonizeEXIO3ExtensionFormat(raw.F_hh.2008)
+list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st) # tpei.nature, tpei.USE, tpei.SUPL,
+list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S) # dpei.nature, dpei.USE, dpei.SUPL, 
+list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F) # dpe.nature, dpe.USE, de.SUPL, 
+list[dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh] <- HarmonizeEXIO3ExtensionFormat(raw.F_hh)
 
 # tfei.exio.noTRP <- ConstructCustomTEI.EXIO(dfei.exio, trp_idx) # I can use tfei.sub$NTRA instead.
 
@@ -200,21 +201,4 @@ BRA_fd_exio <- rowSums(BRA_fd_ex) # Sum all HH FD across countries
 
 ZAF_fd_ex <- matrix(final_demand[,ZAF_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
 ZAF_fd_exio <- rowSums(ZAF_fd_ex) # Sum all HH FD across countries
-
-### Derive intensities ###
-
-# Read TFEI and DFEI from EXIO3 (tfei.exio / dfei.exio)
-# source("import_EXIO_FE_extension.R")
-# Already run at Init.R
-
-# Derive ICP TFEI (or TPEI if necessary)
-
-# This val_BR_BR is now set as default in 'rIPFP - Valuation.R'
-# Re-set val_mtx for further analysis
-# val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
-# names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
-# 
-# BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
-# scaler_BRA <- sum(BRA_FD_ICP_io.yr[,1]) / sum(BRA_fd_exio_pp_BR)
-# init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
 

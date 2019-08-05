@@ -12,7 +12,7 @@ a1 <- join(IND_WB, icp_ntnu, by="ICP_SEQ") %>% select( -COICOP1, -COICOP2, -NTNU
 a2 <- data.frame(ICP_CODE=1:164, ICP_NAME = ICP_catnames) # into the DB
 
 # 3. COICOp Intensity (MJ/USD) table 
-load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
+load( file="./Saved tables/BRA_intensities.Rda")
 load( file="./Saved tables/IND_intensities.Rda")
 load( file="./Saved tables/ZAF_intensities.Rda")
 
@@ -157,7 +157,7 @@ for (i in types) {
     colnames(int.mat[[j]]) <- ICP_catnames
     int_summary <- stat.desc(int.mat[[j]]) 
     int_summary <- t(int_summary[c(9,13),]) %>% round(digits=2)  # Just mean and sd
-    int.sum[[j]] <- data.frame(COUNTRY=ctys[j], YR=IO.year, ICP_CODE=1:164, TYPE=types.long[which(types==i)], int_summary)
+    int.sum[[j]] <- data.frame(COUNTRY=ctys[j], YR=IO.year, ICP_CODE=1:164, ICP_NAME=ICP_catnames, TYPE=types.long[which(types==i)], int_summary)
   }
   int.db.mat[[which(types==i)]] <- do.call("rbind", int.sum)
 }

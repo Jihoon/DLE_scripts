@@ -92,9 +92,9 @@ TFEI.ApplyKeyTechImprovement.EXIO <- function(country='IND',
   TFEI.exio.allregion <- sapply(TFEI.obs, colSums)[cty_idx,]
   
   # Match currency EUR 2007 MER to USD 2011 PPP
-  TFEI.exio.allregion <- TFEI.exio.allregion / ifelse(country=="IND", (EXR_IND * CPI_IND / PPP_IND),
-                                          ifelse(country=="BRA", (EXR_BRA * CPI_BRA / PPP_BRA), 
-                                                 (EXR_ZAF * CPI_ZAF / PPP_ZAF))) 
+  TFEI.exio.allregion <- TFEI.exio.allregion / ifelse(country=="IND", (EXR_IND * CPI_ratio_IND / PPP_IND),
+                                          ifelse(country=="BRA", (EXR_BRA * CPI_ratio_BRA / PPP_BRA), 
+                                                 (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF))) 
   
   return(data.frame(name=EX_catnames,TFEI.exio.allregion))
 }
@@ -216,20 +216,20 @@ FillEmptyCellsinDLEinputTable <- function(table, type="Intensity") {
 
 ### Read in the raw EXIO3 energy extensions and format them in a consistent way. (with 69 carriers)
 HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
-  pei.nature.raw <- data.frame(name=label.S$name[idx.PE.nature], mat=raw.ext[idx.PE.nature, ]) %>% 
-    mutate(name=gsub("Nature Inputs: ", "", name)) %>% right_join(data.frame(name=carrier.name.fin)) 
-  pei.USE.raw <- data.frame(name=label.S$name[idx.USE], mat=raw.ext[idx.USE, ]) %>% 
-    mutate(name=gsub("Energy Carrier Use ", "", name)) %>% right_join(data.frame(name=carrier.name.pr)) %>% 
-    right_join(data.frame(name=carrier.name.fin))  # Only the primary carriers, but keep the 69x9800 dimension
-  ei.SUPL.raw <- data.frame(name=label.S$name[idx.SUPL], mat=raw.ext[idx.SUPL, ]) %>% 
-    mutate(name=gsub("Energy Carrier Supply ", "", name)) %>% right_join(data.frame(name=carrier.name.fin)) # All the 69 carriers
-  
-  pei.nature <- as.matrix(pei.nature.raw %>% select(-name))
-  pei.nature[is.na(pei.nature)] <- 0
-  pei.USE <- as.matrix(pei.USE.raw %>% select(-name))
-  pei.USE[is.na(pei.USE)] <- 0
-  ei.SUPL <- as.matrix(ei.SUPL.raw %>% select(-name))
-  ei.SUPL[is.na(ei.SUPL)] <- 0
+  # pei.nature.raw <- data.frame(name=label.S$name[idx.PE.nature], mat=raw.ext[idx.PE.nature, ]) %>% 
+  #   mutate(name=gsub("Nature Inputs: ", "", name)) %>% right_join(data.frame(name=carrier.name.fin)) 
+  # pei.USE.raw <- data.frame(name=label.S$name[idx.USE], mat=raw.ext[idx.USE, ]) %>% 
+  #   mutate(name=gsub("Energy Carrier Use ", "", name)) %>% right_join(data.frame(name=carrier.name.pr)) %>% 
+  #   right_join(data.frame(name=carrier.name.fin))  # Only the primary carriers, but keep the 69x9800 dimension
+  # ei.SUPL.raw <- data.frame(name=label.S$name[idx.SUPL], mat=raw.ext[idx.SUPL, ]) %>% 
+  #   mutate(name=gsub("Energy Carrier Supply ", "", name)) %>% right_join(data.frame(name=carrier.name.fin)) # All the 69 carriers
+  # 
+  # pei.nature <- as.matrix(pei.nature.raw %>% select(-name))
+  # pei.nature[is.na(pei.nature)] <- 0
+  # pei.USE <- as.matrix(pei.USE.raw %>% select(-name))
+  # pei.USE[is.na(pei.USE)] <- 0
+  # ei.SUPL <- as.matrix(ei.SUPL.raw %>% select(-name))
+  # ei.SUPL[is.na(ei.SUPL)] <- 0
   
   fei.NENE.raw <- data.frame(name=label.S$name[idx.FE.NENE], mat=raw.ext[idx.FE.NENE, ]) %>% 
     mutate(name=gsub("Energy Carrier Net NENE ", "", name))
@@ -248,14 +248,14 @@ HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
   fei.LOSS.raw <- data.frame(name=label.S$name[idx.FE.LOSS], mat=raw.ext[idx.FE.LOSS, ]) %>% 
     mutate(name=gsub("Energy Carrier Net LOSS ", "", name))
   
-  fei.NENE <- data.frame(name=carrier.name.fin) %>% full_join(fei.NENE.raw) %>% slice(1:69) %>% select(-name)
-  fei.NTRA <- data.frame(name=carrier.name.fin) %>% full_join(fei.NTRA.raw) %>% slice(1:69) %>% select(-name)
-  fei.TAVI <- data.frame(name=carrier.name.fin) %>% full_join(fei.TAVI.raw) %>% slice(1:69) %>% select(-name)
-  fei.TMAR <- data.frame(name=carrier.name.fin) %>% full_join(fei.TMAR.raw) %>% slice(1:69) %>% select(-name)
-  fei.TOTH <- data.frame(name=carrier.name.fin) %>% full_join(fei.TOTH.raw) %>% slice(1:69) %>% select(-name)
-  fei.TRAI <- data.frame(name=carrier.name.fin) %>% full_join(fei.TRAI.raw) %>% slice(1:69) %>% select(-name)
-  fei.TROA <- data.frame(name=carrier.name.fin) %>% full_join(fei.TROA.raw) %>% slice(1:69) %>% select(-name)
-  fei.LOSS <- data.frame(name=carrier.name.fin) %>% full_join(fei.LOSS.raw) %>% slice(1:69) %>% select(-name)
+  fei.NENE <- data.frame(name=carriers.Arkz) %>% full_join(fei.NENE.raw) %>% slice(1:69) %>% select(-name)
+  fei.NTRA <- data.frame(name=carriers.Arkz) %>% full_join(fei.NTRA.raw) %>% slice(1:69) %>% select(-name)
+  fei.TAVI <- data.frame(name=carriers.Arkz) %>% full_join(fei.TAVI.raw) %>% slice(1:69) %>% select(-name)
+  fei.TMAR <- data.frame(name=carriers.Arkz) %>% full_join(fei.TMAR.raw) %>% slice(1:69) %>% select(-name)
+  fei.TOTH <- data.frame(name=carriers.Arkz) %>% full_join(fei.TOTH.raw) %>% slice(1:69) %>% select(-name)
+  fei.TRAI <- data.frame(name=carriers.Arkz) %>% full_join(fei.TRAI.raw) %>% slice(1:69) %>% select(-name)
+  fei.TROA <- data.frame(name=carriers.Arkz) %>% full_join(fei.TROA.raw) %>% slice(1:69) %>% select(-name)
+  fei.LOSS <- data.frame(name=carriers.Arkz) %>% full_join(fei.LOSS.raw) %>% slice(1:69) %>% select(-name)
   
   fei.NENE[is.na(fei.NENE)] <- 0
   fei.NTRA[is.na(fei.NTRA)] <- 0
@@ -266,7 +266,7 @@ HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
   fei.TROA[is.na(fei.TROA)] <- 0
   fei.LOSS[is.na(fei.LOSS)] <- 0
   
-  fei.exio <- as.matrix(fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA) # w/o fei.NENE: NENE is about manufacturing process. Not about energy use & wellbeing
+  fei.exio <- as.matrix(           fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA           ) # w/o fei.NENE: NENE is about manufacturing process. Not about energy use & wellbeing
   nei.exio <- as.matrix(fei.NENE + fei.NTRA + fei.TAVI + fei.TMAR + fei.TOTH + fei.TRAI + fei.TROA + fei.LOSS)
   
   fei.elec <- fei.exio
@@ -278,7 +278,9 @@ HarmonizeEXIO3ExtensionFormat <- function(raw.ext) {
   fei.sub <- list(fei.NENE, fei.NTRA, fei.TAVI, fei.TMAR, fei.TOTH, fei.TRAI, fei.TROA, fei.LOSS) 
   names(fei.sub) <- c("NENE", "NTRA", "TAVI", "TMAR", "TOTH", "TRAI", "TROA", "LOSS")
   
-  output <- list(fei.exio, fei.elec, fei.non.elec, fei.sub, pei.nature, pei.USE, ei.SUPL, nei.exio)
+  output <- list(fei.exio, fei.elec, fei.non.elec, fei.sub, 
+  							#	pei.nature, pei.USE, ei.SUPL, 
+  							 nei.exio)
   
   return(output)
 }

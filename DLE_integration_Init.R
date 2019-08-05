@@ -142,7 +142,7 @@ for (i in Scenarios) {
 ### Modify health intensity based on GTAP (EXIO values too large.. Unknown reason)
 library(tibble)
 tpei.health.GTAP <- data.frame(IND=3.82, BRA=2.1, ZAF=5.1)  # MJ/USD
-tpei.health.exio <- colSums(tpei.USE[,c(IND_idx_ex[idx.health.exio], BRA_idx_ex[idx.health.exio], ZAF_idx_ex[idx.health.exio])])
+tpei.health.exio <- colSums(tnei.exio[,c(IND_idx_ex[idx.health.exio], BRA_idx_ex[idx.health.exio], ZAF_idx_ex[idx.health.exio])])
 names(tpei.health.exio) <- names(tpei.health.GTAP)
 ratio.GTAP <- tpei.health.GTAP / tpei.health.exio
 ratio.GTAP <- data.frame(t(ratio.GTAP)) %>% rownames_to_column() 

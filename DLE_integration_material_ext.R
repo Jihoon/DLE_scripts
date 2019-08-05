@@ -91,14 +91,14 @@ tfmi.food <- t(mapply(function(x, y) {x*1e3/y}, tot.mat.food, tot.kcal))   # mBa
 tfmi.clothing <- t(mapply(function(x, y) {x*1e3/y}, tot.mat.clothing, tot.kg.clothing))  # mBarrel or kg / kg clothing
 
 # Intensity (mBarrel or kg/EUR 2007 MER to mBarrel or kg/USD 2011 PPP)
-tfmi.health <- t(data.frame(BRA = tfmi.phy.exio[,BRA_idx_ex[idx.health.exio]] / (EXR_BRA * CPI_BRA / PPP_BRA) * 1e3,
-                          IND = tfmi.phy.exio[,IND_idx_ex[idx.health.exio]] / (EXR_IND * CPI_IND / PPP_IND) * 1e3,
-                          ZAF = tfmi.phy.exio[,ZAF_idx_ex[idx.health.exio]] / (EXR_ZAF * CPI_ZAF / PPP_ZAF) * 1e3))
+tfmi.health <- t(data.frame(BRA = tfmi.phy.exio[,BRA_idx_ex[idx.health.exio]] / (EXR_BRA * CPI_ratio_BRA / PPP_BRA) * 1e3,
+                          IND = tfmi.phy.exio[,IND_idx_ex[idx.health.exio]] / (EXR_IND * CPI_ratio_IND / PPP_IND) * 1e3,
+                          ZAF = tfmi.phy.exio[,ZAF_idx_ex[idx.health.exio]] / (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF) * 1e3))
 
 colnames(tfmi.health) <- colnames(tfmi.food)
-tfmi.education <- t(data.frame(BRA = tfmi.phy.exio[,BRA_idx_ex[idx.education.exio]] / (EXR_BRA * CPI_BRA / PPP_BRA) * 1e3, 
-                             IND = tfmi.phy.exio[,IND_idx_ex[idx.education.exio]] / (EXR_IND * CPI_IND / PPP_IND) * 1e3,
-                             ZAF = tfmi.phy.exio[,ZAF_idx_ex[idx.education.exio]] / (EXR_ZAF * CPI_ZAF / PPP_ZAF) * 1e3))
+tfmi.education <- t(data.frame(BRA = tfmi.phy.exio[,BRA_idx_ex[idx.education.exio]] / (EXR_BRA * CPI_ratio_BRA / PPP_BRA) * 1e3, 
+                             IND = tfmi.phy.exio[,IND_idx_ex[idx.education.exio]] / (EXR_IND * CPI_ratio_IND / PPP_IND) * 1e3,
+                             ZAF = tfmi.phy.exio[,ZAF_idx_ex[idx.education.exio]] / (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF) * 1e3))
 colnames(tfmi.education) <- colnames(tfmi.food)
 
 # Reshape

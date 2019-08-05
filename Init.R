@@ -1,6 +1,6 @@
 # This file needs to be run once at the very beginning of an analysis
 
-rm(list=ls())
+# rm(list=ls())
 setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIASA/DLE - Documents/WS2 - Documents/Analysis/IO/DLE_scripts/"
 
 #################
@@ -11,7 +11,7 @@ setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIA
 
 exio_ctys <- c("AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", 
                "FR", "GR", 
-               "HR", # Added new at EXIO3
+               # "HR", # Added new at EXIO3
                "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", 
                "PL", "PT", "RO", "SE", "SI", "SK", "GB", "US", "JP", "CN", 
                "CA", "KR", "BR", "IN", "MX", "RU", "AU", "CH", "TR", "TW", 
@@ -28,8 +28,8 @@ options(digits=3)
 
 # DLE DB: 2010 $ PPP
 # EXIO: XXXX EUR MER
-CES.year <- 2010 # DLE DB
-IO.year <- 2010 # Pick one closest to the survey year.  2007 for EXIO2
+CES.year <- 2010 # DLE DB - For now set at somewhere midpoint for the three countries..
+IO.year <- CES.year # Pick one closest to the survey year.  2007 for EXIO2
 
 # DLE DB in PPP 2010$ (PPP in terms of private consumption)
 # EXIO in MER 2007
@@ -341,11 +341,22 @@ source("rIPFP - Bridge_RAS.R")
 # Analysis_for_paper.R is the main file for analysis
 
 ICP_food_idx <- 1:45
+ICP_clth_idx <- 48:55
+ICP_hous_idx <- c(56:58, 61)
+ICP_watr_idx <- 59:60
+ICP_ener_idx <- c(62:65, 103, 152:164)
+ICP_hlth_idx <- 85:95
+ICP_mobl_idx <- c(96:102, 104:112)
+ICP_educ_idx <- 135
+ICP_othr_idx <- c(46:47, 122:134, 136:151)
+
+
 ICP_hhold_idx <- c(56:84, 138:151)  # Household goods/services
 ICP_svc_idx <- 85:137   # Health, Transport, Communication, Recreation
 ICP_fuel_idx <-152:164
 ICP_all_idx <- 1:164
 
 
+# Food or clothing intensities and activities also can be done here
 
 

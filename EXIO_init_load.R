@@ -2,8 +2,8 @@
 # 1. avoid running EXIO_init when starting
 # 2. incorporate energy intensity initiation
 
-path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrIOT_PxP_ita_coefficient_version2.2.2/"
-path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2.2.2/"
+path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/EXIOBASE2/mrIOT_PxP_ita_coefficient_version2.2.2/"
+path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/EXIOBASE2/mrSUT_version2.2.2/"
 
 TJ_per_MTOE <- 41870
 TWh_per_MTOE <- 11.63

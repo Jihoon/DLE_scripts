@@ -54,7 +54,10 @@ readFinalDemandfromDBbyDecile = function(svy='IND1') {
                         labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
     filter(!is.na(income))
   
-  Fuel_summary <- Fuel %>% left_join(HHold) %>% # filter(!is.na(val_tot)) %>% 
+  
+  
+  Fuel_summary <- Fuel %>% 
+    left_join(HHold) %>% # filter(!is.na(val_tot)) %>% 
     mutate(fd_tot =val_tot*weight) %>% group_by(decile, fuel) %>%
     summarise(fd_tot=sum(fd_tot, na.rm = TRUE)) %>% arrange(fuel) %>% 
     right_join(DLE_fuel_types) %>% rename(item = fuel) %>%
@@ -103,7 +106,6 @@ readFinalDemandfromDBAllHH = function(svy='IND1') {
   }
   xlcFreeMemory()
   
-  # Fuel <- Fuel %>% rename(item = fuel)
   print(sum(is.na(HHold$income)))
   HHold <- HHold %>% rename(hhid = id) %>% 
     arrange(income/hh_size) %>%
@@ -219,7 +221,6 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
   }
   xlcFreeMemory()
   
-  # Fuel <- Fuel %>% rename(item = fuel)
   print(sum(is.na(HHold$income)))
   HHold <- HHold %>% rename(hhid = id) %>% 
     arrange(income/hh_size) %>%
@@ -256,6 +257,9 @@ readFinalEnergyfromDBAllHH = function(svy='IND1') {
 }
 
 
+
+
+# Convert fuel consumption to MJ by applying energy conversion factors
 BuildMJperHH = function() {
   conv.ene <- read.xlsx("H:/MyDocuments/Analysis/Final energy/India-NSS energy conversion.xlsx", cols=1:3)
   

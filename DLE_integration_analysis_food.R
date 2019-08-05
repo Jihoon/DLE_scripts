@@ -8,6 +8,14 @@ load(file="./Saved tables/BRA.tfei.icp.Rda")
 load(file="./Saved tables/IND.tfei.icp.Rda")
 load(file="./Saved tables/ZAF.tfei.icp.Rda")
 
+load(file="./Saved tables/BRA.tfei.icp.elec.Rda")
+load(file="./Saved tables/IND.tfei.icp.elec.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.elec.Rda")
+
+load(file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/IND.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+
 load(file="./Saved tables/IND_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
@@ -75,6 +83,7 @@ IND.devmin <- IND.food.tfei %>% filter(name=="dev_min") %>% select(ene.int) %>% 
 IND.lctbhv <- IND.food.tfei %>% filter(name=="te_min_cap") %>% select(ene.int) %>% as.numeric() # will be achieved by 2050
 IND.base.elec <- as.numeric(tot.food.elec.IND / IND.food.tfei$kcal[1]) * 1e12
 
+# Emission intensity for India
 IND.base.em <- IND.food.tfei %>% filter(name=="base") %>% select(emi.int) %>% as.numeric()
 IND.devmin.em <- IND.food.tfei %>% filter(name=="dev_min") %>% select(emi.int) %>% as.numeric()    # will be achieved by 2030
 IND.lctbhv.em <- IND.food.tfei %>% filter(name=="te_min_cap") %>% select(emi.int) %>% as.numeric() # will be achieved by 2050
@@ -136,3 +145,39 @@ IND.intensity.em <- rbind(
   data.frame(Scenario="DLE.ACCEL.LCT.BHV", Year=Year.obs, Food=IND.seq.lctbhv.em),
   data.frame(Scenario="DLE.BAU", Year=Year.obs, Food=IND.base.em)
 ) %>% mutate(Country="IND") %>% select(Scenario, Country, Year, Food)
+
+
+# Digging in: What's under rice's embodied electricity?
+idx_item <- which(EX_catnames=="Paddy.rice") #  Products.of.meat.cattle
+emb.ene.item <- data.frame(eigenMapMatMult(dfei.elec, diag(L_inverse[, IND_idx_ex[idx_item]]))[, IND_idx_ex])
+emb.ene.item <- data.frame(eigenMapMatMult(dfei.non.elec, diag(L_inverse[, IND_idx_ex[idx_item]]))[, IND_idx_ex])
+names(emb.ene.item) <- EX_catnames
+view(emb.ene.item)
+
+# Digging in: Intensity difference between meat and other?
+idx.meat.icp <- 9:14
+weighted.mean(colMeans(BRA.tfei.icp[, idx.food.icp]), w=BRA_FD_ICP_io.yr[idx.food.icp, 1])
+weighted.mean(colMeans(IND.tfei.icp[, idx.food.icp]), w=IND_FD_ICP_io.yr[idx.food.icp, 1])
+weighted.mean(colMeans(ZAF.tfei.icp[, idx.food.icp]), w=ZAF_FD_ICP_io.yr[idx.food.icp, 1])
+weighted.mean(colMeans(BRA.tfei.icp[, idx.meat.icp]), w=BRA_FD_ICP_io.yr[idx.meat.icp, 1])
+weighted.mean(colMeans(IND.tfei.icp[, idx.meat.icp]), w=IND_FD_ICP_io.yr[idx.meat.icp, 1])
+weighted.mean(colMeans(ZAF.tfei.icp[, idx.meat.icp]), w=ZAF_FD_ICP_io.yr[idx.meat.icp, 1])
+                                      
+View(data.frame(EX_catnames, 
+                tfei.BRA=colSums(tfei.exio[,BRA_idx_ex]), 
+                tfei.IND=colSums(tfei.exio[,IND_idx_ex]), 
+                tfei.ZAF=colSums(tfei.exio[,ZAF_idx_ex])))
+                                      
+
+tot.meat.BRA <- mean(rowSums(BRA.tfei.icp[, idx.meat.icp] %*% diag(BRA_FD_ICP_io.yr[idx.meat.icp, 1]))) / 1e6 / scaler_BRA
+tot.meat.IND <- mean(rowSums(IND.tfei.icp[, idx.meat.icp] %*% diag(IND_FD_ICP_io.yr[idx.meat.icp, 1]))) / 1e6 / scaler_IND
+tot.meat.ZAF <- mean(rowSums(ZAF.tfei.icp[, idx.meat.icp] %*% diag(ZAF_FD_ICP_io.yr[idx.meat.icp, 1]))) / 1e6 / scaler_ZAF
+tot.food.BRA
+tot.food.IND
+tot.food.ZAF
+
+View(data.frame(EX_catnames, 
+                tfei.BRA=colSums(tfei.exio[,BRA_idx_ex]), 
+                tfei.IND=colSums(tfei.exio[,IND_idx_ex]), 
+                tfei.ZAF=colSums(tfei.exio[,ZAF_idx_ex])))
+

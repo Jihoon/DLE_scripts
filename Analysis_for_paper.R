@@ -27,40 +27,40 @@ D_val_uncertainty <- 0
 # 1.1. BRA - EXIO default
 
 # Re-set val_mtx for further analysis
-val_mtx <- list(val_FR, val_BR_EX, val_US, val_IN, val_ZA)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
+# val_mtx <- list(val_BR, val_IN, val_ZA)
+# names(val_mtx) <- c('BR', 'IN', 'ZA')
 
 list[BRA_intensity, BRA_alloc, NC_BRA_val_EXIO, BRA_FD_adj_val_EXIO] <- DeriveIntensities('BRA')
-save(BRA_intensity, file="./Saved tables/BRA_intensities_val_EXIO.Rda")
-save(BRA_alloc, file="./Saved tables/BRA_alloc_val_EXIO.Rda")
-save(BRA_FD_adj_val_EXIO, file="./Saved tables/BRA_FD_adj_val_EXIO.Rda")
+save(BRA_intensity, file="./Saved tables/BRA_intensities.Rda")
+save(BRA_alloc, file="./Saved tables/BRA_alloc.Rda")
+save(BRA_FD_adj_val_EXIO, file="./Saved tables/BRA_FD_adj.Rda")
 
 
-# 1.2. BRA - Brazil-specific valuation (from Guilioto)
+# # 1.2. BRA - Brazil-specific valuation (from Guilioto)
+# 
+# # Re-set val_mtx for further analysis
+# val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
+# names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
+# 
+# BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
+# scaler_BRA <- sum(BRA_FD_ICP_io.yr[,1]) / sum(BRA_fd_exio_pp_BR)
+# init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
+# 
+# list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
+# # list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
+# list[BRA_intensity.use, BRA_alloc.use, NC_BRA.use, BRA_FD_adj_val_BRA.use] <- DeriveIntensities('BRA', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
+# 
+# save(BRA_intensity, file="./Saved tables/BRA_intensity.Rda")
+# # save(BRA_f.intensity, file="./Saved tables/BRA_f.intensity.Rda")
+# save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
+# save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
+# 
+# save(BRA_intensity.use, file="./Saved tables/BRA_intensities_val_BRA.use.Rda")
+# save(BRA_FD_adj_val_BRA.use, file="./Saved tables/BRA_FD_adj_val_BRA.use.Rda")
 
-# Re-set val_mtx for further analysis
-val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
-
-BRA_fd_exio_pp_BR <- get_purch_price(BRA_fd_exio, "BR")
-scaler_BRA <- sum(BRA_FD_ICP_io.yr[,1]) / sum(BRA_fd_exio_pp_BR)
-init_FD_BRA <- BRA_FD_ICP_io.yr[,1] / scaler_BRA
-
-list[BRA_intensity, BRA_alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- DeriveIntensities('BRA', 'primary')
-# list[BRA_f.intensity, BRA_f.alloc, NC_f.BRA_val_BRA, BRA_f.FD_adj_val_BRA] <- DeriveIntensities('BRA', 'final')
-list[BRA_intensity.use, BRA_alloc.use, NC_BRA.use, BRA_FD_adj_val_BRA.use] <- DeriveIntensities('BRA', 'primary', pri.intensity.mat=indirect_pE_int.elec.prirow)
-
-save(BRA_intensity, file="./Saved tables/BRA_intensity.Rda")
-# save(BRA_f.intensity, file="./Saved tables/BRA_f.intensity.Rda")
-save(BRA_alloc, file="./Saved tables/BRA_alloc_val_BRA.Rda")
-save(BRA_FD_adj_val_BRA, file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
-
-save(BRA_intensity.use, file="./Saved tables/BRA_intensities_val_BRA.use.Rda")
-save(BRA_FD_adj_val_BRA.use, file="./Saved tables/BRA_FD_adj_val_BRA.use.Rda")
-
-load( file="./Saved tables/BRA_intensities_val_BRA.Rda")
-load( file="./Saved tables/BRA_alloc_val_BRA.Rda")
-load( file="./Saved tables/BRA_FD_adj_val_BRA.Rda")
+load( file="./Saved tables/BRA_intensities.Rda")
+load( file="./Saved tables/BRA_alloc.Rda")
+load( file="./Saved tables/BRA_FD_adj.Rda")
 
 # view(data.frame(ICP_catnames, tpei= as.numeric(format(colMeans(BRA.tpei.use.icp), digits=2, nsmall=2)), 
 #                 tfei=as.numeric(format(colMeans(BRA.tfei.icp), digits=2, nsmall=2)),
