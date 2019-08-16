@@ -21,9 +21,9 @@ load(file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
 load(file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 
 # kcal.proj has daily kcal intake.
-kcal.proj = read_excel("./DLE trajectory/Data_FAO_2012_BICS_Narasimha.xlsx")
-kcal.proj = kcal.proj %>% filter(Var %in% c("calTot", "pop")) %>% filter(Region!="CHN") %>%
-  spread(Var, Val) %>% mutate(AnnTotCal=pop*calTot*365) %>% select(-Sector) # TotCal in 1e6 kcal
+# kcal.proj = read_excel("./DLE trajectory/Data_FAO_2012_BICS_Narasimha.xlsx")
+# kcal.proj = kcal.proj %>% filter(Var %in% c("calTot", "pop")) %>% filter(Region!="CHN") %>%
+#   spread(Var, Val) %>% mutate(AnnTotCal=pop*calTot*365) %>% select(-Sector) # TotCal in 1e6 kcal
 kcal.ssp2 = read_excel("./DLE trajectory/SSP_projection_Valin_BICS_2015.xlsx",
                       sheet="Data") %>% 
   filter(SSP=="SSP2" & Reg!="ChinaReg" & Foodtype=="TOTAL - unscaled") %>%

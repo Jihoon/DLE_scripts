@@ -117,6 +117,7 @@ IND_FD_ICP_io.yr <- IND_FD_ICP_svy.yr / IND_con_grwth # M.USD 2007 (MER)  - cons
 IND_FD_AllHH_svy.yr <- IND_FD_ICP_AllHH * PPP_IND / CPI_ratio_IND / EXR_IND    # From USD 2010 PPP to USD 2007 (MER)
 IND_FD_ICP_AllHH <- IND_FD_AllHH_svy.yr / IND_con_grwth   # to USD 2007 (MER)   # An estimate for hh consumption at the common IO year (EXIO2:2007)
 
+# Urban/Rural divide for PM work
 
 
 
@@ -129,12 +130,12 @@ IND_FD_ICP_AllHH <- IND_FD_AllHH_svy.yr / IND_con_grwth   # to USD 2007 (MER)   
 # BRA1 is for 2008-2009
 BRA_FD <- data.frame(item=ICP_catnames) %>% left_join(BRA_FD)  # Join to make items consistent with the standardized names and order
 BRA_FD[is.na(BRA_FD)] <- 0
-BRA_FD_ICP_io.yr <- as.matrix(BRA_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth) # to M.USD 2007
+BRA_FD_ICP_io.yr <- as.matrix(BRA_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth) # to M.USD 2007 (MER)
 # BRA1_FD_ICP_io.yr <- cbind(BRA1_FD[,1], as.matrix(BRA1_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA / 1e6 / BRA_con_grwth)) # to M.USD 2007
 
 # FD for all households
 BRA_FD_ICP_AllHH <- data.frame(item=ICP_catnames) %>% left_join(BRA_FD_ALL)
-BRA_FD_ICP_AllHH <- as.matrix(BRA_FD_ICP_AllHH[,-1]) * PPP_BRA / CPI_ratio_BRA / EXR_BRA / BRA_con_grwth # to USD 2007
+BRA_FD_ICP_AllHH <- as.matrix(BRA_FD_ICP_AllHH[,-1]) * PPP_BRA / CPI_ratio_BRA / EXR_BRA / BRA_con_grwth # to USD 2007 (MER)
 # BRA_FD_ICP_AllHH[,-1] <- NAer(BRA_FD_ICP_AllHH[,-1]) # Faster than 
 BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 

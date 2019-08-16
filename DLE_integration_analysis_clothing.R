@@ -30,6 +30,7 @@ ZAF_clothing <- ZAF_OTH.raw %>% mutate(code=as.numeric(code)) %>% filter(code >=
 ZAF_footwear <- ZAF_OTH.raw %>% mutate(code=as.numeric(code)) %>% filter(code >=3211001 & code <=3213500)
 
 # BRA_OTH_ALLdata
+source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access database.R")
 BRA_OTH_ALLdata <- selectDBdata(tables='BRA0_OTHCON') %>% left_join(data.frame(code=1:164, item=ICP_catnames))
 load(file="./Saved tables/BRA_HH.Rda")
 BRA_clothing <- BRA_OTH_ALLdata %>% filter(code >=48 & code <=52) 

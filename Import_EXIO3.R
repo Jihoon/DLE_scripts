@@ -89,7 +89,7 @@ raw.st[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_", IO.year, ".csv"), head
 
 
 
-# Arrange intensity outputs (with 69 carriers)
+# Arrange intensity outputs (with 69 carriers) - fei: MJ/EUR
 list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st) # tpei.nature, tpei.USE, tpei.SUPL,
 list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S) # dpei.nature, dpei.USE, dpei.SUPL, 
 list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F) # dpe.nature, dpe.USE, de.SUPL, 

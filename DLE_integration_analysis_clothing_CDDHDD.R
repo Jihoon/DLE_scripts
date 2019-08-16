@@ -76,12 +76,12 @@ clothing.region.income <- clothing.HDD %>% group_by(region, decile) %>%
 
 ggplot(clothing.region.income, aes(x=HDD, y=weight.clothing)) +
   geom_point(aes(group = decile, colour=decile))
-ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing)) +
-  geom_point(aes(group = decile, colour=decile))
+# ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing)) +
+#   geom_point(aes(group = decile, colour=decile))
 
 
-ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing, size=weight, group = decile, colour=decile)) +
-  stat_sum() + scale_size_area(max_size = 12) + labs(x="HDD.18")
+# ggplot(clothing.region.income, aes(x=HDD.18, y=weight.clothing, size=weight, group = decile, colour=decile)) +
+#   stat_sum() + scale_size_area(max_size = 12) + labs(x="HDD.18")
 
 ### Predicting for BRA and ZAF
 hdd.BRA <- read_csv(paste0(hdd.path, "DoT_HDD_tas_30.0Brazil.csv")) %>% filter(var=="HDDsum" & stat=="PopWeightAv") %>% 

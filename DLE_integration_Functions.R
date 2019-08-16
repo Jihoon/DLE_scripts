@@ -85,7 +85,7 @@ TFEI.ApplyKeyTechImprovement.EXIO <- function(country='IND',
     return(dfei)}
   
   DFEI.obs <- lapply(coeff.obs, update.DFEI.eff)
-  TFEI.obs <- lapply(DFEI.obs, function(d) {eigenMapMatMult(d, as.matrix(L_inverse)) })
+  TFEI.obs <- lapply(DFEI.obs, function(d) {eigenMapMatMult(d, as.matrix(L_inverse)) }) # One list entry per year
   
   cty_place <- which(exio_ctys==countrycode(country, "iso3c", "iso2c"))
   cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
@@ -94,7 +94,7 @@ TFEI.ApplyKeyTechImprovement.EXIO <- function(country='IND',
   # Match currency EUR 2007 MER to USD 2011 PPP
   TFEI.exio.allregion <- TFEI.exio.allregion / ifelse(country=="IND", (EXR_IND * CPI_ratio_IND / PPP_IND),
                                           ifelse(country=="BRA", (EXR_BRA * CPI_ratio_BRA / PPP_BRA), 
-                                                 (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF))) 
+                                                 (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF))) #* EXR_EUR$r 
   
   return(data.frame(name=EX_catnames,TFEI.exio.allregion))
 }

@@ -1,6 +1,6 @@
 ## Functions for intensity analysis ##
 
-# Intensity under ICP classification
+# Intensity under ICP classification (returns MJ/USD)
 # In the end, I will replace the codes above with this function.
 DeriveIntensities <- function(country='IND', type='final', final.intensity.mat=tfei.exio, pri.intensity.mat=tpei.USE) {
   icp_fd_cty_usd <- eval(parse(text=paste0(country, "_FD_ICP_io.yr")))

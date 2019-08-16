@@ -29,7 +29,7 @@ options(digits=3)
 # DLE DB: 2010 $ PPP
 # EXIO: XXXX EUR MER
 CES.year <- 2010 # DLE DB - For now set at somewhere midpoint for the three countries..
-IO.year <- CES.year # Pick one closest to the survey year.  2007 for EXIO2
+IO.year <- 2007 # Pick one closest to the survey year.  2007 for EXIO2
 
 # DLE DB in PPP 2010$ (PPP in terms of private consumption)
 # EXIO in MER 2007

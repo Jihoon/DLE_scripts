@@ -85,6 +85,74 @@ readFinalDemandfromDBbyDecile = function(svy='IND1') {
   return(a)
 }
 
+# Created to cater to the need from PM work (only run for IND)
+readFinalDemandfromDBbyDecile.UrbRur = function(svy='IND1') {
+  xlcFreeMemory()
+  Food <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_FOOD')))
+  xlcFreeMemory()
+  OthCon <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_OTHCON')))
+  xlcFreeMemory()
+  Fuel <- selectDBdata(ID, FUEL, VAL_TOT, 
+                       # QTY_TOT, UNIT, 
+                       tables=c(paste0(svy, '_FUEL')))
+  xlcFreeMemory()
+  
+  if (grepl("BRA", svy)) {
+    HHold <- selectDBdata(ID, WEIGHT, INCOME, CONSUMPTION, HH_SIZE, EXPENDITURE, tables=c(paste0(svy, '_HH')))
+    # income_proxy <- income
+  }
+  else {
+    HHold <- selectDBdata(ID, WEIGHT, CONSUMPTION, HH_SIZE, EXPENDITURE, URBAN, tables=c(paste0(svy, '_HH')))
+    HHold$income <- HHold$consumption
+  }
+  xlcFreeMemory()
+  
+  print(sum(is.na(HHold$income)))
+  HHold <- HHold %>% 
+    arrange(income/hh_size) %>%
+    mutate(cumpop = cumsum(hh_size*weight)/sum(HHold$weight*HHold$hh_size)) %>%
+    mutate(decile = cut(cumpop, breaks = seq(0, 1, 0.1),
+                        labels=paste0("decile", 1:10), include.lowest = TRUE, ordered=TRUE))  %>%
+    filter(!is.na(income))
+  
+  Pop <- HHold %>% group_by(decile, urban) %>% summarise(Pop = sum(weight*hh_size))
+  
+  Fuel_summary <- Fuel %>% 
+    left_join(HHold) %>% # filter(!is.na(val_tot)) %>% 
+    mutate(fd_tot =val_tot*weight) %>% group_by(decile, urban, fuel) %>%
+    summarise(fd_tot=sum(fd_tot, na.rm = TRUE)) %>% arrange(fuel) %>% 
+    right_join(DLE_fuel_types %>% mutate(urban=1) %>% rbind(mutate(., urban=0))) %>% # DLE_fuel_types already has to have urban (0/1) permutation to do a correct right_join.
+    rename(item = fuel) %>%
+    spread(decile, fd_tot) %>% ungroup() %>% mutate(total = rowSums(.[3:12], na.rm = TRUE)) %>% arrange(urban, item) %>% 
+    # filter(!is.na(urban)) %>%
+    select(item, urban, total, decile1:decile10)
+  Fuel_summary[is.na(Fuel_summary)] <- 0
+  
+  print(sum(is.na(HHold$income)))
+  
+  n_fuel <- dim(DLE_fuel_sector_Q)[1]
+  Fuel_summary.R <- data.frame(item=rownames(bridge_fuel_EXIO_q), urban=0,
+                             t(DLE_fuel_sector_Q) %*% as.matrix(Fuel_summary[1:n_fuel,-c(1,2)]))
+  Fuel_summary.U <- data.frame(item=rownames(bridge_fuel_EXIO_q), urban=1, 
+                             t(DLE_fuel_sector_Q) %*% as.matrix(Fuel_summary[(n_fuel+1):(2*n_fuel),-c(1,2)]))
+  
+  items <- data.frame(item=unique(rbind.fill(Food, OthCon)$item)) # Unique items in the survey
+  a <- rbind.fill(Food, OthCon) %>% left_join(HHold) %>% filter(!is.na(decile)) %>% 
+    mutate(fd_tot = val_tot*weight) %>% group_by(decile, urban, item) %>%
+    summarise(fd_tot = sum(fd_tot, na.rm = TRUE)) %>% 
+    right_join(items %>% mutate(urban=1) %>% rbind(mutate(., urban=0))) %>%
+    spread(decile, fd_tot) %>% ungroup() %>% mutate(total = rowSums(.[3:12], na.rm = TRUE)) %>%
+    select(item, urban, total, decile1:decile10) %>% rbind(Fuel_summary.R, Fuel_summary.U) #%>% arrange(urban, item) 
+  a[is.na(a)] <- 0
+  # 
+  # a_tot <- rbind.fill(Food, OthCon) %>% left_join(HHold) %>% # filter(!is.na(val_tot)) %>%
+  #   mutate(fd_tot =val_tot*weight) %>% group_by(item) %>%
+  #   summarise(fd_tot=sum(fd_tot, na.rm = TRUE)) %>%
+  #   rename(total = fd_tot)
+  
+  return(list(a, Pop))
+}
+
 readFinalDemandfromDBAllHH = function(svy='IND1') {
   xlcFreeMemory()
   Food <- selectDBdata(ID, ITEM, VAL_TOT, tables=c(paste0(svy, '_FOOD')))
