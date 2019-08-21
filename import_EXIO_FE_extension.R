@@ -1,18 +1,18 @@
-EXIO3_path = "H:/MyDocuments/Analysis/Final energy/Arkaitz/IOT/"
+EXIO3_path = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_India/"
 
 raw.S <- read.csv(paste0(EXIO3_path, "S_2008.csv"), header = FALSE)    # Stressor (Intensity)
 raw.st <- read.csv(paste0(EXIO3_path, "st_2008.csv"), header = FALSE)  # Total stressor
-raw.S.2007 <- read.csv(paste0(EXIO3_path, "S_2007.csv"), header = FALSE)    # Stressor (Intensity)
-raw.st.2007 <- read.csv(paste0(EXIO3_path, "st_2007.csv"), header = FALSE)  # Total stressor
+# raw.S.2007 <- read.csv(paste0(EXIO3_path, "S_2007.csv"), header = FALSE)    # Stressor (Intensity)
+# raw.st.2007 <- read.csv(paste0(EXIO3_path, "st_2007.csv"), header = FALSE)  # Total stressor
 
 raw.Y <- read.csv(paste0(EXIO3_path, "Y_2007.csv"), header = FALSE)  # Final demand
 raw.F <- read.csv(paste0(EXIO3_path, "F_2007.csv"), header = FALSE)
-raw.F.2008 <- read.csv(paste0(EXIO3_path, "F_2008.csv"), header = FALSE)
+# raw.F.2008 <- read.csv(paste0(EXIO3_path, "F_2008.csv"), header = FALSE)
 raw.F_hh <- read.csv(paste0(EXIO3_path, "F_hh_2007.csv"), header = FALSE)
 raw.x <- unlist(read.csv(paste0(EXIO3_path, "x_2007.csv"), header = FALSE))
-raw.x.2008 <- unlist(read.csv(paste0(EXIO3_path, "x_2008.csv"), header = FALSE))
+# raw.x.2008 <- unlist(read.csv(paste0(EXIO3_path, "x_2008.csv"), header = FALSE))
 
-label.S <- read.xls(paste0(EXIO3_path, "labs_S_2011.xls"), header = FALSE)[,1:2] %>% rename(name = V1, unit = V2) # slice(1413:1707)
+label.S <- read_xls(paste0(EXIO3_path, "labs_S_2011.xls"), col_names = FALSE)[,1:2] %>% rename(name = ...1, unit = ...2) # slice(1413:1707)
 
 # idx.FE <- grep("Energy Carrier Net", label.S$name)
 idx.FE.NENE <- grep("NENE", label.S$name)
@@ -33,7 +33,7 @@ idx.Elec.carrier <- grep("Electricity by ", carrier.name.fin) # Among the 69 car
 # Arrange intensity outputs (with 69 carriers)
 list[tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tpei.nature, tpei.USE, tpei.SUPL, tnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.st)
 list[dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dpei.nature, dpei.USE, dpei.SUPL, dnei.exio] <- HarmonizeEXIO3ExtensionFormat(raw.S)
-list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dpe.nature, dpe.USE, de.SUPL, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F.2008)
+# list[dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dpe.nature, dpe.USE, de.SUPL, dne.exio] <- HarmonizeEXIO3ExtensionFormat(raw.F.2008)
 
 
 

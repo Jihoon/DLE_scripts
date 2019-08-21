@@ -109,17 +109,17 @@ list[BRA.tfei.icp.non.elec, BRA.alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- De
 list[IND.tfei.icp.non.elec, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'final', final.intensity.mat=tfei.non.elec)
 list[ZAF.tfei.icp.non.elec, ZAF_alloc, NC_ZAF, ZAF_FD_adj] <- DeriveIntensities('ZAF', 'final', final.intensity.mat=tfei.non.elec)
 
-save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.Rda")
-save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.Rda")
-save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.Rda")
+save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.Jul2018.Rda")
+save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.Jul2018.Rda")
+save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.Jul2018.Rda")
 
-save(BRA.tfei.icp.elec, file="./Saved tables/BRA.tfei.icp.elec.Rda")
-save(IND.tfei.icp.elec, file="./Saved tables/IND.tfei.icp.elec.Rda")
-save(ZAF.tfei.icp.elec, file="./Saved tables/ZAF.tfei.icp.elec.Rda")
+save(BRA.tfei.icp.elec, file="./Saved tables/BRA.tfei.icp.elec.Jul2018.Rda")
+save(IND.tfei.icp.elec, file="./Saved tables/IND.tfei.icp.elec.Jul2018.Rda")
+save(ZAF.tfei.icp.elec, file="./Saved tables/ZAF.tfei.icp.elec.Jul2018.Rda")
 
-save(BRA.tfei.icp.non.elec, file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
-save(IND.tfei.icp.non.elec, file="./Saved tables/IND.tfei.icp.non.elec.Rda")
-save(ZAF.tfei.icp.non.elec, file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+save(BRA.tfei.icp.non.elec, file="./Saved tables/BRA.tfei.icp.non.elec.Jul2018.Rda")
+save(IND.tfei.icp.non.elec, file="./Saved tables/IND.tfei.icp.non.elec.Jul2018.Rda")
+save(ZAF.tfei.icp.non.elec, file="./Saved tables/ZAF.tfei.icp.non.elec.Jul2018.Rda")
 
 
 
@@ -210,7 +210,7 @@ DLE.intensity.input <- FillEmptyCellsinDLEinputTable(DLE.intensity.input) %>% ar
 Intensity.table.AM <- read.csv(paste0(result_path, "All intensities by comp - carrier.csv")) %>% select(-X)
 DLE.intensity.input <- Intensity.table.AM %>% left_join(DLE.intensity.input)
 
-write.csv(DLE.intensity.input, paste0(result_path, "DLE intensity by comp.csv"))
+write.csv(DLE.intensity.input, paste0(result_path, "DLE intensity by comp.Jul2018.csv"))
 
 
 

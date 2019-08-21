@@ -210,6 +210,7 @@ load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_AllHHConsump.Rda"
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND1_FUEL_Alldata.Rda") # IND_FUEL_Alldata
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/IND_FD_harmonized.Rda") # IND_FD_ICP_AllHH
 
+load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/BRA_FD.Rda")
 # ZAF
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_FD.Rda")
 load(file="H:/MyDocuments/IO work/DLE_scripts/Saved tables/ZAF_HH.Rda")
