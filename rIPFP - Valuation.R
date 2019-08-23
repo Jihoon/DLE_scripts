@@ -180,14 +180,14 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
 # Including all countries gives too wide range for margin/tax rates.
 # For now, use three countries
 
-val_IN <- get_valuation_mtx('IN', 0, 'EXIO2')
-val_BR <- get_valuation_mtx('BR', 0, 'EXIO2')
-val_ZA <- get_valuation_mtx('ZA', 0, 'EXIO2')
+val_IN <- get_valuation_mtx('IN', 0)
+val_BR <- get_valuation_mtx('BR', 0)
+val_ZA <- get_valuation_mtx('ZA', 0)
 # val_FR <- get_valuation_mtx('FR', 0)
 # val_US <- get_valuation_mtx('US', 0)
 
-# val_mtx <- list(val_BR, val_IN, val_ZA)
-val_mtx <- list(val_BR_BR, val_IN, val_ZA) # Nature energy initial submission
+val_mtx <- list(val_BR, val_IN, val_ZA)
+# val_mtx <- list(val_BR_BR, val_IN, val_ZA) # Nature energy initial submission (when there was no other valuation sources)
 names(val_mtx) <- c('BR', 'IN', 'ZA')
 
 
@@ -325,38 +325,38 @@ get_inv_valmtx <- function(val_mat) {
 ###################################################################
 #  Read in Brazilian valuation file (from Guilioto) and summarize #
 ###################################################################
-
-a <- c("Code", "Descr", "SupPP", "TrdMrg", "TrpMrg", "ImpTax", "IPI", "ICMS", "OthTaxSub", "TotTaxSub", "SupBP")
-BRA_val_org <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
-BRA_val_org <- BRA_val_org %>% select(-Descr, -ImpTax, -IPI, -ICMS, -OthTaxSub) %>% filter(!is.na(Code)) %>% filter(Code!="Total")
-BRA_val <- BRA_val_org
-BRA_val$Code <- floor(as.numeric(BRA_val$Code) / 1000)
-BRA_val <- BRA_val %>% group_by(Code) %>% summarise_each(funs(sum))
-BRA_exio_map <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
-  mutate(Code=as.numeric(Code), CodeBRA=as.numeric(CodeBRA))
-
-BRA_val <- BRA_val[match(BRA_exio_map$CodeBRA, BRA_val$Code),]
-
-# We need to assume certain shares for each trd/trp subsectors.
-# The only groud is from the EXIO FD...
-BRA_val[trd_idx,-1] <- BRA_val[trd_idx,-1] * BRA_fd_exio[trd_idx] / sum(BRA_fd_exio[trd_idx])
-BRA_val[trp_idx,-1] <- BRA_val[trp_idx,-1] * BRA_fd_exio[trp_idx] / sum(BRA_fd_exio[trp_idx])
-
-Exceptions <- !is.na(BRA_exio_map$Exception)
-BRA_val[Exceptions,-1] <- BRA_val_org[match(BRA_exio_map$Exception[Exceptions], BRA_val_org$Code),-1]
-
-# Sum of each margin column needs to be zero.
-valscale <- sum(BRA_val$TrpMrg[-trp_idx]) / sum(BRA_val$TrpMrg[trp_idx])
-BRA_val$TrpMrg[-trp_idx] <- BRA_val$TrpMrg[-trp_idx] / abs(valscale)
-valscale <- sum(BRA_val$TrdMrg[-trd_idx]) / sum(BRA_val$TrdMrg[trd_idx])
-BRA_val$TrdMrg[-trd_idx] <- BRA_val$TrdMrg[-trd_idx] / abs(valscale)
-
-attach(BRA_val)
-val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
-detach(BRA_val)
-
-val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
-names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
+# 
+# a <- c("Code", "Descr", "SupPP", "TrdMrg", "TrpMrg", "ImpTax", "IPI", "ICMS", "OthTaxSub", "TotTaxSub", "SupBP")
+# BRA_val_org <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
+# BRA_val_org <- BRA_val_org %>% select(-Descr, -ImpTax, -IPI, -ICMS, -OthTaxSub) %>% filter(!is.na(Code)) %>% filter(Code!="Total")
+# BRA_val <- BRA_val_org
+# BRA_val$Code <- floor(as.numeric(BRA_val$Code) / 1000)
+# BRA_val <- BRA_val %>% group_by(Code) %>% summarise_each(funs(sum))
+# BRA_exio_map <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
+#   mutate(Code=as.numeric(Code), CodeBRA=as.numeric(CodeBRA))
+# 
+# BRA_val <- BRA_val[match(BRA_exio_map$CodeBRA, BRA_val$Code),]
+# 
+# # We need to assume certain shares for each trd/trp subsectors.
+# # The only groud is from the EXIO FD...
+# BRA_val[trd_idx,-1] <- BRA_val[trd_idx,-1] * BRA_fd_exio[trd_idx] / sum(BRA_fd_exio[trd_idx])
+# BRA_val[trp_idx,-1] <- BRA_val[trp_idx,-1] * BRA_fd_exio[trp_idx] / sum(BRA_fd_exio[trp_idx])
+# 
+# Exceptions <- !is.na(BRA_exio_map$Exception)
+# BRA_val[Exceptions,-1] <- BRA_val_org[match(BRA_exio_map$Exception[Exceptions], BRA_val_org$Code),-1]
+# 
+# # Sum of each margin column needs to be zero.
+# valscale <- sum(BRA_val$TrpMrg[-trp_idx]) / sum(BRA_val$TrpMrg[trp_idx])
+# BRA_val$TrpMrg[-trp_idx] <- BRA_val$TrpMrg[-trp_idx] / abs(valscale)
+# valscale <- sum(BRA_val$TrdMrg[-trd_idx]) / sum(BRA_val$TrdMrg[trd_idx])
+# BRA_val$TrdMrg[-trd_idx] <- BRA_val$TrdMrg[-trd_idx] / abs(valscale)
+# 
+# attach(BRA_val)
+# val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
+# detach(BRA_val)
+# 
+# val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
+# names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 
 # User can select which val_mtx to use with val_BR_BR or val_BR_EX. By default, val_BR_BR is preferred.
 

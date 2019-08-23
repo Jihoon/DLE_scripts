@@ -133,10 +133,12 @@ CPI_ratio_BRA <- as.numeric(CPI %>% filter(year==CES.year & iso2c=='BR') %>% sel
 CPI_ratio_ZAF <- as.numeric(CPI %>% filter(year==CES.year & iso2c=='ZA') %>% select(FP.CPI.TOTL) / CPI %>% filter(year==IO.year & iso2c=='ZA') %>% select(FP.CPI.TOTL))
 
 PPP_cty = WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = CES.year, end = CES.year, extra = FALSE, cache = NULL)
-PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP))
-PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP))
-PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PRVT.PP))
-
+PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PPP))
+PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PPP))
+PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PPP))
+# PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP))
+# PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP))
+# PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PRVT.PP))
 # Exchange rate (MER) [LCU/$]
 EXR_EUR <- WDI(country = "XC", indicator = "PA.NUS.FCRF", start = IO.year, end = IO.year, extra = FALSE, cache = NULL)
 EXR_EUR <- EXR_EUR %>% rename(r=PA.NUS.FCRF)
@@ -184,9 +186,9 @@ ZAF_pop_io.yr <- Popul %>% rename(pop=SP.POP.TOTL) %>% filter(iso2c=="ZA" & year
 # sum(tfei.exio[,BRA_idx_ex[idx.health.exio]]) / (EXR_BRA * CPI_ratio_BRA.hth / PPP_BRA) * EXR_EUR$r #
 # sum(tfei.exio[,IND_idx_ex[idx.health.exio]]) / (EXR_IND * CPI_ratio_IND.hth / PPP_IND) * EXR_EUR$r #
 # sum(tfei.exio[,ZAF_idx_ex[idx.health.exio]]) / (EXR_ZAF * CPI_ratio_ZAF.hth / PPP_ZAF) * EXR_EUR$r #
-colSums(tfei.exio[,BRA_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_BRA * CPI_ratio_BRA / PPP_BRA) #* EXR_EUR$r #
-colSums(tfei.exio[,IND_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_IND * CPI_ratio_IND / PPP_IND) #* EXR_EUR$r #
-colSums(tfei.exio[,ZAF_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF) #* EXR_EUR$r #
+colSums(tfei.exio[,BRA_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_BRA * CPI_ratio_BRA / PPP_BRA) * EXR_EUR$r #
+colSums(tfei.exio[,IND_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_IND * CPI_ratio_IND / PPP_IND) * EXR_EUR$r #
+colSums(tfei.exio[,ZAF_idx_ex[c(idx.education.exio,idx.health.exio)]]) / (EXR_ZAF * CPI_ratio_ZAF / PPP_ZAF) * EXR_EUR$r #
 
 # L_inverse is required here.
 TFEI.EXIO.ts.debug <- sapply(DLE.countries, TFEI.ApplyKeyTechImprovement.EXIO, dfei=dfei.exio, simplify=FALSE, USE.NAMES = TRUE) # Returns a list
@@ -292,9 +294,9 @@ list[ZAF.tfei.icp, ZAF_alloc, NC_ZAF, ZAF_FD_adj] <- DeriveIntensities('ZAF', 'f
 # save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.2010.Rda")
 # save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.2010.Rda")
 # save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.2010.Rda")
-save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.2008.fix.2007.IO.Rda")
-save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.2008.fix.2007.IO.Rda")
-save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.2008.fix.2007.IO.Rda")
+save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.2008.old.2007.IO.old.PPP.NUS.Rda")
+save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.2008.old.2007.IO.old.PPP.NUS.Rda")
+save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.2008.old.2007.IO.old.PPP.NUS.Rda")
 
 
 

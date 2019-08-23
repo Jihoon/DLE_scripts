@@ -1,3 +1,5 @@
+### This is solely about EXIOBASE2.
+
 ### Created to 
 # 1. avoid running EXIO_init when starting
 # 2. incorporate energy intensity initiation

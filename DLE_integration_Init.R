@@ -53,33 +53,33 @@ list[BRA.tfei.icp.non.elec, BRA.alloc, NC_BRA_val_BRA, BRA_FD_adj_val_BRA] <- De
 list[IND.tfei.icp.non.elec, IND_alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'final', final.intensity.mat=tfei.non.elec)
 list[ZAF.tfei.icp.non.elec, ZAF_alloc, NC_ZAF, ZAF_FD_adj] <- DeriveIntensities('ZAF', 'final', final.intensity.mat=tfei.non.elec)
 
-save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.Rda")
-save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.Rda")
-save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.Rda")
+save(BRA.tfei.icp, file="./Saved tables/BRA.tfei.icp.old.2008.ext.2007.IO.Rda")
+save(IND.tfei.icp, file="./Saved tables/IND.tfei.icp.old.2008.ext.2007.IO.Rda")
+save(ZAF.tfei.icp, file="./Saved tables/ZAF.tfei.icp.old.2008.ext.2007.IO.Rda")
 
-save(BRA.tnei.icp, file="./Saved tables/BRA.tnei.icp.Rda")
-save(IND.tnei.icp, file="./Saved tables/IND.tnei.icp.Rda")
-save(ZAF.tnei.icp, file="./Saved tables/ZAF.tnei.icp.Rda")
+save(BRA.tnei.icp, file="./Saved tables/BRA.tnei.icp.old.2008.ext.2007.IO.Rda")
+save(IND.tnei.icp, file="./Saved tables/IND.tnei.icp.old.2008.ext.2007.IO.Rda")
+save(ZAF.tnei.icp, file="./Saved tables/ZAF.tnei.icp.old.2008.ext.2007.IO.Rda")
 
-save(BRA.tfei.icp.elec, file="./Saved tables/BRA.tfei.icp.elec.Rda")
-save(IND.tfei.icp.elec, file="./Saved tables/IND.tfei.icp.elec.Rda")
-save(ZAF.tfei.icp.elec, file="./Saved tables/ZAF.tfei.icp.elec.Rda")
+save(BRA.tfei.icp.elec, file="./Saved tables/BRA.tfei.icp.elec.old.2008.ext.2007.IO.Rda")
+save(IND.tfei.icp.elec, file="./Saved tables/IND.tfei.icp.elec.old.2008.ext.2007.IO.Rda")
+save(ZAF.tfei.icp.elec, file="./Saved tables/ZAF.tfei.icp.elec.old.2008.ext.2007.IO.Rda")
 
-save(BRA.tfei.icp.non.elec, file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
-save(IND.tfei.icp.non.elec, file="./Saved tables/IND.tfei.icp.non.elec.Rda")
-save(ZAF.tfei.icp.non.elec, file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+save(BRA.tfei.icp.non.elec, file="./Saved tables/BRA.tfei.icp.non.elec.old.2008.ext.2007.IO.Rda")
+save(IND.tfei.icp.non.elec, file="./Saved tables/IND.tfei.icp.non.elec.old.2008.ext.2007.IO.Rda")
+save(ZAF.tfei.icp.non.elec, file="./Saved tables/ZAF.tfei.icp.non.elec.old.2008.ext.2007.IO.Rda")
 
 
 # for eyeballing/comparison ICP intensities
 b <- data.frame(ICP_catnames, 
                 
-                BRA.tpei.nature=colMeans(BRA.tpei.nature.icp),  BRA.tpei.use=colMeans(BRA.tpei.use.icp),  
+                # BRA.tpei.nature=colMeans(BRA.tpei.nature.icp),  BRA.tpei.use=colMeans(BRA.tpei.use.icp),  
                 BRA.tnei=colMeans(BRA.tnei.icp), BRA.tfei=colMeans(BRA.tfei.icp), BRA.tfei.elec=colMeans(BRA.tfei.icp.elec), 
                 
-                IND.tpei.nature=colMeans(IND_intensity.nature), IND.tpei.use=colMeans(IND_intensity.use), 
+                # IND.tpei.nature=colMeans(IND_intensity.nature), IND.tpei.use=colMeans(IND_intensity.use), 
                 IND.tnei=colMeans(IND.tnei.icp), IND.tfei=colMeans(IND.tfei.icp), IND.tfei.elec=colMeans(IND.tfei.icp.elec),
                 
-                ZAF.tpei.nature=colMeans(ZAF_intensity.nature), ZAF.tpei.use=colMeans(ZAF_intensity.use), 
+                # ZAF.tpei.nature=colMeans(ZAF_intensity.nature), ZAF.tpei.use=colMeans(ZAF_intensity.use), 
                 ZAF.tnei=colMeans(ZAF.tnei.icp), ZAF.tfei=colMeans(ZAF.tfei.icp), ZAF.tfei.elec=colMeans(ZAF.tfei.icp.elec))
 write.table(b, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
@@ -169,7 +169,7 @@ DLE.intensity.input <- FillEmptyCellsinDLEinputTable(DLE.intensity.input) %>% ar
 Intensity.table.AM <- read.csv(paste0(result_path, "All intensities by comp - carrier.csv")) %>% select(-X)
 DLE.intensity.input <- Intensity.table.AM %>% left_join(DLE.intensity.input)
 
-write.csv(DLE.intensity.input, paste0(result_path, "DLE intensity by comp.csv"))
+write.csv(DLE.intensity.input, paste0(result_path, "DLE intensity by comp.old.2008.ext.2007.IO.csv"))
 
 
 
@@ -271,3 +271,17 @@ ggplot(tfei.range, aes(x=Type, y=Avg, ymin=High, ymax=Low, fill=Carrier)) +
   geom_errorbar(colour="black", width=.1, position = position_dodge(width=0.9)) +
   facet_wrap(~Component, ncol=4, scales = "free_y", labeller = labeller(Component=comp.name)) + 
   ylab("Final energy intensity")
+
+
+
+# Compare intensity calculations (Debug purpose)
+i1 <- read.csv(paste0(result_path, "DLE intensity by comp.fix.2008.IO.csv")) %>% select(-(Housing.R:TV)) %>%
+  filter(Type=="OP") %>% group_by(Scenario, Country, Year) %>% summarise_at(vars(Education:Food), sum) %>% ungroup()
+i2 <- read.csv(paste0(result_path, "DLE intensity by comp.fix.2010.IO.csv")) %>% select(-(Housing.R:TV)) %>%
+  filter(Type=="OP") %>% group_by(Scenario, Country, Year) %>% summarise_at(vars(Education:Food), sum) %>% ungroup()
+i0 <- read.csv(paste0(result_path, "DLE intensity by comp.Jul2018.csv")) %>% select(-(Housing.R:TV)) %>%
+  filter(Type=="OP") %>% group_by(Scenario, Country, Year) %>% summarise_at(vars(Education:Food), sum) %>% 
+  mutate(Education_fx = Education*0.731, Health_fx = Health*0.731)
+
+write.csv(data.frame(i0, i1%>%select(Education:Food), i2%>%select(Education:Food)), paste0(result_path, "debug/Compare_IO_intensities.csv"))
+

@@ -3,18 +3,21 @@
 ### Clothing (incl. shoes)
 ################################
 
-load(file="./Saved tables/BRA.tfei.icp.Rda")
-load(file="./Saved tables/IND.tfei.icp.Rda")
-load(file="./Saved tables/ZAF.tfei.icp.Rda")
+load(file="./Saved tables/BRA.tfei.icp.fix.2010.IO.Rda")
+load(file="./Saved tables/IND.tfei.icp.fix.2010.IO.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.fix.2010.IO.Rda")
 
-load(file="./Saved tables/BRA.tfei.icp.elec.Rda")
-load(file="./Saved tables/IND.tfei.icp.elec.Rda")
-load(file="./Saved tables/ZAF.tfei.icp.elec.Rda")
+load(file="./Saved tables/BRA.tfei.icp.elec.fix.2010.IO.Rda")
+load(file="./Saved tables/IND.tfei.icp.elec.fix.2010.IO.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.elec.fix.2010.IO.Rda")
 
-load(file="./Saved tables/BRA.tfei.icp.non.elec.Rda")
-load(file="./Saved tables/IND.tfei.icp.non.elec.Rda")
-load(file="./Saved tables/ZAF.tfei.icp.non.elec.Rda")
+load(file="./Saved tables/BRA.tfei.icp.non.elec.fix.2010.IO.Rda")
+load(file="./Saved tables/IND.tfei.icp.non.elec.fix.2010.IO.Rda")
+load(file="./Saved tables/ZAF.tfei.icp.non.elec.fix.2010.IO.Rda")
 
+load(file="./Saved tables/BRA_FD_ICP_io.yr.fix.2010.IO.Rda")
+load(file="./Saved tables/IND_FD_ICP_io.yr.fix.2010.IO.Rda")
+load(file="./Saved tables/ZAF_FD_ICP_io.yr.fix.2010.IO.Rda")
 
 
 ### Load more data for Analysis
@@ -285,14 +288,15 @@ tfei.non.elec.clothing.all <- as.list(unlist(tfei.clothing.all) - unlist(tfei.el
 
 
 # 1. Based on the avg price ($/kg) from India
-unit.clothing <- list(IND=dle.clothing.pcap.IND,  # [kg/cap]
-                      BRA=dle.clothing.pcap.BRA,  
-                      ZAF=dle.clothing.pcap.ZAF)
-unit.footwear <- list(IND=dle.footwear.pcap.IND, 
-                      BRA=dle.footwear.pcap.BRA,  
-                      ZAF=dle.footwear.pcap.ZAF) 
+# unit.clothing <- list(IND=dle.clothing.pcap.IND,  # [kg/cap]
+#                       BRA=dle.clothing.pcap.BRA,  
+#                       ZAF=dle.clothing.pcap.ZAF)
+# unit.footwear <- list(IND=dle.footwear.pcap.IND, 
+#                       BRA=dle.footwear.pcap.BRA,  
+#                       ZAF=dle.footwear.pcap.ZAF) 
 
 # 2. Based on the kg-HDD relationship from Ed's data
+source("DLE_integration_analysis_clothing_CDDHDD.R")
 unit.clothing <- list(IND=dle.clothing.pcap.IND,  # [kg/cap]
                       BRA=dle.clothing.pcap.BRA.HDD,  
                       ZAF=dle.clothing.pcap.ZAF.HDD)

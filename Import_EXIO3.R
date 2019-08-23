@@ -21,7 +21,7 @@ EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXI
 raw.S <- read.csv(paste0(EXIO3_path, "S_", IO.year, ".csv"), header = FALSE)    # Stressor (Intensity)
 raw.st <- read.csv(paste0(EXIO3_path, "st_", IO.year, ".csv"), header = FALSE)  # Total stressor
 raw.F <- read.csv(paste0(EXIO3_path, "F_", IO.year, ".csv"), header = FALSE)
-raw.V <- read.csv(paste0(EXIO3_path, "V_", IO.year, ".csv"), header = FALSE)
+# raw.V <- read.csv(paste0(EXIO3_path, "V_", IO.year, ".csv"), header = FALSE)
 
 raw.F_hh <- read.csv(paste0(EXIO3_path, "F_hh_", IO.year, ".csv"), header = FALSE)
 # raw.F_hh.2008 <- read.csv(paste0(EXIO3_path, "F_hh_2008.csv"), header = FALSE)
@@ -193,6 +193,8 @@ tot_demand <- rowSums(tot_output)
 save(L_inverse, file=paste0("./Saved tables/L_inverse_EXIO3_", IO.year, ".Rda"))
 load(file=paste0("./Saved tables/L_inverse_EXIO3_", IO.year, ".Rda")) # L_inverse
 
+
+# *_fd_exio being used in rIPFP
 IND_fd_ex <- matrix(final_demand[,IND_idx_fd[1]], nrow=200) / EXR_EUR$r  # to M.USD (2007 MER)
 IND_fd_exio <- rowSums(IND_fd_ex) # Sum all HH FD across countries
 
