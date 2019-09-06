@@ -9,12 +9,12 @@
 get_draws = function(n_draw, n_dim=3, coords) {
   # alpha = 1
   if(missing(coords)) {coords <- diag(n_dim)} # Coords can be n_dim X k (any k)
-  
+
   draw_standard <- rdirichlet(n_draw, rep(1, dim(coords)[2]))  # n_draw X k
   draw_projected <- draw_standard %*% t(as.matrix(coords))  # n_draw X n_dim
-  
+
   return(draw_projected)
-  
+
   # plot3d(draw_projected[,1], draw_projected[,2], draw_projected[,3], size=4)
 }
 
@@ -33,63 +33,63 @@ trd_idx <- 152:155
 trp_idx <- 157:163
 
 get_valuation_mtx <- function(country, mc=0, mode='EXIO3'){   # Two-letter country code (mc: do Monte Carlo (1) or not (0) for val mtx?)
-  
+
   cty_place <- which(exio_ctys==country)
   # cty_idx <- seq(200*(cty_place-1)+1, 200*cty_place)  # 200 EXIO commodities per country
   # cty_idx_fd <- seq(7*(cty_place-1)+1, 7*cty_place)   # 7 final demand columns per country
-  # 
+  #
   # y_bp <- matrix(final_demand[, cty_idx_fd[1]], nrow=200)  # The country's hh fd column to a matrix (200x49) in bp
   # # y_bp <- as.data.frame(rowSums(y_bp))
   # y_bp <- rowSums(y_bp)
-  
+
   if (mc==0) {
     # Index for xx_output.xls files
     f_hous_idx <- 169  # Column for Final hh demand
     row_start <- 15  # Starting row number "paddy rice"
     row_end <- 214  # Ending row number "Extra-territorial organizations and bodies"
-  
+
     if (mode=='EXIO2') {
       wb <- XLConnect::loadWorkbook(paste("../Valuation/", country, "_output.xls", sep=""))
-      
+
       y_bp          <- as.matrix(readWorksheet(wb, "usebptot", header=FALSE, startRow=row_start, endRow=row_end,
                                                startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
-      
-      trd_margin  <- as.matrix(readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end, 
+
+      trd_margin  <- as.matrix(readWorksheet(wb, "trade_margins", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
-      trp_margin  <- as.matrix(readWorksheet(wb, "transport_margins", header=FALSE, startRow=row_start, endRow=row_end, 
+      trp_margin  <- as.matrix(readWorksheet(wb, "transport_margins", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
-      prod_tax    <- as.matrix(readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end, 
+      prod_tax    <- as.matrix(readWorksheet(wb, "product_taxes", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
     } else if (mode=='EXIO3') {
       # Read from Valuation_3.4 at IO.year
       wb <- XLConnect::loadWorkbook(paste0("../Valuation/Valuation_3_4/", country, "_", IO.year, ".xls"))
-      
+
       # "Taxes less subsidies on products purchased: Total"
       y_bp_dom        <- as.matrix(readWorksheet(wb, "bpdom_fin", header=FALSE, startRow=row_start, endRow=row_end,
                                                  startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
       y_bp_imp        <- as.matrix(readWorksheet(wb, "bpimp_fin", header=FALSE, startRow=row_start, endRow=row_end,
                                                  startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
       y_bp <- y_bp_dom + y_bp_imp
-      
-      trd_margin  <- as.matrix(readWorksheet(wb, "trade_margins_fin", header=FALSE, startRow=row_start, endRow=row_end, 
+
+      trd_margin  <- as.matrix(readWorksheet(wb, "trade_margins_fin", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
-      trp_margin  <- as.matrix(readWorksheet(wb, "transport_margins_fin", header=FALSE, startRow=row_start, endRow=row_end, 
+      trp_margin  <- as.matrix(readWorksheet(wb, "transport_margins_fin", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
-      prod_tax    <- as.matrix(readWorksheet(wb, "product_taxes_fin", header=FALSE, startRow=row_start, endRow=row_end, 
+      prod_tax    <- as.matrix(readWorksheet(wb, "product_taxes_fin", header=FALSE, startRow=row_start, endRow=row_end,
                                              startCol=f_hous_idx, endCol=f_hous_idx, forceConversion=TRUE))
     }
-    
+
     defect <- which(trd_margin[-trd_idx] < 0) # Why negative margin for non trd/trp sectors in NTNU val mtx???
     trd_margin[-trd_idx][defect] <- 0
     defect <- which(trp_margin[-trp_idx] < 0) # Why negative margin for non trd/trp sectors???
     trp_margin[-trp_idx][defect] <- 0
-    
+
     D <- construct_val_mtx(y_bp, trd_margin, trp_margin, prod_tax)
-    
+
     # Sort of redundant.. This is also in construct_val_mtx()
     trp_ratio <- trp_margin[trp_idx]/sum(trp_margin[trp_idx])
     trd_ratio <- trd_margin[trd_idx]/sum(trd_margin[trd_idx])
-    
+
     trade_margin_breakdown[,country] <<- trd_ratio
     trans_margin_breakdown[,country] <<- trp_ratio
     trade_margin_rate[,country] <<- trd_margin/y_bp
@@ -99,19 +99,19 @@ get_valuation_mtx <- function(country, mc=0, mode='EXIO3'){   # Two-letter count
   else {
     upper <- paste0(country, "upper")
     lower <- paste0(country, "lower")
-    
+
     trd_range <- t(trd_margin_range[,c(lower, upper)])
     trp_range <- t(trp_margin_range[,c(lower, upper)])
     tx_range <- t(trp_margin_range[,c(lower, upper)])
-    
+
     trd_r_draws <- replicate(n_draw, foo(trd_range)) %>% replace(is.na(.), 0)
     trp_r_draws <- replicate(n_draw, foo(trp_range)) %>% replace(is.na(.), 0)
     tax_r_draws <- replicate(n_draw, foo(tx_range)) %>% replace(is.na(.), 0)
-    
+
     trd_margin <- diag(y_bp) %*% trd_r_draws
     trp_margin <- diag(y_bp) %*% trp_r_draws
     prod_tax <- diag(y_bp) %*% tax_r_draws
-    
+
     total_trd_margin <- colSums(trd_margin[-trd_idx,])
     total_trp_margin <- colSums(trp_margin[-trp_idx,])
     total_trd_margin*t(replicate(n_draw, trade_margin_breakdown[,c(country)]))
@@ -119,14 +119,14 @@ get_valuation_mtx <- function(country, mc=0, mode='EXIO3'){   # Two-letter count
     trp_margin[trp_idx,] <- -t(total_trp_margin * t(replicate(n_draw, trans_margin_breakdown[,c(country)])))
     # trd_margin[trd_idx,] <- -t(total_trd_margin * trade_brkdn_draws)
     # trp_margin[trp_idx,] <- -t(total_trp_margin * trans_brkdn_draws)
-    
+
     D <- list()
     for (i in 1:n_draw) {
       d_out <- construct_val_mtx(y_bp, as.matrix(trd_margin[,i]), as.matrix(trp_margin[,i]), as.matrix(prod_tax[,i]))
       D[[i]] <- d_out
     }
   }
-  
+
   return(D)
 }
 
@@ -140,34 +140,34 @@ construct_val_mtx <- function(ybp, trd, trp, tax) {
   # trd_margin_disag <- replicate(length(trd_idx), trd) %*% diag(trd_ratio)
   trp_margin_disag <- trp[,rep(1,length(trp_idx))] %*% diag(trp_ratio)
   trd_margin_disag <- trd[,rep(1,length(trd_idx))] %*% diag(trd_ratio)
-  
+
     # There are cases where the trd/trp sectors for ypp become negative as a result of random draws.
   # For now, I truncate those cases. Not sure whether this is realistic.
   # trd[ybp+trd<100] <- -ybp[ybp+trd<100]+100
   # trp[ybp+trp<100] <- -ybp[ybp+trp<100]+100
   trd[ybp+trd<0] <- -ybp[ybp+trd<0]
   trp[ybp+trp<0] <- -ybp[ybp+trp<0]
-  
+
   # Calculate Ypp based on the other vectors
-  ypp <- ybp + trd + trp + tax 
-  
+  ypp <- ybp + trd + trp + tax
+
   # F <- diag(ybp[1:200,1])
   Fin <- diag(as.numeric(ybp))
   Fin[-trp_idx, trp_idx] <- trp_margin_disag[-trp_idx,]
   Fin[-trd_idx, trd_idx] <- trd_margin_disag[-trd_idx,]
-  
+
   # F[trp_idx, trp_idx] <- diag(ybp[trp_idx]-colSums(trp_margin_disag[-trp_idx,]))
   # F[trd_idx, trd_idx] <- diag(ybp[trd_idx]-colSums(trd_margin_disag[-trd_idx,]))
   Fin[trp_idx, trp_idx] <- diag(ypp[trp_idx]-tax[trp_idx])
   Fin[trd_idx, trd_idx] <- diag(ypp[trd_idx]-tax[trd_idx])
   Fin <- cbind(Fin,tax)
-  
+
   # cbind(y_pp, rowSums(Fin))
-  
+
   y <- 1/ypp[,1]
-  y[is.infinite(y)] <- 0 
+  y[is.infinite(y)] <- 0
   D <- diag(y) %*% as.matrix(Fin)
-  
+
   return(D)
 }
 
@@ -250,7 +250,7 @@ trade_brkdn_draws <- get_draws(n_draw, dim(trade_margin_breakdown)[1], trade_mar
 
 
 ##############################################
-### Function get_basic_price from PP to BP ### 
+### Function get_basic_price from PP to BP ###
 ##############################################
 
 # Any y_pp can be converted to y_bp by
@@ -278,24 +278,24 @@ get_purch_price <- function(v_bp, country = 'IN'){
   else {
     # if(country=='FR' | country=='AT') {D <- val_AT}
     # else {D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]] }
-    D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]] 
+    D <- eval(parse(text=paste0("val_", country, "_rand")))[[draw_count]]
   }
   Dinv <- get_inv_valmtx(D)
   v_pp <- t(Dinv) %*% v_bp
-  
+
   taxR <- D[,201]
-  
+
   # When using an IO year other than 2007 (e.g.2010), there can be a mismatch between HHFD of exio2010 and tax information from 2007,
   # which leads to 100% tax rate with FD=0. Then I set the tax rate to zero for these sectors.
   # Ultimately, we need to use the valuation data from the same IO year (once it's available).
   tax.div <- 1-taxR
   if (sum(tax.div>=0 & tax.div<1e-5)>0) {
-    taxR[tax.div>=0 & tax.div<1e-5] <- 0 
+    taxR[tax.div>=0 & tax.div<1e-5] <- 0
     print(paste("get_purch_price: awkward tax rate detected!!!", country, ":", EX_catnames[ which(tax.div>=0 & tax.div<1e-5)]))
   }
-  
+
   v_pp <- v_pp / (1-taxR)
-  
+
   # print(which(v_pp<0))
   # For France, v_pp for trade sectors become negative..
   # Need to figure out a better way later.
@@ -306,7 +306,7 @@ get_purch_price <- function(v_bp, country = 'IN'){
 get_inv_valmtx <- function(val_mat) {
   mat <- val_mat[,1:200]
   mat_inv <- matrix(0, dim(mat)[1], dim(mat)[2])
-  
+
   idx_zero <- which(diag(mat)==0)
   if (length(idx_zero)!=0) {
     D <- mat[-idx_zero, -idx_zero]
@@ -316,7 +316,7 @@ get_inv_valmtx <- function(val_mat) {
   else {
     mat_inv <- solve(mat)
   }
-  
+
   return(mat_inv)
 }
 
@@ -325,7 +325,7 @@ get_inv_valmtx <- function(val_mat) {
 ###################################################################
 #  Read in Brazilian valuation file (from Guilioto) and summarize #
 ###################################################################
-# 
+#
 # a <- c("Code", "Descr", "SupPP", "TrdMrg", "TrpMrg", "ImpTax", "IPI", "ICMS", "OthTaxSub", "TotTaxSub", "SupBP")
 # BRA_val_org <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=5, col_names=a)
 # BRA_val_org <- BRA_val_org %>% select(-Descr, -ImpTax, -IPI, -ICMS, -OthTaxSub) %>% filter(!is.na(Code)) %>% filter(Code!="Total")
@@ -334,27 +334,27 @@ get_inv_valmtx <- function(val_mat) {
 # BRA_val <- BRA_val %>% group_by(Code) %>% summarise_each(funs(sum))
 # BRA_exio_map <- read_excel("../Valuation/Brazil/56_tab1_2007_eng.xlsx", skip=0, col_names=TRUE, sheet=4) %>%
 #   mutate(Code=as.numeric(Code), CodeBRA=as.numeric(CodeBRA))
-# 
+#
 # BRA_val <- BRA_val[match(BRA_exio_map$CodeBRA, BRA_val$Code),]
-# 
+#
 # # We need to assume certain shares for each trd/trp subsectors.
 # # The only groud is from the EXIO FD...
 # BRA_val[trd_idx,-1] <- BRA_val[trd_idx,-1] * BRA_fd_exio[trd_idx] / sum(BRA_fd_exio[trd_idx])
 # BRA_val[trp_idx,-1] <- BRA_val[trp_idx,-1] * BRA_fd_exio[trp_idx] / sum(BRA_fd_exio[trp_idx])
-# 
+#
 # Exceptions <- !is.na(BRA_exio_map$Exception)
 # BRA_val[Exceptions,-1] <- BRA_val_org[match(BRA_exio_map$Exception[Exceptions], BRA_val_org$Code),-1]
-# 
+#
 # # Sum of each margin column needs to be zero.
 # valscale <- sum(BRA_val$TrpMrg[-trp_idx]) / sum(BRA_val$TrpMrg[trp_idx])
 # BRA_val$TrpMrg[-trp_idx] <- BRA_val$TrpMrg[-trp_idx] / abs(valscale)
 # valscale <- sum(BRA_val$TrdMrg[-trd_idx]) / sum(BRA_val$TrdMrg[trd_idx])
 # BRA_val$TrdMrg[-trd_idx] <- BRA_val$TrdMrg[-trd_idx] / abs(valscale)
-# 
+#
 # attach(BRA_val)
 # val_BR_BR <- construct_val_mtx(as.matrix(SupBP), as.matrix(TrdMrg), as.matrix(TrpMrg), as.matrix(TotTaxSub))
 # detach(BRA_val)
-# 
+#
 # val_mtx <- list(val_FR, val_BR_BR, val_US, val_IN, val_ZA)
 # names(val_mtx) <- c('FR', 'BR', 'US', 'IN', 'ZA')
 

@@ -19,7 +19,7 @@
 # 10                     Kerosene
 # 11                          LPG
 # 12                  Natural gas
-# 13         Other household fuel 
+# 13         Other household fuel
 
 # Number of fuel types in 13 DLE-harmonized classification
 n_CES_fuel <- dim(DLE_fuel_sector_Q)[2]
@@ -39,7 +39,7 @@ n_CES_fuel <- dim(DLE_fuel_sector_Q)[2]
 IND_FD_code <- IND_FD[-grep("taxes", IND_FD$item, ignore.case = TRUE), ]
 
 # Merge sector code info
-IND_FD_code <- merge(IND_FD_code[1:(dim(IND_FD_code)[1]-n_CES_fuel),], IND_map %>% select(CODE, item=ITEM_DLE), 
+IND_FD_code <- merge(IND_FD_code[1:(dim(IND_FD_code)[1]-n_CES_fuel),], IND_map %>% select(CODE, item=ITEM_DLE),
                     by="item", all.x = TRUE) %>% arrange(CODE) %>%
                rbind(IND_FD[-(1:(dim(IND_FD)[1]-n_CES_fuel)),]%>% mutate(CODE=999))    # Fuels are temprarily assigned to 999. (not used)
 
@@ -51,7 +51,7 @@ IND_FD_code[is.na(IND_FD_code)] <- 0
 ######################################
 
 # Need to separatly handle the fuel rows  (in USD PPP 2010)
-# Fianlly get 164 harmonized ICP rows for all 
+# Fianlly get 164 harmonized ICP rows for all
 IND_FD_ICP <- t(CES_ICP_IND) %*% as.matrix(IND_FD_code[1:(dim(IND_FD_code)[1]-n_CES_fuel),2:12]) %>%
   rbind(IND_FD_code[-(1:(dim(IND_FD_code)[1]-n_CES_fuel)),2:12]) # for all deciles and total
 IND_FD_ICP <- as.matrix(IND_FD_ICP)
@@ -79,7 +79,7 @@ BRA_FD_ICP_io.yr <- as.matrix(BRA_FD[,2:12] * PPP_BRA / CPI_ratio_BRA / EXR_BRA 
 ZAF_FD_code <- ZAF_FD[-grep("taxes|VAT ", ZAF_FD$item, ignore.case = TRUE), ]
 
 # Merge sector code info
-ZAF_FD_code <- ZAF_FD_code[1:(dim(ZAF_FD_code)[1]-n_CES_fuel),] %>% left_join(ZAF_map %>% select(CODE, item=ITEM_DLE), by="item") %>% 
+ZAF_FD_code <- ZAF_FD_code[1:(dim(ZAF_FD_code)[1]-n_CES_fuel),] %>% left_join(ZAF_map %>% select(CODE, item=ITEM_DLE), by="item") %>%
   arrange(CODE) %>%
   rbind(ZAF_FD[-(1:(dim(ZAF_FD)[1]-n_CES_fuel)),] %>% mutate(CODE=999))    # Fuels are temprarily assigned to 999. (not used)
 
@@ -126,7 +126,7 @@ save(ZAF_FD_ICP_io.yr, file="./Saved tables/ZAF_FD_ICP_io.yr.fix.2008.IO.Rda")
 load(file="./Saved tables/IND_AllHHConsump.Rda")
 IND_FD_ALL <- IND_FD_ALL[-grep("taxes", IND_FD_ALL$item, ignore.case = TRUE), ]
 
-IND_FD_ALL <- merge(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),], IND_map %>% select(CODE, item=ITEM_DLE), 
+IND_FD_ALL <- merge(IND_FD_ALL[1:(dim(IND_FD_ALL)[1]-n_CES_fuel),], IND_map %>% select(CODE, item=ITEM_DLE),
                     by="item", all.x = TRUE) %>% arrange(CODE) %>%
               rbind(IND_FD_ALL[-(1:(dim(IND_FD_ALL)[1]-n_CES_fuel)),] %>% mutate(CODE=999))
 IND_FD_ALL[is.na(IND_FD_ALL)] <- 0
@@ -158,7 +158,7 @@ IND_FD_ICP_AllHH <- IND_FD_AllHH_svy.yr / IND_con_grwth   # to USD 2007 (MER)   
 # FD for all households
 BRA_FD_ICP_AllHH <- data.frame(item=ICP_catnames) %>% left_join(BRA_FD_ALL)
 BRA_FD_ICP_AllHH <- as.matrix(BRA_FD_ICP_AllHH[,-1]) * PPP_BRA / CPI_ratio_BRA / EXR_BRA / BRA_con_grwth # to USD 2007 (MER)
-# BRA_FD_ICP_AllHH[,-1] <- NAer(BRA_FD_ICP_AllHH[,-1]) # Faster than 
+# BRA_FD_ICP_AllHH[,-1] <- NAer(BRA_FD_ICP_AllHH[,-1]) # Faster than
 BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 
 
@@ -170,8 +170,8 @@ BRA_FD_ICP_AllHH[is.na(BRA_FD_ICP_AllHH)] <- 0
 # Read in original IND_FD_ALL
 ZAF_FD_ALL <- ZAF_FD_ALL[-grep("taxes|VAT ", ZAF_FD_ALL$item, ignore.case = TRUE), ]
 
-ZAF_FD_ALL <- merge(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),], ZAF_map %>% select(CODE, item=ITEM_DLE), 
-                    by="item", all.x = TRUE) %>% 
+ZAF_FD_ALL <- merge(ZAF_FD_ALL[1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel),], ZAF_map %>% select(CODE, item=ITEM_DLE),
+                    by="item", all.x = TRUE) %>%
   arrange(CODE) %>% select(item, CODE, everything()) %>%
   rbind(ZAF_FD_ALL[-(1:(dim(ZAF_FD_ALL)[1]-n_CES_fuel)),] %>% mutate(CODE=999))
 ZAF_FD_ALL[is.na(ZAF_FD_ALL)] <- 0
@@ -206,7 +206,3 @@ ZAF_FD_ICP_AllHH <- ZAF_FD_AllHH_svy.yr / ZAF_con_grwth   # to USD 2007 (MER)   
 save(ZAF_FD_ICP_AllHH, file="./Saved tables/ZAF_FD_harmonized.Rda")
 save(IND_FD_ICP_AllHH, file="./Saved tables/IND_FD_harmonized.Rda")
 save(BRA_FD_ICP_AllHH, file="./Saved tables/BRA_FD_harmonized.Rda")
-
-
-
-
