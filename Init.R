@@ -1,6 +1,6 @@
 # This file needs to be run once at the very beginning of an analysis
 
-# rm(list=ls())
+rm(list=ls())
 setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIASA/DLE - Documents/WS2 - Documents/Analysis/IO/DLE_scripts/"
 
 #################
@@ -28,17 +28,17 @@ options(digits=3)
 
 # DLE DB: 2010 $ PPP
 # EXIO: XXXX EUR MER
-CES.year <- 2010 # DLE DB - For now set at somewhere midpoint for the three countries..
-IO.year <- 2007 # Pick one closest to the survey year.  2007 for EXIO2
+CES.year <- 2010 # DLE DB is in 2010$ PPP.
+IO.year <- 2010 # Pick one closest to the survey year.  2007 for EXIO2
 
 # DLE DB in PPP 2010$ (PPP in terms of private consumption)
 # EXIO in MER 2007
 # Need this PPP rate to go back to local currency in 2010
 # [LCU/$]
 PPP_cty = WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP", "PA.NUS.PRVT.PP"), start = CES.year, end = CES.year, extra = FALSE, cache = NULL)
-PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PRVT.PP))
-PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PRVT.PP))
-PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PRVT.PP))
+PPP_IND <- as.numeric(PPP_cty %>% filter(country=="India") %>% select(PA.NUS.PPP))
+PPP_BRA <- as.numeric(PPP_cty %>% filter(country=="Brazil") %>% select(PA.NUS.PPP))
+PPP_ZAF <- as.numeric(PPP_cty %>% filter(country=="South Africa") %>% select(PA.NUS.PPP))
 
 # Inflation
 # Deflate currency in 2010 to 2007 (EXIO)
@@ -303,8 +303,8 @@ source("Import_EXIO3.R")  # Incorporate EXIO3
 ##########################################
 
 source("rIPFP - Valuation.R")
-# source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
-source("Load_init_data.R") # Need 'get_purch_price'
+source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
+# source("Load_init_data.R") # Need 'get_purch_price'
 
 
 
@@ -360,3 +360,4 @@ ICP_all_idx <- 1:164
 # Food or clothing intensities and activities also can be done here
 
 
+# source("DLE_integration_init.R")  # Derive ICP intensities
