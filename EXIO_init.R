@@ -3,8 +3,8 @@
 
 # setwd("H:/MyDocuments/IO work/")
 
-path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrIOT_PxP_ita_coefficient_version2.2.2/"
-path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/mrSUT_version2.2.2/"
+path_iot <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/EXIOBASE2/mrIOT_PxP_ita_coefficient_version2.2.2/"
+path_sut <- "P:/ene.general/DecentLivingEnergy/IO/Data - EXIOBASE/EXIOBASE2/mrSUT_version2.2.2/"
 
 EXIO3_path = "H:/MyDocuments/Analysis/Final energy/Arkaitz/IOT/"
 

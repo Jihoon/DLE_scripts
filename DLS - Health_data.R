@@ -1,4 +1,6 @@
 library(fields) # for colorbar.plot
+library(tidyverse)
+library(countrycode)
 
 # Read in PPP rates (using openxlsx library) because of an error for XLConnect loadWorkbook function
 # Probably need to go for either library, not both
@@ -7,7 +9,7 @@ a <- openxlsx::readWorkbook(wb, "PPPs (AGG)", colNames = FALSE, rowNames = FALSE
 ctry_code <- t(a[1,c(3:dim(a)[2])])
 PPP_GDP <- t(as.numeric(a[2,c(3:dim(a)[2])]))
 PPP_health <- t(as.numeric(a[9,c(3:dim(a)[2])]))
-PPP_health_scaler <- as.numeric(PPP_health/PPP_GDP)
+PPP_health_scaler <- as.numeric(PPP_health/PPP_GDP)   # will apply this ratio to the WHO data to get better PPP dedicated for health
 PPP_health_scaler[is.na(PPP_health_scaler)] <- 0
 options(stringsAsFactors = FALSE)
 PPP_scaler <- data.frame(ctry_code, PPP_health_scaler)
@@ -109,6 +111,7 @@ CtyPerf$HospitalPer1M[CtyPerf$HospitalPer1M > 40] <- NA   # Wrong entry for Guin
 CtyPerf$HealthExpRatio <- CtyPerf$TotExpPerCapita/CtyPerf$GDP2012
 
 # Set country code
+library(shape)
 CtyPerf$ColIdx <- ceiling(CtyPerf$PerfIdx*1000) 
 Col <- femmecol(1000)
 
@@ -268,6 +271,7 @@ plot3d(TotExpPerCapita, PhysicianPer1000, InfMort, col=Col[CtyPerf$ColIdx], size
 
 
 # Summarize groups
+library(pastecs)
 
 a <- TotExpPerCapita[LifeExp >= 65 & InfMort <= 25]
 b <- sort(a)[1:(length(a)/2)]

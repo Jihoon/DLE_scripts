@@ -70,3 +70,4 @@ Food/*
 .RDataTmp
 Saved tables/*
 obsolete (old codes - may be reusable)/Read_DLE_DB.R
+.Rhistory

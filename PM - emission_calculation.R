@@ -1,12 +1,19 @@
 # Run this once Init.R is run.
-
+setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIASA/DLE - Documents/WS2 - Documents/Analysis/IO/DLE_scripts/"
 org_wd <- getwd()
 EX_industry <- t(read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", nrows=1, skip=1)[3+1:163])
 EX_industry <- data.frame(ID=1:length(EX_industry), IND=EX_industry)
 
 datapath <- 'C:/Users/min/IIASA/DLE - Documents/Air Pollution/'
 setwd(datapath)
-PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v2019-06-17_16-27-39.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+
+case <- 'policy' # 'base' # 
+if (case=='base') {
+  PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v2019-06-17_16-27-39.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+} else if (case=='policy') {
+  PM_ext_i <- readr::read_csv('PM_MFR_by_IO_Industry_v2019-12-04_09-23-33.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+}
+  
 
 # For the 1st round result, there are only 127 industries assigned with emissions values. (Household emissions yet to come)
 PM_ext_i <- EX_industry %>% full_join(PM_ext_i)
@@ -53,7 +60,8 @@ IND_FD_ICP_io.yr[which(ICP_catnames=="Firewood and other fuels"),] = 0 # Used in
 # 4.0 Refine IND_FD_ICP_io.yr to zero out fuelwood consumption (because it is too informal to be included in IO analysis.)
 # This IND.tPM.icp is returned as MJ/USD (MER @IO.year)
 list[IND.tPM.icp, IND.alloc, NC_IND, IND_FD_adj] <- DeriveIntensities('IND', 'final', final.intensity.mat=st_PM)
-
+saveRDS(IND.tPM.icp, file=paste0('IND.tPM.icp.', case,'.Rds'))
+saveRDS(IND_FD_adj, file=paste0('IND_FD_adj.', case,'.Rds'))
 # 4.1 multiply it with fd (by any percentile appended with updated cooking fuel consumption, 164xn_percentile) or each percentile can be a diag mtx to
 #   be able to see the effect of each consumption product.
 
@@ -148,7 +156,7 @@ dlist <- list(ineq=totPM.highlight.ineq, D10=totPM.highlight.D10, D1=totPM.highl
               Tot.R=totPM.highlight.tot.R, Tot.U=totPM.highlight.tot.U)
 
 for (d in 1:6) {
-  pdf(file = paste0("./Draft results/Indirect/PM2.5_by_decile_", names(dlist)[d], ".pdf"), width = 7, height = 7)
+  pdf(file = paste0("./Draft results/Indirect/PM2.5_by_decile_", names(dlist)[d], " ",case, ".pdf"), width = 7, height = 7)
   p <- ggplot(data=dlist[[d]], aes(x=decile, y=PM2.5)) +
     geom_line(aes(group=ICP_catnames, color=ICP_catnames), size=1) +
     scale_color_manual(values=brewer.pal(10, "Paired"), guide = 'none') +
@@ -160,7 +168,7 @@ for (d in 1:6) {
 }
 # Per capita - Urban-Rural separated
 for (d in 4:6) {
-  pdf(file = paste0("./Draft results/Indirect/PM2.5_by_decile_pcap_", names(dlist)[d], ".pdf"), width = 7, height = 7)
+  pdf(file = paste0("./Draft results/Indirect/PM2.5_by_decile_pcap_", names(dlist)[d], " ", case, ".pdf"), width = 7, height = 7)
   p <- ggplot(data=dlist[[d]], aes(x=decile, y=PM.pcap)) +
     geom_line(aes(group=ICP_catnames, color=ICP_catnames), size=1) +
     scale_color_manual(values=brewer.pal(10, "Paired"), guide = 'none') +
@@ -187,8 +195,9 @@ for (d in 4:6) {
 #   scale_y_log10(limits = c(5e-11, 1e-8)) + labs(y='log PM2.5 per cap: Urban') 
 
 
-write.xlsx(totPM.IND.icp, "./Draft results/Indirect/PM2.5 by decile - Indirect.no.fuelwood.xlsx")
-write.xlsx(rbind(totPM.IND.icp.U %>% mutate(urban=1), totPM.IND.icp.R %>% mutate(urban=0)), "./Draft results/Indirect/PM2.5 by decile - Indirect.no.fuelwood.U-R.xlsx")
+write.xlsx(totPM.IND.icp, paste0("./Draft results/Indirect/PM2.5 by decile - Indirect.no.fuelwood - ", case, ".xlsx"))
+write.xlsx(rbind(totPM.IND.icp.U %>% mutate(urban=1), totPM.IND.icp.R %>% mutate(urban=0)), 
+           paste0("./Draft results/Indirect/PM2.5 by decile - Indirect.no.fuelwood.U_R - ", case, ".xlsx"))
 
 a <- data.frame(p_names, dir=PM_int[IND_idx_ex], indir=st_PM[IND_idx_ex]) %>% mutate(diff=indir-dir, r=diff/indir)
 
@@ -233,4 +242,6 @@ a <- data.frame(a) %>% mutate(EXIO=EX_catnames) %>% select(EXIO, everything())
 names(a)[-1] = ICP_catnames
 view(a)
 
-
+# Check out the breakdown among FD sectors
+PM_t = st_PM %*% as.matrix(final_demand[,IND_idx_fd])
+PM_t / sum(PM_t) # 53:47 for 2010 (hh consumption vs other)
