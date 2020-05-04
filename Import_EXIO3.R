@@ -1,6 +1,7 @@
 EXIO3_path_old = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_India/"
 EXIO3_path = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_TROA/"
-EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_14Nov/"
+# EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_14Nov/"
+EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_20190114/" 
 
 # Monetary Mtx EXIO3
 # raw.Y <- read.csv(paste0(EXIO3_path, "Y_2007.csv"), header = FALSE)  # Final demand
@@ -82,9 +83,9 @@ idx.Elec.carrier <- grep("Electricity by ", carriers.Arkz) # Among the 69 carrie
 # raw.S.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_2008.csv"), header = FALSE)[carriers.RWood,]
 # raw.st.2008[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_2008.csv"), header = FALSE)[carriers.RWood,]
 
-raw.F[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
-raw.S[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
-raw.st[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
+raw.F[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "F_pxp_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
+raw.S[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "S_pxp_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
+raw.st[idx.NE,] <- read.csv(paste0(EXIO3_path_fix, "st_pxp_", IO.year, ".csv"), header = FALSE)[carriers.RWood,]
 
 
 
@@ -97,6 +98,12 @@ list[dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh] <- Harm
 
 # tfei.exio.noTRP <- ConstructCustomTEI.EXIO(dfei.exio, trp_idx) # I can use tfei.sub$NTRA instead.
 
+# Save the results
+EXIO3_energy <- list(tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tnei.exio,
+                     dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dnei.exio,
+                     dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dne.exio,
+                     dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh)
+save(EXIO3_energy, file = paste0("P:/ene.general/DecentLivingEnergy/DLE_scaleup/Data/IO/EXIO3_energy_ext_", as.character(IO.year), ".Rdata"))
 
 
 
