@@ -64,6 +64,10 @@ summary(lm.clothing)
 # summary(lm.clothing.18) 
 summary(lm.footwear) 
 
+# Save for DLE-upscaling
+saveRDS(lm.clothing, file="P:/ene.model/DLE_scaleup/Data/Clothing/lm.clothing.Rds")
+saveRDS(lm.footwear, file="P:/ene.model/DLE_scaleup/Data/Clothing/lm.footwear.Rds")
+
 # tidy.clothing <-tidy(lm.clothing)
 # write.table(tidy.clothing, "clipboard", sep="\t", row.names = FALSE, col.names = TRUE)
 
