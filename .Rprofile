@@ -79,7 +79,7 @@ source("P:/ene.general/DecentLivingEnergy/Surveys/Generic function to access dat
 # Faster matrix multiplication
 # example : eigenMapMatMult(X, Y)
 library(Rcpp)
-sourceCpp("matmult_test.cpp")
+sourceCpp("H:/MyDocuments/IO work/DLE_scripts/matmult_test.cpp")
 
 
 .ls.objects <- function (pos = 1, pattern, order.by,
