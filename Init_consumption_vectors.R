@@ -86,6 +86,15 @@ ZAF_FD_code <- ZAF_FD_code[1:(dim(ZAF_FD_code)[1]-n_CES_fuel),] %>% left_join(ZA
 # Replace NAs with zeros
 ZAF_FD_code[is.na(ZAF_FD_code)] <- 0
 
+######################################
+### Convert CES rows into ICP rows ###
+######################################
+
+# Need to separatly handle the fuel rows  (in USD PPP 2010)
+# Fianlly get 164 harmonized ICP rows for all
+ZAF_FD_ICP <- t(CES_ICP_ZAF) %*% as.matrix(ZAF_FD_code[1:(dim(ZAF_FD_code)[1]-n_CES_fuel),2:12]) %>%
+  rbind(ZAF_FD_code[-(1:(dim(ZAF_FD_code)[1]-n_CES_fuel)),2:12]) # for all deciles and total
+ZAF_FD_ICP <- as.matrix(ZAF_FD_ICP)
 
 # Deciles
 ZAF_FD_ICP_svy.yr <- ZAF_FD_ICP * PPP_ZAF / CPI_ratio_ZAF / EXR_ZAF / 1e6 # to M.USD 2007 (MER)
@@ -104,10 +113,10 @@ scaler_ZAF <- sum(ZAF_FD_ICP_io.yr[,1]) / sum(get_purch_price(ZAF_fd_exio, "ZA")
 init_FD_ZAF <- ZAF_FD_ICP_io.yr[,1] / scaler_ZAF
 
 
-
-save(BRA_FD_ICP_io.yr, file="./Saved tables/BRA_FD_ICP_io.yr.fix.2008.IO.Rda")
-save(IND_FD_ICP_io.yr, file="./Saved tables/IND_FD_ICP_io.yr.fix.2008.IO.Rda")
-save(ZAF_FD_ICP_io.yr, file="./Saved tables/ZAF_FD_ICP_io.yr.fix.2008.IO.Rda")
+# TODO: save these with specific year number using 'IO.year'
+save(BRA_FD_ICP_io.yr, file="./Saved tables/BRA_FD_ICP_io.yr.Rda")
+save(IND_FD_ICP_io.yr, file="./Saved tables/IND_FD_ICP_io.yr.Rda")
+save(ZAF_FD_ICP_io.yr, file="./Saved tables/ZAF_FD_ICP_io.yr.Rda")
 
 
 
