@@ -1,6 +1,6 @@
 # This file needs to be run once at the very beginning of an analysis
 
-rm(list=ls())
+# rm(list=ls())
 setwd("H:/MyDocuments/IO work/DLE_scripts")  # Change if run from OneDrive "/IIASA/DLE - Documents/WS2 - Documents/Analysis/IO/DLE_scripts/"
 
 #################
@@ -303,7 +303,12 @@ source("Import_EXIO3.R")  # Incorporate EXIO3
 ##########################################
 
 source("rIPFP - Valuation.R")
-source("Init_consumption_vectors.R")  # Run once to generate and save those vectors
+
+# Run this once to generate and save those vectors
+# But, better to use this (instead of the one below) to make sure which year XXX_FD_ICP_io.yr is based on.
+source("Init_consumption_vectors.R")  
+
+# For a faster process
 # source("Load_init_data.R") # Need 'get_purch_price'
 
 
