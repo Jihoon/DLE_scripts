@@ -4,14 +4,20 @@ org_wd <- getwd()
 EX_industry <- t(read.table(paste(path_sut, "mrUse_version2.2.2.txt", sep=""), header=FALSE, sep="\t", dec=".", nrows=1, skip=1)[3+1:163])
 EX_industry <- data.frame(ID=1:length(EX_industry), IND=EX_industry)
 
+source("Init.R") # Need this for function definitions etc. Better to run the whole thing to be simplistic.
+
 datapath <- 'C:/Users/min/IIASA/DLE - Documents/Air Pollution/'
 setwd(datapath)
 
-case <- 'policy' # 'base' # 
+case <- 'base' 
 if (case=='base') {
-  PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v2019-06-17_16-27-39.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+  # PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v2019-06-17_16-27-39.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+  # PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v1_a_CONC_by_SEC_2020-04-08_17-19-47.csv') %>% rename("IND" = "Item") 
+  PM_ext_i <- readr::read_csv("PM_by_IO_Industry_v1_CONC_by_SEC_BASE_2020-04-27_13-00-07.csv") %>% rename("IND" = "Item") 
 } else if (case=='policy') {
-  PM_ext_i <- readr::read_csv('PM_MFR_by_IO_Industry_v2019-12-04_09-23-33.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+  # PM_ext_i <- readr::read_csv('PM_MFR_by_IO_Industry_v2019-12-04_09-23-33.csv') %>% rename("IND" = "Item") # 'PPM_by_IO_Industry_v2019-06-06_11-35-10'
+  # PM_ext_i <- readr::read_csv('PM_by_IO_Industry_v1_b_CONC_by_SEC_2020-04-08_17-27-26.csv') %>% rename("IND" = "Item")
+  PM_ext_i <- readr::read_csv("PM_by_IO_Industry_v1_CONC_by_SEC_MFR_2020-04-27_13-01-21.csv") %>% rename("IND" = "Item") 
 }
   
 
@@ -218,30 +224,30 @@ xlsx::write.xlsx(data.frame(item=ICP_catnames, ZAF.con.by.decile), paste0(datapa
 
 ### Look into some details per COICOP item
 # This shows which IO industry is emitting a lot for the given ICP item (idx_icp).
-bridge <- read.xlsx(paste0("C:/Users/min/IIASA/DLE - Documents/Air Pollution/IND.bridge.EXIO-COICOP.xlsx"))
-tot.FD.ex.IND <- t(bridge[,-1]) %*% diag(IND_FD_ICP_io.yr[,1])  / scaler_IND.nofw#200x164: total FD in exio products (no deciles)
-tot.FD.ex.IND.adj <- t(bridge[,-1]) %*% diag(IND_FD_adj)  # IND_FD_adj is already scaled.
-# idx_icp <- which(ICP_catnames == "Firewood and other fuels")
-idx_icp <- which(ICP_catnames == "Furniture and furnishings")
-tot.FD.ex.sector <- rep(0, 9800) # stressor
-tot.FD.ex.sector[IND_idx_ex] <- tot.FD.ex.IND[, idx_icp]
-tot.production.ex.sector <-  eigenMapMatMult(as.matrix(L_inverse), matrix(tot.FD.ex.sector, ncol=1)) # embodied economic output from FD of idx_icp
-tot.PM.ex.sector <- (tot.production.ex.sector * PM_int)[IND_idx_ex] # indirect emission from the consumption of the icp sector #idx_icp
-View(data.frame(exio=EX_catnames, tot.x=tot.production.ex.sector[IND_idx_ex], pm.int=PM_int[IND_idx_ex], tot.PM.ex.sector))
-
-# For all ICP items
-a <- matrix(0, nrow=length(EX_catnames), ncol=length(ICP_catnames))
-for (i in 1:length(ICP_catnames)) {
-  tot.FD.ex.sector <- rep(0, 9800) # stressor
-  tot.FD.ex.sector[IND_idx_ex] <- tot.FD.ex.IND.adj[, i]
-  tot.production.ex.sector <-  eigenMapMatMult(as.matrix(L_inverse), matrix(tot.FD.ex.sector, ncol=1)) # embodied economic output from FD of idx_icp
-  tot.PM.ex.sector <- (tot.production.ex.sector * PM_int)[IND_idx_ex] # indirect emission from the consumption of the icp sector #idx_icp
-  a[,i] = tot.PM.ex.sector
-}
-a <- data.frame(a) %>% mutate(EXIO=EX_catnames) %>% select(EXIO, everything())
-names(a)[-1] = ICP_catnames
-view(a)
-
-# Check out the breakdown among FD sectors
-PM_t = st_PM %*% as.matrix(final_demand[,IND_idx_fd])
-PM_t / sum(PM_t) # 53:47 for 2010 (hh consumption vs other)
+# bridge <- read.xlsx(paste0("C:/Users/min/IIASA/DLE - Documents/Air Pollution/IND.bridge.EXIO-COICOP.xlsx"))
+# tot.FD.ex.IND <- t(bridge[,-1]) %*% diag(IND_FD_ICP_io.yr[,1])  / scaler_IND.nofw#200x164: total FD in exio products (no deciles)
+# tot.FD.ex.IND.adj <- t(bridge[,-1]) %*% diag(IND_FD_adj)  # IND_FD_adj is already scaled.
+# # idx_icp <- which(ICP_catnames == "Firewood and other fuels")
+# idx_icp <- which(ICP_catnames == "Furniture and furnishings")
+# tot.FD.ex.sector <- rep(0, 9800) # stressor
+# tot.FD.ex.sector[IND_idx_ex] <- tot.FD.ex.IND[, idx_icp]
+# tot.production.ex.sector <-  eigenMapMatMult(as.matrix(L_inverse), matrix(tot.FD.ex.sector, ncol=1)) # embodied economic output from FD of idx_icp
+# tot.PM.ex.sector <- (tot.production.ex.sector * PM_int)[IND_idx_ex] # indirect emission from the consumption of the icp sector #idx_icp
+# View(data.frame(exio=EX_catnames, tot.x=tot.production.ex.sector[IND_idx_ex], pm.int=PM_int[IND_idx_ex], tot.PM.ex.sector))
+# 
+# # For all ICP items
+# a <- matrix(0, nrow=length(EX_catnames), ncol=length(ICP_catnames))
+# for (i in 1:length(ICP_catnames)) {
+#   tot.FD.ex.sector <- rep(0, 9800) # stressor
+#   tot.FD.ex.sector[IND_idx_ex] <- tot.FD.ex.IND.adj[, i]
+#   tot.production.ex.sector <-  eigenMapMatMult(as.matrix(L_inverse), matrix(tot.FD.ex.sector, ncol=1)) # embodied economic output from FD of idx_icp
+#   tot.PM.ex.sector <- (tot.production.ex.sector * PM_int)[IND_idx_ex] # indirect emission from the consumption of the icp sector #idx_icp
+#   a[,i] = tot.PM.ex.sector
+# }
+# a <- data.frame(a) %>% mutate(EXIO=EX_catnames) %>% select(EXIO, everything())
+# names(a)[-1] = ICP_catnames
+# view(a)
+# 
+# # Check out the breakdown among FD sectors
+# PM_t = st_PM %*% as.matrix(final_demand[,IND_idx_fd])
+# PM_t / sum(PM_t) # 53:47 for 2010 (hh consumption vs other)
