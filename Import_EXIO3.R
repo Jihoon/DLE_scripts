@@ -1,6 +1,10 @@
+# EXIO3_path_old for satellite format
 EXIO3_path_old = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_India/"
+
+# EXIO3_path for A matrix or other base IO matrices
 EXIO3_path = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/IOT_bug_w_TROA/"
-# EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_14Nov/"
+
+# EXIO3_path_fix for energy satellite
 EXIO3_path_fix = "C:/Users/min/IIASA/DLE - Documents/WS2 - Documents/Data/IO/EXIOBASE/EXIOBASE3/EnvExt/EnvExt_NEU_1995-2015_20190114/" 
 
 # Monetary Mtx EXIO3
@@ -98,67 +102,27 @@ list[dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh] <- Harm
 
 # tfei.exio.noTRP <- ConstructCustomTEI.EXIO(dfei.exio, trp_idx) # I can use tfei.sub$NTRA instead.
 
-# Save the results
-EXIO3_energy <- list(tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tnei.exio,
+# Save the results for DLE upscaling
+
+EXIO3_FD <- read.csv(paste0(EXIO3_path, "Y_", IO.year, ".csv"), header = FALSE)
+EXIO3_FD.hh <- as.matrix(EXIO3_FD[,seq(1, dim(EXIO3_FD)[2], 7)])
+EXIO3_data <- list(tfei.exio, tfei.elec, tfei.non.elec, tfei.sub, tnei.exio,
                      dfei.exio, dfei.elec, dfei.non.elec, dfei.sub, dnei.exio,
                      dfe.exio, dfe.elec, dfe.non.elec, dfe.sub, dne.exio,
-                     dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh)
-save(EXIO3_energy, file = paste0("P:/ene.general/DecentLivingEnergy/DLE_scaleup/Data/IO/EXIO3_energy_ext_", as.character(IO.year), ".Rdata"))
+                     dfe.exio.hh, dfe.elec.hh, dfe.non.elec.hh, dfe.sub.hh, dne.exio.hh,
+                     EXIO3_FD.hh)
+names(EXIO3_data) <- c("tfei.exio", "tfei.elec", "tfei.non.elec", "tfei.sub", "tnei.exio", 
+                         "dfei.exio", "dfei.elec", "dfei.non.elec", "dfei.sub", "dnei.exio", 
+                         "dfe.exio", "dfe.elec", "dfe.non.elec", "dfe.sub", "dne.exio", 
+                         "dfe.exio.hh", "dfe.elec.hh", "dfe.non.elec.hh", "dfe.sub.hh", "dne.exio.hh",
+                         "EXIO3_FD.hh")
+EXIO3_sect_reg <- list(EXIO_sector = EX_catnames, EXIO_region = exio_ctys)
+save(EXIO3_data, file = paste0("P:/ene.general/DecentLivingEnergy/DLE_scaleup/Data/IO/EXIO3_energy_ext_", as.character(IO.year), ".Rdata"))
+save(EXIO3_sect_reg, file = paste0("P:/ene.general/DecentLivingEnergy/DLE_scaleup/Data/IO/EXIO3_sectors_regions.Rdata"))
 
 
 
-### General prep ###
-
-# Now WDI part is covered in Init.R
-
-# library(WDI)
-
-# PPP <- WDI(country = c("IN", "BR", "ZA"), indicator = c("PA.NUS.PPP"), start = 2008, end = 2011, extra = FALSE, cache = NULL)
-
-# survey year: BRA-2008, IND-2011, ZAF-2010
-# I'll use 2010 as the base year for now.
-
-# # DLE DB: 2010 $ PPP
-# # EXIO: XXXX EUR MER
-# CES.year <- 2010 # DLE DB
-# IO.year <- 2010 # Pick one closest to the survey year
-# 
-# PPP_IND <- as.numeric(PPP %>% filter(year==CES.year & iso2c=='IN') %>% select(PA.NUS.PPP))
-# PPP_BRA <- as.numeric(PPP %>% filter(year==CES.year & iso2c=='BR') %>% select(PA.NUS.PPP))
-# PPP_ZAF <- as.numeric(PPP %>% filter(year==CES.year & iso2c=='ZA') %>% select(PA.NUS.PPP))
-# 
-# # CPI and EXR not needed if both IO and CES are in 2010 term (normally >1)
-# CPI_IND <- as.numeric(CPI %>% filter(year==CES.year & iso2c=='IN') %>% select(FP.CPI.TOTL) / 
-#                         CPI %>% filter(year==IO.year & iso2c=='IN') %>% select(FP.CPI.TOTL))
-# CPI_BRA <- as.numeric(CPI %>% filter(year==CES.year & iso2c=='BR') %>% select(FP.CPI.TOTL) / 
-#                         CPI %>% filter(year==IO.year & iso2c=='BR') %>% select(FP.CPI.TOTL))
-# CPI_ZAF <- as.numeric(CPI %>% filter(year==CES.year & iso2c=='ZA') %>% select(FP.CPI.TOTL) / 
-#                         CPI %>% filter(year==IO.year & iso2c=='ZA') %>% select(FP.CPI.TOTL))
-# 
-# # Exchange rate (MER) [LCU/$]
-# EXR_EUR <- WDI(country = "XC", indicator = "PA.NUS.FCRF", start = IO.year, end = IO.year, extra = FALSE, cache = NULL)
-# EXR_EUR <- EXR_EUR %>% rename(r=PA.NUS.FCRF)
-# EXR_cty <- WDI(country = c("IN", "BR", "ZA"), indicator = "PA.NUS.FCRF", start = IO.year, end = IO.year, extra = FALSE, cache = NULL)
-# 
-# EXR_IND <- as.numeric(EXR_cty %>% filter(country=="India") %>% select(PA.NUS.FCRF))
-# EXR_BRA <- as.numeric(EXR_cty %>% filter(country=="Brazil") %>% select(PA.NUS.FCRF))
-# EXR_ZAF <- as.numeric(EXR_cty %>% filter(country=="South Africa") %>% select(PA.NUS.FCRF))
-# 
-# # 
-# HH_CON <- WDI(country = c("IN", "BR", "ZA"), 
-#               indicator = c(#"NE.CON.PETC.CD", 
-#                 "NE.CON.PRVT.CD", 
-#                 # "NE.CON.PETC.CN", 
-#                 "NE.CON.PRVT.KD"), 
-#               start = 2004, end = 2011, extra = FALSE, cache = NULL)
-# BRA_con_grwth <- as.numeric(HH_CON %>% filter(year==2008 & iso2c=='BR') %>% select(NE.CON.PRVT.KD) / # BRA0/1
-#                               HH_CON %>% filter(year==IO.year & iso2c=='BR') %>% select(NE.CON.PRVT.KD))
-# IND_con_grwth <- as.numeric(HH_CON %>% filter(year==2011 & iso2c=='IN') %>% select(NE.CON.PRVT.KD) / # IND1
-#                               HH_CON %>% filter(year==IO.year & iso2c=='IN') %>% select(NE.CON.PRVT.KD))
-# ZAF_con_grwth <- as.numeric(HH_CON %>% filter(year==2010 & iso2c=='ZA') %>% select(NE.CON.PRVT.KD) / # ZAF1
-#                               HH_CON %>% filter(year==IO.year & iso2c=='ZA') %>% select(NE.CON.PRVT.KD))
-# 
-
+#### Auxiliary script (may not be used) ####
 
 
 # Then we need to overwrite L_inverse, tot_demand, final_demand, and the country list with EXIO3 data.

@@ -37,7 +37,8 @@ IND_HH.CDDHDD <- IND_HH.CDDHDD %>%
 # clothing.all from 
 clothing.HDD <- clothing.all %>% full_join(footwear.all %>% select(id, weight.tot.f = weight.tot)) %>%
   left_join(IND_HH.CDDHDD) %>% 
-  mutate_at(vars(weight.tot, income), funs(pcap=./hh_size)) %>% mutate(HDD2 = HDD^2)
+  mutate_at(vars(weight.tot, income, expenditure), list(pcap= ~./hh_size)) %>% mutate(HDD2 = HDD^2)
+  # mutate_at(vars(weight.tot, income), funs(pcap=./hh_size)) %>% mutate(HDD2 = HDD^2) # funx() deprecated
 
 # # Eyeballing data
 # ggplot(clothing.HDD, aes(x=HDD, y=weight.tot)) +
@@ -57,10 +58,12 @@ clothing.HDD <- clothing.HDD %>% filter(!(id %in% outliers$id))
 # library(broom)
 
 lm.clothing <- lm(weight.tot ~ expenditure + HDD + hh_size, clothing.HDD, weights = weight)
-# lm.clothing <- lm(weight.tot ~ consumption + HDD + hh_size, clothing.HDD)
+lm.clothing <- lm(weight.tot_pcap ~ HDD, clothing.HDD, weights = weight * hh_size) # Doesn't depend on HDD (pcap)
+lm.clothing <- lm(weight.tot ~ HDD, clothing.HDD, weights = weight)
 # lm.clothing.18 <- lm(weight.tot ~ expenditure + HDD.18 + hh_size, clothing.HDD, weights = weight)
-lm.footwear <- lm(weight.tot.f ~ expenditure + HDD + hh_size, clothing.HDD, weights = weight)
 summary(lm.clothing) 
+
+lm.footwear <- lm(weight.tot.f ~ expenditure + HDD + hh_size, clothing.HDD, weights = weight)
 # summary(lm.clothing.18) 
 summary(lm.footwear) 
 
