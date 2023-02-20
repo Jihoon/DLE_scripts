@@ -1,5 +1,6 @@
 # Intend to be standalone, based on EXIO3 2015
 library(countrycode)
+library(tidyverse)
 
 IO.year <- 2015
 
@@ -59,7 +60,7 @@ EXIORegionIndex.FD_hh <- function(exio.idx) {
 
 
 
-final_demand[intersect(EXIORegionIndex(exio_reg_idx[["WEU"]]), EXIOCategoryIndex(exio_food_idx)), ]
+# final_demand[intersect(EXIORegionIndex(exio_reg_idx[["WEU"]]), EXIOCategoryIndex(exio_food_idx)), ]
 
 tfe_industry <- tfe_transport <- tfe_feedstock <- 
   tfe_elec_industry <- tfe_elec_transport <- tfe_elec_feedstock <- 
@@ -82,7 +83,8 @@ for (r in MSG_reg) {
     print(paste("Region:", r, ", Sector:", names(exio_sect_idx)[s], "- calculating Industry TFE"))
     tfe_industry[[r]]=as.matrix(tfei.sub$NTRA) %*% as.matrix(reg_fd)
     print(paste("Region:", r, ", Sector:", names(exio_sect_idx)[s], "- calculating Transportation TFE"))
-    tfe_transport[[r]]=as.matrix(tfei.exio - tfei.sub$NENE - tfei.sub$NTRA) %*% as.matrix(reg_fd)
+    # tfei.exio is the sum of TRAs and NTRA
+    tfe_transport[[r]]=as.matrix(tfei.exio - tfei.sub$NTRA) %*% as.matrix(reg_fd)
     print(paste("Region:", r, ", Sector:", names(exio_sect_idx)[s], "- calculating Feedstock TFE"))
     tfe_feedstock[[r]]=as.matrix(tfei.sub$NENE) %*% as.matrix(reg_fd)
     print(paste("Region:", r, ", Sector:", names(exio_sect_idx)[s], "- calculating total elec TFE"))
